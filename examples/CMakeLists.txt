@@ -20,7 +20,7 @@ foreach(example_source ${EXAMPLE_SOURCES})
     )
     
     set_target_properties(${example_name} PROPERTIES
-        CXX_STANDARD 17
+        CXX_STANDARD 20
         CXX_STANDARD_REQUIRED ON
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/examples"
     )
