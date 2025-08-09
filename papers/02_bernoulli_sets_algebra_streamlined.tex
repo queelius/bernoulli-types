@@ -649,6 +649,19 @@ For two observed sets $\tilde{A},\tilde{B}$ arising from independent channels wi
     \fprate_{A\cup B} &= 1-(1-\fprate_A)(1-\fprate_B), & \fnrate_{A\cup B} &= \fnrate_A\,\fnrate_B, \\
     \fprate_{\overline{A}} &= \fnrate_A, & \fnrate_{\overline{A}} &= \fprate_A.
 \end{align}
+\begin{figure}[h]
+\centering
+\begin{tabular}{lcc}
+\toprule
+Operation & FPR & FNR \\
+\midrule
+$A\cap B$ & $\alpha_A\alpha_B$ & $1-(1-\beta_A)(1-\beta_B)$ \\
+$A\cup B$ & $1-(1-\alpha_A)(1-\alpha_B)$ & $\beta_A\beta_B$ \\
+$\overline{A}$ & $\beta_A$ & $\alpha_A$ \\
+\bottomrule
+\end{tabular}
+\caption{Error propagation for set operations under independence.}
+\end{figure}
 These follow from elementary conditioning and independence assumptions; they remain valid for rate intervals by replacing real arithmetic with interval arithmetic.
 
 \paragraph{Order under operations.} Even if $\tilde{A}$ and $\tilde{B}$ are first- or second-order models, the composition may require additional parameters to describe value-dependent effects; we say the operation raises the \emph{order}. Complement flips one-sided errors (e.g., Bloom filters with $\fnrate=0$ become FN-only upon complement).

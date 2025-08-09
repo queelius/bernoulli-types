@@ -14,6 +14,8 @@
 \usepackage[square,numbers]{natbib}
 \bibliographystyle{plainnat}
 \usepackage{cleveref}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
 
 % Include unified notation definitions shared across the Bernoulli series
 \input{unified_notation.tex}
@@ -237,16 +239,16 @@ where $t_1, \ldots, t_n$ enumerate the elements of $T$.
 
 \begin{example}[Boolean Confusion Matrix]
 For $\bernoulli{\Bool}{2}$ with false positive rate $\alpha$ and false negative rate $\beta$:
-
-\begin{center}
+\begin{figure}[h]
+\centering
 \begin{tabular}{c|cc}
 latent \textbackslash observed & $\mathtt{true}$ & $\mathtt{false}$ \\
 \hline
 $\mathtt{true}$ & $1-\beta$ & $\beta$ \\
 $\mathtt{false}$ & $\alpha$ & $1-\alpha$
 \end{tabular}
-\end{center}
-
+\caption{Boolean asymmetric confusion matrix (BAC model).}
+\end{figure}
 This directly corresponds to a binary asymmetric channel (BAC).
 \end{example}
 

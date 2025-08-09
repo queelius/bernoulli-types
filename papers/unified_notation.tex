@@ -115,3 +115,31 @@
 % \PASet{S} → \obs{S}^+ or \withError{S}{\fprate}{0}  
 % \NASet{S} → \obs{S}^- or \withError{S}{0}{\fnrate}
 % \Set{S} → S (no decoration needed for latent)
+
+% ========== NOTATION TABLE (for inclusion) ==========
+
+\newcommand{\BernoulliNotationTable}{%
+\begin{tabular}{@{}ll@{}}
+\textbf{Symbol} & \textbf{Meaning} \\
+\midrule
+$\obs{x}$ & Observed value corresponding to latent $x$ \\
+$\obs{S}$ & Observed (approximate) set for latent $S$ \\
+$\obs{f}$ & Observed map approximating latent $f$ \\
+$\fprate$ & False positive rate $\Prob\{\obs{x}\in\obs{S} \mid x\notin S\}$ \\
+$\fnrate$ & False negative rate $\Prob\{\obs{x}\notin\obs{S} \mid x\in S\}$ \\
+$\errorrate$ & Pointwise map error $\Prob\{\obs{f}(x)\neq f(x)\}$ \\
+$Q$ & Confusion matrix: $Q_{ij}=\Prob\{\text{obs } t_j\mid \text{lat } t_i\}$ \\
+$W(y\mid x)$ & Channel kernel from latent $x$ to observed $y$ \\
+$\Indicator{S}$ & Set indicator function $U\to\Bool$ \\
+$\Complement{S}$ & Set complement \\
+$\Card{S}$ & Cardinality of a set $S$ \\
+\end{tabular}%
+}
+
+\newcommand{\NotationSection}{%
+\section*{Notation}
+This section summarizes symbols used throughout the paper. See also the shared cheat sheet for formulas and assumptions.
+
+\medskip
+\noindent\BernoulliNotationTable
+}
