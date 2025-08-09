@@ -715,6 +715,40 @@ When composing observed relations, errors become non-uniformly distributed. For 
 The error rate for $(x,z)$ depends on the number of intermediate elements $y$ satisfying the relation.
 \end{proposition}
 
+\section{Composition and Error Propagation}
+
+Let $f:X\to Y$ and $g:Y\to Z$ be latent, and let $\obs{f},\obs{g}$ be observed through independent memoryless channels with pointwise error rates $\error_f(x)=\Prob\{\obs{f}(x)\neq f(x)\}$ and $\error_g(y)=\Prob\{\obs{g}(y)\neq g(y)\}$. Consider the composition $h=g\circ f$ with observation $\obs{h}=\obs{g}\circ\obs{f}$.
+
+\begin{proposition}[Union bound for composition]
+For any $x\in X$,
+\begin{equation}
+\Prob\{\obs{h}(x)\neq h(x)\} \;\le\; \error_f(x) + \Expect{\error_g\bigl(f(x)\bigr)}.
+\end{equation}
+If $\error_f$ and $\error_g$ are bounded by constants $\epsilon_f,\epsilon_g$, then
+\begin{equation}
+\Prob\{\obs{h}(x)\neq h(x)\} \;\le\; 1-(1-\epsilon_f)(1-\epsilon_g).
+\end{equation}
+\end{proposition}
+
+\begin{remark}
+Channel composition corresponds to matrix multiplication of confusion matrices. The diagonal dominance of the product controls overall fidelity; the simple bound above is often tight enough for design.
+\end{remark}
+
+\section{Sampling-Based Function Equality}
+
+Given black-box access to functions $f,g:X\to Y$ over finite $X$, define the disagreement set $D=\{x\in X: f(x)\neq g(x)\}$. The classic sampling test draws i.i.d. $x_1,\dots,x_n\sim\mathrm{Unif}(X)$ and accepts if $f(x_i)=g(x_i)$ for all $i$.
+
+\begin{theorem}[Soundness of sampling equality]
+If $|D|/|X|=\delta>0$, then the probability of (falsely) accepting equality is
+\begin{equation}
+\Prob\{ \forall i,\; f(x_i)=g(x_i) \} \;=\; (1-\delta)^n \;\le\; e^{-\delta n}.
+\end{equation}
+\end{theorem}
+
+\begin{remark}
+In the Bernoulli map setting, the test operates on observations $\obs{f},\obs{g}$; the analysis then compounds with the channels' error rates, yielding slightly looser but still exponential bounds.
+\end{remark}
+
 \section{Related Work}
 
 \begin{itemize}

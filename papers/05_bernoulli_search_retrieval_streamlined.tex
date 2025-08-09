@@ -205,6 +205,26 @@ For independent sub-queries $q_1 \lor q_2$:
 \fnrate_{q_1 \lor q_2} &= \fnrate_{q_1} \cdot \fnrate_{q_2}
 \end{align}
 
+\section{Rank-Ordered Search and Thresholding}
+
+Boolean retrieval can be generalized to rank-ordered search by assigning scores to documents based on observed evidence. Let $s(d\mid q)$ be a score monotonically related to $\Prob\{d\in S_q \mid \text{observations}\}$, where $S_q$ is the latent result set. For Bernoulli indexes with independent evidence, log-odds add; thus summing per-term log-likelihood ratios yields a natural score. A threshold $\theta$ trades recall for precision.
+
+\begin{proposition}[Monotone scoring]
+If per-term observations are independent and each term contributes a likelihood ratio $\lambda_t(d)$, then $s(d\mid q)=\sum_{t\in q} \log \lambda_t(d)$ is monotone in the posterior $\Prob\{d\in S_q\mid\text{obs}\}$.
+\end{proposition}
+
+\begin{remark}
+Bernoulli sets supply exactly the sufficient statistics needed for such scores: counts of observed hits and miss patterns with known $(\fprate,\fnrate)$. This connects Boolean filtering to probabilistic ranking under the same channel model.
+\end{remark}
+
+\section{Observed Relations}
+
+Beyond set membership, retrieval often hinges on relations $R\subseteq K\times D$ (e.g., proximity, fields). An observed relation $\obs{R}$ specifies a Bernoulli channel over pairs $(k,d)$. Composition of relations (joins) inherits the error propagation of \S2: for $\obs{S}\circ\obs{R}$, false positives multiply along independent paths while false negatives combine via De Morgan.
+
+\begin{proposition}[Join error propagation]
+Under independence, the join $\obs{S}\circ\obs{R}$ has $\fprate\le 1-\prod (1-\fprate_i)$ over contributing edges and $\fnrate\ge 1-\prod (1-\fnrate_i)$; equality holds for single-path joins.
+\end{proposition}
+
 \section{Distribution of Retrieval Metrics}
 
 \subsection{Positive Predictive Value}

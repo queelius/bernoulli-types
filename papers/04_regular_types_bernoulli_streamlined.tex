@@ -540,6 +540,20 @@ Traditional programming assumes perfect observation—that our code directly man
 
 This isn't the end of determinism but its proper contextualization: determinism is the special case where observation is perfect.
 
+\section{Appendix: Limitations and Interop Guidelines}
+
+\begin{proposition}[Non-regularity under noisy equality]
+If a type's equality operator returns an observed Boolean with nonzero error (i.e., $\Prob\{\obs{(a=b)}\neq (a=b)\}>0$ for some $a,b$), then the type is not regular in the classical sense: observed equality is not guaranteed to be reflexive, symmetric, or transitive on every evaluation.
+\end{proposition}
+
+\paragraph{Design guidance.}
+\begin{itemize}
+  \item \textbf{Surface latent vs observed}: Expose both a latent-spec notion of equality and an observed comparator returning a probability or error interval.
+  \item \textbf{Stabilize by repetition}: For critical checks, aggregate multiple observations (majority vote) and bound error via concentration.
+  \item \textbf{Contain scope}: Restrict observed equality to local algorithmic steps; publish only stabilized results across module boundaries.
+  \item \textbf{Document assumptions}: Record independence/memoryless assumptions and expected error rates at API boundaries.
+\end{itemize}
+
 \section{Conclusions}
 
 Regular types assume perfect observation of equality—that when we write \code{a == b}, we access the latent mathematical truth. Bernoulli types acknowledge that equality comparison is itself an observation through a potentially noisy channel. This shift from assumed perfect observation to explicit approximate observation has profound implications:

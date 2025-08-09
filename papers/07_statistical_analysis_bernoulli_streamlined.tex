@@ -555,6 +555,22 @@ A Bloom filter with $m$ bits and $k$ hash functions storing approximately $n$ el
 \end{equation}
 \end{example}
 
+\section{Aggregation via Majority Vote}
+
+Suppose we obtain $k$ independent observations of a latent Boolean via a first-order channel with error $\epsilon<\tfrac12$. Let $\hat{x}_k$ be the majority vote. By Hoeffding's inequality,
+\begin{equation}
+\Prob\{\hat{x}_k \neq x\} \;\le\; \exp\bigl(-2(\tfrac12-\epsilon)^2 k\bigr),
+\end{equation}
+so the error decays exponentially in $k$. For asymmetric channels $(\fprate,\fnrate)$, choose a biased threshold using log-likelihood ratios to minimize risk.
+
+\section{Estimating Error Rates and Sample Complexity}
+
+Let $\widehat{\FPR}=\FP_n/n$ and $\widehat{\FNR}=\FN_p/p$ be the empirical rates. The MLEs for $(\fprate,\fnrate)$ under independence are the empirical fractions, with asymptotic normality given earlier. To obtain $(1-\delta)$-accurate estimates with additive error $\pm \varepsilon$, it suffices (by Hoeffding) to take
+\begin{equation}
+ n \ge \frac{\ln(2/\delta)}{2\varepsilon^2},\qquad p \ge \frac{\ln(2/\delta)}{2\varepsilon^2}.
+\end{equation}
+For precision and recall targets, propagate these uncertainties via the delta method or interval arithmetic to produce conservative bounds.
+
 \section{Related Work}
 
 This statistical analysis builds on:
