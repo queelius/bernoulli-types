@@ -660,3 +660,15 @@ Let $h:U\times\{0,1\}^k\to\{0,1\}^k$ be a hash family. If there exists a seed $s
     \fprate = 2^{-k},\qquad \fnrate = 0,\qquad \text{space} = k\cdot |S|\;\text{bits},
 \end{equation}
 achieving the information-theoretic bound up to lower-order terms. The construction time to find such $s$ may be exponential; practical filters (Bloom/Cuckoo) approximate this regime with randomized hashing and achieve the same asymptotic tradeoffs.
+
+\section{Interval Arithmetic and Dependency}
+
+In practice, base error rates are uncertain. Let $\fprate\in[\underline{\alpha},\overline{\alpha}]$ and $\fnrate\in[\underline{\beta},\overline{\beta}]$. Because the propagation formulas for $\cap,\cup,\overline{(\cdot)}$ are monotone in each argument on $[0,1]$, worst-case bounds for composite queries are obtained by evaluating endpoints. For example,
+\begin{align}
+    \fprate_{A\cup B} &\in \left[1-(1-\underline{\alpha}_A)(1-\underline{\alpha}_B),\; 1-(1-\overline{\alpha}_A)(1-\overline{\alpha}_B)\right], \\
+    \fnrate_{A\cap B} &\in \left[1-(1-\overline{\beta}_A)(1-\overline{\beta}_B),\; 1-(1-\underline{\beta}_A)(1-\underline{\beta}_B)\right].
+\end{align}
+When independence across sub-queries is doubtful, such interval bounds provide conservative guarantees.
+
+\subsection{Related Results}
+Classical Bloom analysis and optimal parameter choices appear in \cite{mitzenmacher2002,broder2004}. Interval methods for sound bounding are surveyed in \cite{moore1966}. For space–optimal hashing viewpoints, see \cite{bloom1970} and follow-ups.

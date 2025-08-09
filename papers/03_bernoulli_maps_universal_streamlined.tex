@@ -734,6 +734,30 @@ If $\error_f$ and $\error_g$ are bounded by constants $\epsilon_f,\epsilon_g$, t
 Channel composition corresponds to matrix multiplication of confusion matrices. The diagonal dominance of the product controls overall fidelity; the simple bound above is often tight enough for design.
 \end{remark}
 
+\subsection{Composition via Confusion Matrices}
+
+For finite codomains, channel composition is algebraic. Let $Y$ be finite and let $W_f(y\mid y')$ be the pointwise channel of $\obs{f}$ and $W_g(z\mid z')$ the pointwise channel of $\obs{g}$. The composed pointwise channel is
+\begin{equation}
+    W_{g\circ f}(z\mid y') \,=\, \sum_{y\in Y} W_g(z\mid y)\,W_f(y\mid y').
+\end{equation}
+In particular, if both are binary symmetric channels (BSC) with crossover $\epsilon_f$ and $\epsilon_g$, then $W_{g\circ f}$ is BSC with crossover
+\begin{equation}
+    \epsilon_{g\circ f} = 1-(1-\epsilon_f)(1-\epsilon_g) = \epsilon_f+\epsilon_g-\epsilon_f\epsilon_g.
+\end{equation}
+
+\subsection{Worked Example: $\Bool\to\Bool$}
+
+Let $f(x)=x$ (identity) and suppose we observe $\obs{f}$ through a BSC with $\epsilon_f=0.1$. Let $g(x)=\mathsf{not}(x)$ with observation $\epsilon_g=0.2$. Then for any input $x\in\Bool$,
+\begin{equation}
+    \Prob\{\obs{(g\circ f)}(x)\neq (g\circ f)(x)\} \le 1-(1-0.1)(1-0.2)=0.28.
+\end{equation}
+Equivalently, the composed pointwise channel is a BSC with crossover $0.28$.
+
+\paragraph{Sampling equality in the example.} If two Boolean functions disagree on a $\delta=0.1$ fraction of inputs and we sample $n=50$ points uniformly at random, the probability of falsely accepting equality is $\le e^{-0.1\cdot 50} \approx 0.0067$.
+
+\subsection{Related Results}
+See Cover and Thomas for channel composition and data-processing inequalities \cite{cover2006}, Motwani and Raghavan for randomized algorithm tail bounds \cite{motwani1995}, and Goldreich for property testing perspectives on function equality \cite{goldreich2017}.
+
 \section{Sampling-Based Function Equality}
 
 Given black-box access to functions $f,g:X\to Y$ over finite $X$, define the disagreement set $D=\{x\in X: f(x)\neq g(x)\}$. The classic sampling test draws i.i.d. $x_1,\dots,x_n\sim\mathrm{Unif}(X)$ and accepts if $f(x_i)=g(x_i)$ for all $i$.
