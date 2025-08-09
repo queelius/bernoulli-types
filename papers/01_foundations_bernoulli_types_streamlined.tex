@@ -138,6 +138,18 @@ Bernoulli types can be understood through the lens of information theory as nois
 Every Bernoulli type $\bernoulli{T}{n}$ with error profile $\sigma$ corresponds to a discrete memoryless channel with input alphabet $T$, output alphabet $T$, and transition probabilities determined by $\sigma$.
 \end{theorem}
 
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[node distance=2.8cm]
+  \node (X) {$x\in T$ (latent)};
+  \node (chan) [right=of X, draw, rounded corners, inner sep=6pt] {channel $W(\cdot\mid x)$};
+  \node (Y) [right=of chan] {$\tilde{x}\in T$ (observed)};
+  \draw[-{Latex[length=3mm]}] (X) -- (chan);
+  \draw[-{Latex[length=3mm]}] (chan) -- (Y);
+\end{tikzpicture}
+\caption{Latent-to-observed channel view of Bernoulli types.}
+\end{figure}
+
 \subsection{Order and Confusion Matrices}
 
 For a finite type $T=\{t_1,\dots,t_m\}$, the \emph{confusion matrix} $Q\in[0,1]^{m\times m}$ of a Bernoulli type records
@@ -207,6 +219,9 @@ P(y_1, \ldots, y_k | x_1, \ldots, x_k) = \prod_{i=1}^k P(y_i | x_i)
 
 This completes the correspondence.
 \end{proof}
+
+% Shared one-page cheat sheet
+\input{appendix_cheat_sheet.tex}
 
 \subsection{Confusion Matrix Representation}
 

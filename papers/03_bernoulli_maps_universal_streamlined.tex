@@ -734,6 +734,24 @@ If $\error_f$ and $\error_g$ are bounded by constants $\epsilon_f,\epsilon_g$, t
 Channel composition corresponds to matrix multiplication of confusion matrices. The diagonal dominance of the product controls overall fidelity; the simple bound above is often tight enough for design.
 \end{remark}
 
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[node distance=2.0cm]
+  \node (X) {$X$};
+  \node (f) [right=of X, draw, rounded corners, inner sep=5pt] {$f$};
+  \node (Y) [right=of f] {$Y$};
+  \node (g) [right=of Y, draw, rounded corners, inner sep=5pt] {$g$};
+  \node (Z) [right=of g] {$Z$};
+  \draw[-{Latex[length=3mm]}] (X) -- (f) node[midway, above] {latent};
+  \draw[-{Latex[length=3mm]}] (f) -- (Y);
+  \draw[-{Latex[length=3mm]}] (Y) -- (g);
+  \draw[-{Latex[length=3mm]}] (g) -- (Z);
+  \draw[red, dashed, -{Latex[length=3mm]}] (X) to[bend left=20] node[midway, above] {$\obs{f}$} (Y);
+  \draw[red, dashed, -{Latex[length=3mm]}] (Y) to[bend left=20] node[midway, above] {$\obs{g}$} (Z);
+\end{tikzpicture}
+\caption{Function composition with observed channels $\obs{f},\obs{g}$.}
+\end{figure}
+
 \subsection{Composition via Confusion Matrices}
 
 For finite codomains, channel composition is algebraic. Let $Y$ be finite and let $W_f(y\mid y')$ be the pointwise channel of $\obs{f}$ and $W_g(z\mid z')$ the pointwise channel of $\obs{g}$. The composed pointwise channel is
@@ -806,5 +824,8 @@ Future directions include:
 The universality of Bernoulli maps demonstrates that computation is fundamentally about observing the uncomputable through the lens of the computable.
 
 \bibliography{references}
+
+% Shared one-page cheat sheet at end for quick reference
+\input{appendix_cheat_sheet.tex}
 
 \end{document}
