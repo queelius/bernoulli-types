@@ -138,6 +138,33 @@ Bernoulli types can be understood through the lens of information theory as nois
 Every Bernoulli type $\bernoulli{T}{n}$ with error profile $\sigma$ corresponds to a discrete memoryless channel with input alphabet $T$, output alphabet $T$, and transition probabilities determined by $\sigma$.
 \end{theorem}
 
+\subsection{Order and Confusion Matrices}
+
+For a finite type $T=\{t_1,\dots,t_m\}$, the \emph{confusion matrix} $Q\in[0,1]^{m\times m}$ of a Bernoulli type records
+\begin{equation}
+    Q_{ij} \coloneqq \Prob{\text{observe } t_j \mid \text{latent } t_i}, \qquad \sum_{j=1}^m Q_{ij}=1.
+\end{equation}
+We define the \emph{order} of a Bernoulli type on $T$ as the number of independent error parameters, i.e., the degrees of freedom in $Q$ off the identity. In the extreme, a symmetric model has a single parameter $\epsilon$ with
+\begin{equation}
+    Q_{ij}=\begin{cases}1-\epsilon,& i=j,\\[2pt] \epsilon/(m-1),& i\neq j.\end{cases}
+\end{equation}
+For $T=\Bool$, the second-order (asymmetric) model splits errors into false positives $\fprate$ and false negatives $\fnrate$:
+\begin{center}
+\begin{tabular}{c|cc}
+latent $\\/\\$ observed & $\True$ & $\False$ \\ \hline
+$\True$ & $1-\fnrate$ & $\fnrate$ \\
+$\False$ & $\fprate$ & $1-\fprate$
+\end{tabular}
+\end{center}
+
+\subsection{Bayesian Inference and Multiple Observations}
+
+Let $\tilde{x}\sim\bernoulli{T}{n}(x)$ be an observation and let $\pi$ be a prior on $T$. For finite $T$, Bayes' rule yields
+\begin{equation}
+    \Prob{x=t_i\mid \tilde{x}=t_j} = \frac{Q_{ij}\,\pi(t_i)}{\sum_{r=1}^m Q_{rj}\,\pi(t_r)}.
+\end{equation}
+If we obtain i.i.d. observations $\tilde{x}_1,\dots,\tilde{x}_k$ under a memoryless channel, the joint likelihood factorizes and the posterior concentrates around the latent value. In the Boolean case with symmetric error $\epsilon<\tfrac12$, the majority vote of $k$ observations is a consistent estimator and the error probability decays exponentially in $k$ (Chernoff/Hoeffding bounds).
+
 \begin{proof}
 We establish a bijection between Bernoulli types and discrete memoryless channels (DMCs).
 

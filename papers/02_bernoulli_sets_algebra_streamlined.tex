@@ -637,3 +637,26 @@ Future work includes:
 \bibliography{references}
 
 \end{document}
+\section{Bernoulli Sets and Set Algebra}
+
+Let $S\subseteq U$ be latent and let $\tilde{S}$ be its observation through membership queries with false positive rate $\fprate$ and false negative rate $\fnrate$:
+\begin{equation}
+    \Prob{x\in\tilde{S}\mid x\in S}=1-\fnrate, \qquad \Prob{x\in\tilde{S}\mid x\notin S}=\fprate.
+\end{equation}
+For two observed sets $\tilde{A},\tilde{B}$ arising from independent channels with parameters $(\fprate_A,\fnrate_A)$ and $(\fprate_B,\fnrate_B)$, basic set operations have one-step error propagation laws:
+\begin{align}
+    \fprate_{A\cap B} &= \fprate_A\,\fprate_B, & \fnrate_{A\cap B} &= 1-(1-\fnrate_A)(1-\fnrate_B), \\
+    \fprate_{A\cup B} &= 1-(1-\fprate_A)(1-\fprate_B), & \fnrate_{A\cup B} &= \fnrate_A\,\fnrate_B, \\
+    \fprate_{\overline{A}} &= \fnrate_A, & \fnrate_{\overline{A}} &= \fprate_A.
+\end{align}
+These follow from elementary conditioning and independence assumptions; they remain valid for rate intervals by replacing real arithmetic with interval arithmetic.
+
+\paragraph{Order under operations.} Even if $\tilde{A}$ and $\tilde{B}$ are first- or second-order models, the composition may require additional parameters to describe value-dependent effects; we say the operation raises the \emph{order}. Complement flips one-sided errors (e.g., Bloom filters with $\fnrate=0$ become FN-only upon complement).
+
+\section{Space–Optimal Hash-Set Construction}
+
+Let $h:U\times\{0,1\}^k\to\{0,1\}^k$ be a hash family. If there exists a seed $s$ such that $h(x,s)=0^k$ for all $x\in S$, we can implement membership by testing $h(x,s)=0^k$. Then
+\begin{equation}
+    \fprate = 2^{-k},\qquad \fnrate = 0,\qquad \text{space} = k\cdot |S|\;\text{bits},
+\end{equation}
+achieving the information-theoretic bound up to lower-order terms. The construction time to find such $s$ may be exponential; practical filters (Bloom/Cuckoo) approximate this regime with randomized hashing and achieve the same asymptotic tradeoffs.

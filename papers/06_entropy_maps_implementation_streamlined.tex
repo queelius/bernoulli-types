@@ -498,3 +498,16 @@ While exponential construction time limits current practicality, entropy maps es
 \bibliography{references}
 
 \end{document}
+\section{Codecs and Entropy-Optimal Constructions}
+
+We distinguish \emph{values} (with interpretation) from \emph{data} (bitstrings). A codec associates to each value $x$ a codeword $x'$ such that decoding recovers $x$ from $x'$ with high probability (lossless) or in distribution (lossy). When codes are prefix-free and lengths $\ell(x')$ approximate the ideal Shannon lengths, $\ell\approx -\log p(x)$, we obtain rate–distortion-optimal tradeoffs.
+
+For approximate set membership, the target is to minimize expected loss subject to a bit budget. Under a Bernoulli set model with class prior $\pi$ and one-sided error, prefix-free encodings of membership evidence produce filters with near-minimal false positive rates for a given rate. More generally, for Bernoulli maps $f:X\to Y$ with confusion matrix $Q$, coding the outputs of $\tilde{f}$ with a distribution matched to $Q$ minimizes the expected code length of observations, while the induced error profile follows from the decoder's decision rule.
+
+\subsection{Bloom-like Filters from Coding}
+
+Consider a code that maps items to a small set of positions with collision probability $\alpha$. Storing the union of codewords yields a membership oracle with $\fprate\approx\alpha$ and $\fnrate=0$. Choosing the code to match the empirical distribution of queries (nonuniform priors) improves average-case performance: items with high query probability receive more redundancy, reducing their pointwise false positive rate. This is a direct application of optimal prefix coding to observed sets.
+
+\subsection{Rate–Error Tradeoffs}
+
+Let $R$ be the rate (bits per element). For classical Bloom filters, $\fprate \approx (1-e^{-k/R})^k$ with optimal $k=R\ln 2$, giving $\fprate\approx 2^{-R\ln 2}$. Entropy-aware designs recover the same exponential tradeoff while adapting constants to nonuniform workloads. For maps, coding the codomain according to the channel output distribution minimizes expected rate; the Bayes decoder yields minimum risk for a given $Q$ and prior.
