@@ -57,6 +57,7 @@
 
 \begin{document}
 \maketitle
+\NotationSection
 
 \begin{abstract}
 We explore the fundamental tension between regular types—which assume perfect observation of equality—and Bernoulli types, where we can only observe latent equality through a noisy channel. Regular types require that equality be reflexive, symmetric, and transitive, but these axioms assume we can perfectly observe whether two values are equal. In reality, equality comparison is itself a computation that observes the latent mathematical fact of equality. Bernoulli types make this explicit: when we write \code{a == b}, we are not accessing the latent truth but rather observing it through potentially faulty comparison operations. This shift from assuming perfect equality to observing approximate equality enables new programming paradigms for distributed systems (where different nodes may observe different equalities), privacy-preserving computation (where equality is deliberately obscured), and fault-tolerant algorithms (where hardware errors affect observations). We present a type system that distinguishes latent equality from observed equality, enabling safe integration of Bernoulli types with traditional programming.

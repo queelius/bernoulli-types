@@ -83,6 +83,7 @@
 
 \begin{document}
 \maketitle
+\NotationSection
 
 \begin{abstract}
 We introduce Bernoulli maps as a general framework for understanding computation through the distinction between latent functions (the true mathematical mappings) and their observations (the computed approximations). Every practical algorithm observes a latent function through a noisy channel—whether due to randomization, resource bounds, or intentional approximation. We show that randomized algorithms, sketching techniques, hash functions, and lossy compression are unified by this perspective: they all implement observed functions that approximate latent mathematical functions with controlled error. By making the latent/observed distinction explicit at the type level, we enable compositional reasoning about error propagation and provide a foundation for designing algorithms with predictable approximation characteristics. The framework reveals that approximation is not a compromise but a fundamental aspect of bridging mathematical functions with computational reality.
@@ -161,9 +162,9 @@ where $f_1, \ldots, f_n$ enumerate all functions from $X$ to $Y$.
 \end{definition}
 
 \begin{example}[Boolean Function Confusion Matrix]
-For $\Bool \mapsto \Bool$, there are 4 functions: $\mathsf{id}$, $\mathsf{not}$, $\mathsf{true}$, $\mathsf{false}$. A first-order Bernoulli approximation has confusion matrix:
-
-\begin{center}
+For $\Bool \mapsto \Bool$, there are 4 functions: $\mathsf{id}$, $\mathsf{not}$, $\mathsf{true}$, $\mathsf{false}$. A first-order Bernoulli approximation has the mini confusion matrix in Figure~\ref{fig:bool-func-confusion}.
+\begin{figure}[t]
+\centering
 \begin{tabular}{c|cccc}
 latent \textbackslash observed & $\mathsf{id}$ & $\mathsf{not}$ & $\mathsf{true}$ & $\mathsf{false}$ \\
 \hline
@@ -172,9 +173,10 @@ $\mathsf{not}$ & $\epsilon/3$ & $1-\epsilon$ & $\epsilon/3$ & $\epsilon/3$ \\
 $\mathsf{true}$ & $\epsilon/3$ & $\epsilon/3$ & $1-\epsilon$ & $\epsilon/3$ \\
 $\mathsf{false}$ & $\epsilon/3$ & $\epsilon/3$ & $\epsilon/3$ & $1-\epsilon$
 \end{tabular}
-\end{center}
-
-This represents maximum entropy distribution over errors.
+\caption{Mini confusion matrix for $\Bool\to\Bool$ under a first-order (symmetric) error model.}
+\label{fig:bool-func-confusion}
+\end{figure}
+This represents a maximum-entropy distribution over off-diagonal errors.
 \end{example}
 
 \begin{proposition}[Function Confusion Matrix Properties]

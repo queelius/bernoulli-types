@@ -78,6 +78,7 @@
 
 \begin{document}
 \maketitle
+\NotationSection
 
 \begin{abstract}
 We present a framework for information retrieval based on the fundamental distinction between latent document relevance and its observation through space-bounded indexes. Traditional search assumes perfect observation of which documents contain which terms. In reality, we can only observe document-term relationships through indexes that trade space for observation quality. By replacing exact indexes with Bernoulli sets, we make this latent/observed distinction explicit: queries return not the latent set of relevant documents but an observation of that set through a probabilistic channel. We derive how observation quality propagates through Boolean queries, showing that complex queries compound observation errors in predictable ways. The framework enables principled space-accuracy trade-offs, with applications to distributed search (different nodes observe different relevance), privacy-preserving retrieval (deliberately noisy observations), and resource-constrained systems. We demonstrate that accepting imperfect observations of relevance can reduce index size by 10-100× while maintaining acceptable retrieval quality.

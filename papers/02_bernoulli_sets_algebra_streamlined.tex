@@ -5,6 +5,7 @@
 \usepackage[margin=1in]{geometry}
 \usepackage[english]{babel}
 \usepackage{graphicx}
+\usepackage{booktabs}
 \usepackage[activate={true,nocompatibility},final,tracking=true,kerning=true,spacing=true,factor=1100,stretch=10,shrink=10]{microtype}
 \usepackage{mathtools}
 \usepackage{amsmath}
@@ -75,6 +76,7 @@
 
 \begin{document}
 \maketitle
+\NotationSection
 
 \begin{abstract}
 We develop a comprehensive algebraic theory for Bernoulli sets, where membership queries provide noisy observations of latent set membership. Given a latent set $S$, we can only observe membership through a probabilistic channel that may produce false positives and false negatives. We show that set-theoretic operations on these observed sets follow predictable error propagation laws, forming an approximate Boolean algebra. Our key insight is that by explicitly modeling the gap between latent sets and their observations, we can derive optimal space-accuracy trade-offs and enable new applications in distributed systems, privacy-preserving computation, and approximate query processing. The framework unifies Bloom filters, counting filters, and other probabilistic set data structures as special cases of observing latent sets through different channels.
@@ -649,7 +651,7 @@ For two observed sets $\tilde{A},\tilde{B}$ arising from independent channels wi
     \fprate_{A\cup B} &= 1-(1-\fprate_A)(1-\fprate_B), & \fnrate_{A\cup B} &= \fnrate_A\,\fnrate_B, \\
     \fprate_{\overline{A}} &= \fnrate_A, & \fnrate_{\overline{A}} &= \fprate_A.
 \end{align}
-\begin{figure}[h]
+\begin{figure}[t]
 \centering
 \begin{tabular}{lcc}
 \toprule

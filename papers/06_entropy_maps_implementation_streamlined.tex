@@ -71,6 +71,7 @@
 
 \begin{document}
 \maketitle
+\NotationSection
 
 \begin{abstract}
 We present entropy maps as a space-optimal implementation technique for Bernoulli maps—functions that provide noisy observations of latent mathematical mappings. The key insight is that by using prefix-free codes and cryptographic hash functions, we can achieve information-theoretically optimal space usage while maintaining the latent/observed distinction fundamental to Bernoulli types. An entropy map observes a latent function $f: X \to Y$ by hashing domain elements to prefix-free codes representing codomain values, with the code lengths determined by the desired observation distribution. This enables oblivious computation where the stored representation reveals nothing about the latent function beyond what can be inferred from queries. We demonstrate applications to privacy-preserving set membership, approximate function representation, and space-efficient probabilistic data structures. The framework reveals that optimal space usage requires accepting observation errors—a fundamental trade-off between fidelity and efficiency in observing latent functions.
