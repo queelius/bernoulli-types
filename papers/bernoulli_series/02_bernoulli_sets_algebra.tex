@@ -11,7 +11,6 @@
 \usepackage{amsmath}
 \usepackage{amsthm}
 \usepackage{amssymb}
-\usepackage{booktabs}
 \usepackage{pgfplots}
 % \usepackage{minted} % Disabled for now
 \usepackage{hyperref}
@@ -33,33 +32,9 @@
 \newtheorem{axiom}{Axiom}
 
 % Unified notation for latent/observed framework
-\newcommand{\obs}[1]{\widetilde{#1}}  % Universal observation operator
-\newcommand{\latent}[1]{#1}           % Explicit latent marker (optional)
-\newcommand{\observed}[1]{\widetilde{#1}}  % Explicit observed marker
+% (These are now defined in unified_notation.tex)
 
-% Set operations (using standard LaTeX)
-\newcommand{\Complement}[1]{\overline{#1}}
-\newcommand{\SetComplement}[1]{\overline{#1}}
-\newcommand{\SetUnion}{\cup}
-\newcommand{\SetIntersection}{\cap}
-\newcommand{\PowerSet}[1]{\mathcal{P}(#1)}
-\newcommand{\PS}[1]{\mathcal{P}(#1)}
-\newcommand{\EmptySet}{\emptyset}
-\newcommand{\Universe}{\mathcal{U}}
-
-% Probability and statistics
-\newcommand{\Prob}[1]{\mathbb{P}\left[#1\right]}
-\newcommand{\ProbCond}[2]{\mathbb{P}\left[#1 \mid #2\right]}
-\newcommand{\Expect}[1]{\mathbb{E}\left[#1\right]}
-\newcommand{\Var}[1]{\mathrm{Var}\left[#1\right]}
-\newcommand{\Card}[1]{\lvert#1\rvert}
-\newcommand{\Indicator}[1]{\mathbf{1}_{#1}}
-
-% Error rates
-\newcommand{\fprate}{\alpha}
-\newcommand{\fnrate}{\beta}
-\newcommand{\FPR}{\mathsf{FPR}}
-\newcommand{\FNR}{\mathsf{FNR}}
+% Set operations and probability notation now in unified_notation.tex
 
 % Legacy compatibility (to be phased out)
 \newcommand{\Set}[1]{#1}  % Just use S instead of \Set{S}
@@ -106,7 +81,7 @@ We introduce the concept of \emph{Bernoulli sets} as a unifying framework that e
     \item Deriving optimal space-accuracy trade-offs
 \end{itemize}
 
-\paragraph{Scope and organization.}  This paper is the second installment in our series on Bernoulli types.  It builds on the definitions and channel interpretation introduced in Part~1 and develops an algebra of approximate sets.  Later parts explore approximate functions (Part~3), implications for regular types (Part~4), search and retrieval (Part~5), space–optimal implementations (Part~6), and statistical analysis (Part~7).  The accompanying technical report on random approximate sets provides complementary background on the probability space underlying Bernoulli sets.
+\paragraph{Scope and organization.}  This paper is the second installment in our series on Bernoulli types.  It builds on the definitions and channel interpretation introduced in Part~1 (specifically the confusion matrix formulation in Section~2 and the Bayesian inference framework in Section~3) and develops an algebra of approximate sets.  Later parts explore approximate functions (Part~3), implications for regular types (Part~4), search and retrieval (Part~5), space–optimal implementations (Part~6), and statistical analysis (Part~7).  The accompanying technical report on random approximate sets provides complementary background on the probability space underlying Bernoulli sets.
 
 \section{The Bernoulli Set Model}
 

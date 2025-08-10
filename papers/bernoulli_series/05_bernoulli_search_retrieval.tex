@@ -12,6 +12,7 @@
 \usepackage{amssymb}
 \usepackage{algorithm2e}
 % \usepackage{minted} % Disabled - using verbatim instead
+\usepackage{booktabs}
 \usepackage{hyperref}
 \usepackage[square,numbers]{natbib}
 \bibliographystyle{plainnat}
@@ -29,24 +30,11 @@
 \newtheorem{example}[theorem]{Example}
 \newtheorem{remark}[theorem]{Remark}
 
-% Unified notation for latent/observed framework
-\newcommand{\obs}[1]{\widetilde{#1}}  % Universal observation operator
-\newcommand{\latent}[1]{#1}           % Explicit latent marker
-\newcommand{\observed}[1]{\widetilde{#1}}  % Explicit observed marker
+% Unified notation - defined in unified_notation.tex
 
-% Sets (no decoration for latent, tilde for observed)
-\newcommand{\Set}[1]{#1}              % Just use S instead of \Set{S}
-\newcommand{\ASet}[1]{\obs{#1}}       % Use \obs{S} for observed sets
-\newcommand{\PS}[1]{\mathcal{P}(#1)}  % Power set
-\newcommand{\EmptySet}{\emptyset}
-
-% Set operations and functions
-\newcommand{\SetUnion}{\cup}
-\newcommand{\SetIntersection}{\cap}
-\newcommand{\SetComplement}[1]{\overline{#1}}
+% Sets and set operations - defined in unified_notation.tex
+% Additional set notation - SetIndicator defined in unified_notation.tex as \Indicator
 \newcommand{\SetBuilder}[2]{\{#1 : #2\}}
-\newcommand{\SetIndicator}[1]{\mathbf{1}_{#1}}
-\newcommand{\Card}[1]{\lvert#1\rvert}
 
 % Search operations
 \newcommand{\Find}{\mathsf{find}}     % Latent search
@@ -60,13 +48,8 @@
 \newcommand{\Left}{\mathsf{left}}
 \newcommand{\Right}{\mathsf{right}}
 
-% Probability and error rates
-\newcommand{\Prob}[1]{\mathbb{P}\left[#1\right]}
-\newcommand{\ProbCond}[2]{\mathbb{P}\left[#1 \mid #2\right]}
-\newcommand{\fprate}{\alpha}
-\newcommand{\fnrate}{\beta}
-\newcommand{\tprate}{\tau}
-\newcommand{\tnrate}{\nu}
+% Probability and error rates - defined in unified_notation.tex
+% Note: \tnrate uses \rho in unified_notation.tex, not \nu
 \newcommand{\PPV}{\mathsf{PPV}}
 
 \title{Approximate Boolean Search with Bernoulli Sets: Information Retrieval in the Presence of Uncertainty}
@@ -115,7 +98,9 @@ By making observation quality explicit, we enable:
     \item \textbf{Distributed robustness}: Different nodes may observe different relevance
 \end{itemize}
 
-\paragraph{Scope and organization.}  This article forms Part~5 of our Bernoulli series and applies the latent/observed framework to information retrieval.  Building on the foundations (Part~1), set algebra (Part~2), and function approximation (Part~3), we demonstrate how approximate sets enable Boolean search under space constraints.  Part~4 examined regular types, while upcoming Parts~6 and~7 explore space–optimal implementation and statistical analysis, respectively.
+This framework naturally connects to oblivious computing and secure indexes used in encrypted search, where similar space-optimal constructions (e.g., perfect hash filters) provide both efficiency and privacy guarantees through controlled observation uncertainty.
+
+\paragraph{Scope and organization.}  This article forms Part~5 of our Bernoulli series and applies the latent/observed framework to information retrieval.  Building on the foundations (Part~1: latent/observed duality), set algebra (Part~2: union/intersection error propagation), and function approximation (Part~3: composition principles), we demonstrate how approximate sets enable Boolean search under space constraints.  Part~4 examined regular types, while upcoming Parts~6 and~7 explore space–optimal implementation and statistical analysis, respectively.
 
 \section{Boolean Search Model}
 
@@ -329,6 +314,21 @@ Bernoulli sets naturally provide differential privacy:
 An approximate index with symmetric error rate $\epsilon$ provides $\log((1-\epsilon)/\epsilon)$-differential privacy for document contents.
 \end{theorem}
 
+\subsection{Connection to Secure Indexes and Oblivious Computing}
+
+The latent/observed paradigm in Bernoulli sets connects deeply to secure indexes used in encrypted search systems. While Bernoulli sets introduce observation errors for space efficiency, secure indexes introduce controlled uncertainty for privacy:
+
+\begin{itemize}
+    \item \textbf{Oblivious Data Structures}: Both Bernoulli sets and secure indexes hide access patterns—Bernoulli through probabilistic responses, secure indexes through cryptographic obfuscation
+    \item \textbf{Perfect Hash Filters}: Space-optimal Bernoulli sets (HashSet construction, Section 2) share theoretical foundations with perfect hash filters used in encrypted search
+    \item \textbf{Plausible Deniability}: False positives in Bernoulli sets provide natural plausible deniability, similar to padding strategies in secure indexes
+    \item \textbf{Information-Theoretic Security}: Both frameworks can be analyzed through entropy measures—observation entropy in Bernoulli types, query privacy entropy in secure indexes
+\end{itemize}
+
+\begin{remark}[Unified Framework]
+Bernoulli sets and secure indexes represent two facets of the same fundamental problem: observing hidden information through constrained channels. Bernoulli sets constrain by space (leading to false positives), while secure indexes constrain by cryptography (preventing information leakage). Future work could unify these approaches into a general theory of oblivious observation.
+\end{remark}
+
 This enables private search protocols:
 
 \begin{enumerate}
@@ -393,6 +393,8 @@ Resource-constrained devices benefit from:
     \item \textbf{Approximate Nearest Neighbor}: Similar space-accuracy trade-offs but for continuous spaces
     \item \textbf{Succinct Data Structures}: Exact results with compressed representations vs. our approximate approach
     \item \textbf{Private Information Retrieval}: Complementary privacy techniques
+    \item \textbf{Encrypted Search}: Secure indexes use similar space-optimal constructions with additional cryptographic guarantees
+    \item \textbf{Oblivious RAM}: Access pattern hiding through cryptographic vs. probabilistic means
 \end{itemize}
 
 \section{Conclusions}
@@ -420,6 +422,8 @@ Future directions include:
     \item \textbf{Ranked retrieval}: Extend to scoring functions that observe latent relevance scores
     \item \textbf{Temporal dynamics}: Model how observations of relevance change over time
     \item \textbf{Neural integration}: Combine with learned representations that observe semantic similarity
+    \item \textbf{Cryptographic Bernoulli Types}: Combine probabilistic and cryptographic guarantees for both space efficiency and privacy
+    \item \textbf{Oblivious Search Protocols}: Leverage the latent/observed distinction to design protocols where servers cannot distinguish between queries
 \end{itemize}
 
 \subsection{Extension to Ranked Retrieval}

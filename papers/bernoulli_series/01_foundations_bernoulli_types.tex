@@ -10,6 +10,7 @@
 \usepackage{amsmath}
 \usepackage{amsthm}
 \usepackage{amssymb}
+\usepackage{booktabs}
 \usepackage{hyperref}
 \usepackage[square,numbers]{natbib}
 \bibliographystyle{plainnat}
@@ -32,14 +33,6 @@
 
 % Custom commands
 \newcommand{\bernoulli}[2]{\mathcal{B}\langle #1, #2 \rangle}
-\newcommand{\Bool}{\mathbb{B}}
-\newcommand{\True}{\mathtt{true}}
-\newcommand{\False}{\mathtt{false}}
-\newcommand{\Prob}[1]{\mathbb{P}\left[#1\right]}
-\newcommand{\Expect}[1]{\mathbb{E}\left[#1\right]}
-\newcommand{\fprate}{\alpha}
-\newcommand{\fnrate}{\beta}
-\newcommand{\Card}[1]{|#1|}
 \newcommand{\powerset}[1]{\mathcal{P}(#1)}
 
 \title{Foundations of Bernoulli Types: A Unified Framework for Probabilistic Data Structures}
@@ -51,6 +44,7 @@
 
 \begin{document}
 \maketitle
+\NotationSection
 
 \begin{abstract}
 We present a unified mathematical framework for understanding probabilistic data structures through the fundamental distinction between \emph{latent} (true but unobservable) values and their \emph{observed} (noisy but measurable) approximations. This framework, based on Bernoulli types, provides a principled approach to reasoning about uncertainty in computation. We show that the relationship between latent and observed values can be characterized by confusion matrices, channel models, and Bayesian inference. Our key insight is that approximation is not merely an implementation detail but a first-class concept that can be lifted to the type level. We demonstrate that Bloom filters, sketches, randomized algorithms, and other probabilistic data structures are special cases of this general framework, unified by the latent-observed duality.
@@ -165,7 +159,7 @@ We define the \emph{order} of a Bernoulli type on $T$ as the number of independe
 For $T=\Bool$, the second-order (asymmetric) model splits errors into false positives $\fprate$ and false negatives $\fnrate$:
 \begin{center}
 \begin{tabular}{c|cc}
-latent $\\/\\$ observed & $\True$ & $\False$ \\ \hline
+latent $\backslash$ observed & $\True$ & $\False$ \\ \hline
 $\True$ & $1-\fnrate$ & $\fnrate$ \\
 $\False$ & $\fprate$ & $1-\fprate$
 \end{tabular}
@@ -221,9 +215,6 @@ P(y_1, \ldots, y_k | x_1, \ldots, x_k) = \prod_{i=1}^k P(y_i | x_i)
 
 This completes the correspondence.
 \end{proof}
-
-% Shared one-page cheat sheet
-\input{appendix_cheat_sheet.tex}
 
 \subsection{Confusion Matrix Representation}
 
@@ -683,6 +674,9 @@ Future work includes:
     \item Implementing a full programming language with native Bernoulli type support
     \item Exploring hardware acceleration for Bernoulli type operations
 \end{itemize}
+
+% Shared one-page cheat sheet appendix
+\input{appendix_cheat_sheet.tex}
 
 \bibliography{references}
 

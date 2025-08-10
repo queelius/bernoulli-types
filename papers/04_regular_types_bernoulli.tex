@@ -11,10 +11,14 @@
 \usepackage{amsthm}
 \usepackage{amssymb}
 % \usepackage{minted} % Disabled - using verbatim instead
+\usepackage{booktabs}
 \usepackage{hyperref}
 \usepackage[square,numbers]{natbib}
 \bibliographystyle{plainnat}
 \usepackage{cleveref}
+
+% Include unified notation definitions shared across the Bernoulli series
+\input{unified_notation.tex}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,shapes}
 
@@ -27,19 +31,11 @@
 \newtheorem{example}[theorem]{Example}
 \newtheorem{remark}[theorem]{Remark}
 
-% Unified notation for latent/observed framework
-\newcommand{\obs}[1]{\widetilde{#1}}  % Universal observation operator
-\newcommand{\latent}[1]{#1}           % Explicit latent marker (optional)
-\newcommand{\observed}[1]{\widetilde{#1}}  % Explicit observed marker
+% Unified notation - defined in unified_notation.tex
 
 % Type and code notation
-\newcommand{\Type}[1]{\mathtt{#1}}
-\newcommand{\Bool}{\Type{Bool}}
-\newcommand{\True}{\mathtt{true}}
-\newcommand{\False}{\mathtt{false}}
 \newcommand{\bernoulli}[2]{\mathcal{B}\langle #1, #2 \rangle}
-\newcommand{\Prob}[1]{\mathbb{P}\left[#1\right]}
-\newcommand{\ProbCond}[2]{\mathbb{P}\left[#1 \mid #2\right]}
+% Probability commands - defined in unified_notation.tex
 \newcommand{\equals}{==}
 \newcommand{\notequals}{!=}
 \newcommand{\assign}{=}
@@ -54,12 +50,15 @@
 
 \begin{document}
 \maketitle
+\NotationSection
 
 \begin{abstract}
 We explore the fundamental tension between regular types—which assume perfect observation of equality—and Bernoulli types, where we can only observe latent equality through a noisy channel. Regular types require that equality be reflexive, symmetric, and transitive, but these axioms assume we can perfectly observe whether two values are equal. In reality, equality comparison is itself a computation that observes the latent mathematical fact of equality. Bernoulli types make this explicit: when we write \code{a == b}, we are not accessing the latent truth but rather observing it through potentially faulty comparison operations. This shift from assuming perfect equality to observing approximate equality enables new programming paradigms for distributed systems (where different nodes may observe different equalities), privacy-preserving computation (where equality is deliberately obscured), and fault-tolerant algorithms (where hardware errors affect observations). We present a type system that distinguishes latent equality from observed equality, enabling safe integration of Bernoulli types with traditional programming.
 \end{abstract}
 
 \section{Introduction}
+
+\paragraph{Scope and organization.}  Positioned as Part~4 of our Bernoulli series, this paper revisits the concept of regular types under the latent/observed paradigm.  Building on the foundations (Part~1: confusion matrices and Bayesian inference), the set algebra (Part~2: error propagation laws), and the function framework (Part~3: composition of observed functions), we examine how equality and other regular type properties must be reinterpreted when observations are imperfect.  Parts~5--7 explore applications to search, implementation techniques, and statistical analysis.
 
 Alexander Stepanov's concept of regular types forms the foundation of generic programming \cite{stepanov2014}. A regular type supports:
 \begin{itemize}
@@ -535,6 +534,20 @@ Traditional programming assumes perfect observation—that our code directly man
 
 This isn't the end of determinism but its proper contextualization: determinism is the special case where observation is perfect.
 
+\section{Appendix: Limitations and Interop Guidelines}
+
+\begin{proposition}[Non-regularity under noisy equality]
+If a type's equality operator returns an observed Boolean with nonzero error (i.e., $\Prob\{\obs{(a=b)}\neq (a=b)\}>0$ for some $a,b$), then the type is not regular in the classical sense: observed equality is not guaranteed to be reflexive, symmetric, or transitive on every evaluation.
+\end{proposition}
+
+\paragraph{Design guidance.}
+\begin{itemize}
+  \item \textbf{Surface latent vs observed}: Expose both a latent-spec notion of equality and an observed comparator returning a probability or error interval.
+  \item \textbf{Stabilize by repetition}: For critical checks, aggregate multiple observations (majority vote) and bound error via concentration.
+  \item \textbf{Contain scope}: Restrict observed equality to local algorithmic steps; publish only stabilized results across module boundaries.
+  \item \textbf{Document assumptions}: Record independence/memoryless assumptions and expected error rates at API boundaries.
+\end{itemize}
+
 \section{Conclusions}
 
 Regular types assume perfect observation of equality—that when we write \code{a == b}, we access the latent mathematical truth. Bernoulli types acknowledge that equality comparison is itself an observation through a potentially noisy channel. This shift from assumed perfect observation to explicit approximate observation has profound implications:
@@ -552,5 +565,8 @@ The apparent violation of regularity axioms reveals a deeper truth: those axioms
 By making the latent/observed distinction explicit, Bernoulli types don't break programming—they make it more honest about the nature of computation. As systems grow in scale and complexity, embracing the fundamental gap between what is mathematically true and what we can observe becomes not just useful but necessary.
 
 \bibliography{references}
+
+% Shared one-page cheat sheet at end for quick reference
+\input{appendix_cheat_sheet.tex}
 
 \end{document}

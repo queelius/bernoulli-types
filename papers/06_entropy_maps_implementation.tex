@@ -18,6 +18,9 @@
 \bibliographystyle{plainnat}
 \usepackage{cleveref}
 
+% Include unified notation definitions shared across the Bernoulli series
+\input{unified_notation.tex}
+
 % Theorem environments
 \newtheorem{theorem}{Theorem}[section]
 \newtheorem{lemma}[theorem]{Lemma}
@@ -27,33 +30,17 @@
 \newtheorem{example}[theorem]{Example}
 \newtheorem{remark}[theorem]{Remark}
 
-% Unified notation for latent/observed framework
-\newcommand{\obs}[1]{\widetilde{#1}}  % Universal observation operator
-\newcommand{\latent}[1]{#1}           % Explicit latent marker (optional)
-\newcommand{\observed}[1]{\widetilde{#1}}  % Explicit observed marker
+% Unified notation - defined in unified_notation.tex
 
 % Sets and functions
+% Set notation - most defined in unified_notation.tex
 \newcommand{\Set}[1]{#1}              % Just use S instead of \Set{S}
 \newcommand{\ASet}[1]{\obs{#1}}       % Use \obs{S} instead
 \newcommand{\SetIndicator}[1]{\mathbf{1}_{#1}}
-\newcommand{\Indicator}[1]{\mathbf{1}_{#1}}
-\newcommand{\EmptySet}{\emptyset}
-\newcommand{\PowerSet}[1]{\mathcal{P}(#1)}
-\newcommand{\Card}[1]{\lvert#1\rvert}
-
-% Probability and error rates
-\newcommand{\Prob}[1]{\mathbb{P}\left[#1\right]}
-\newcommand{\ProbCond}[2]{\mathbb{P}\left[#1 \mid #2\right]}
-\newcommand{\Expect}[1]{\mathbb{E}\left[#1\right]}
-\newcommand{\fprate}{\alpha}
-\newcommand{\fnrate}{\beta}
-\newcommand{\error}{\epsilon}
+% Set notation, probability and error rates - defined in unified_notation.tex
+% Note: \error should use \errorrate from unified_notation.tex
 
 % Types
-\newcommand{\Type}[1]{\mathtt{#1}}
-\newcommand{\Bool}{\Type{Bool}}
-\newcommand{\True}{\mathtt{true}}
-\newcommand{\False}{\mathtt{false}}
 \newcommand{\bernoulli}[2]{\mathcal{B}\langle #1, #2 \rangle}
 
 % Information theory
@@ -68,12 +55,15 @@
 
 \begin{document}
 \maketitle
+\NotationSection
 
 \begin{abstract}
 We present entropy maps as a space-optimal implementation technique for Bernoulli maps—functions that provide noisy observations of latent mathematical mappings. The key insight is that by using prefix-free codes and cryptographic hash functions, we can achieve information-theoretically optimal space usage while maintaining the latent/observed distinction fundamental to Bernoulli types. An entropy map observes a latent function $f: X \to Y$ by hashing domain elements to prefix-free codes representing codomain values, with the code lengths determined by the desired observation distribution. This enables oblivious computation where the stored representation reveals nothing about the latent function beyond what can be inferred from queries. We demonstrate applications to privacy-preserving set membership, approximate function representation, and space-efficient probabilistic data structures. The framework reveals that optimal space usage requires accepting observation errors—a fundamental trade-off between fidelity and efficiency in observing latent functions.
 \end{abstract}
 
 \section{Introduction}
+
+\paragraph{Scope and organization.}  This paper is Part~6 of our Bernoulli series and focuses on how to implement approximate observations in a space–optimal manner.  It builds upon the theoretical foundations (Parts~1--3: the latent/observed framework, error propagation algebra, and function composition) and the investigation of regular types (Part~4) and search (Part~5).  Here we derive information-theoretic coding techniques (entropy maps) that realize the observation distributions described earlier.  The final part (Part~7) will examine the statistical behavior of these observations.
 
 The Bernoulli framework distinguishes between latent mathematical objects and their computational observations. While previous work has focused on the algebraic properties of these observations, a critical question remains: how can we \emph{implement} observations space-efficiently?
 
@@ -147,6 +137,18 @@ This achieves expected code length (entropy):
 \mathcal{H} = -\sum_{y \in Y} p_y \log_2 p_y
 \end{equation}
 \end{theorem}
+
+\subsection{Codecs and Entropy-Optimal Constructions}
+
+We distinguish \emph{values} (with interpretation) from \emph{data} (bitstrings). A codec associates to each value $x$ a codeword $x'$ such that decoding recovers $x$ from $x'$ with high probability (lossless) or in distribution (lossy). When codes are prefix-free and lengths $\ell(x')$ approximate Shannon lengths $\ell\approx -\log p(x)$, we obtain rate–distortion-optimal tradeoffs.
+
+For approximate set membership, the target is to minimize expected loss subject to a bit budget. Under a Bernoulli set model with class prior $\pi$ and one-sided error, prefix-free encodings of membership evidence produce filters with near-minimal false positive rates for a given rate. More generally, for Bernoulli maps $f:X\to Y$ with confusion matrix $Q$, coding the outputs of $\tilde{f}$ with a distribution matched to $Q$ minimizes the expected code length of observations, while the induced error profile follows from the decoder's decision rule.
+
+\subsubsection{Bloom-like Filters from Coding}
+Consider a code that maps items to a small set of positions with collision probability $\alpha$. Storing the union of codewords yields a membership oracle with $\fprate\approx\alpha$ and $\fnrate=0$. Choosing the code to match the empirical distribution of queries (nonuniform priors) improves average-case performance: items with high query probability receive more redundancy, reducing their pointwise false positive rate. This is a direct application of optimal prefix coding to observed sets.
+
+\subsubsection{Rate–Error Tradeoffs}
+Let $R$ be the rate (bits per element). For classical Bloom filters, $\fprate \approx (1-e^{-k/R})^k$ with optimal $k=R\ln 2$, giving $\fprate\approx 2^{-R\ln 2}$. Entropy-aware designs recover the same exponential tradeoff while adapting constants to nonuniform workloads. For maps, coding the codomain according to the channel output distribution minimizes expected rate; the Bayes decoder yields minimum risk for a given $Q$ and prior.
 
 \section{Latent/Observed Duality in Entropy Maps}
 
@@ -273,11 +275,11 @@ Implement a cache admission policy:
 \subsection{Rate-Distortion Trade-off}
 
 \begin{theorem}[Fundamental Space-Accuracy Trade-off]
-For any implementation of observations of a function $f: X \to Y$ with error rate $\error$, the minimum space required is:
+For any implementation of observations of a function $f: X \to Y$ with error rate $\errorrate$, the minimum space required is:
 \begin{equation}
-S \geq \Card{\text{dom}(f)} \cdot [H(Y) - H(\error)]
+S \geq \Card{\text{dom}(f)} \cdot [H(Y) - H(\errorrate)]
 \end{equation}
-where $H(Y)$ is the entropy of the output distribution and $H(\error)$ is the binary entropy of the error rate.
+where $H(Y)$ is the entropy of the output distribution and $H(\errorrate)$ is the binary entropy of the error rate.
 \end{theorem}
 
 Entropy maps achieve this bound, confirming their optimality.
@@ -491,5 +493,8 @@ The key insight is that optimal space usage requires accepting observation error
 While exponential construction time limits current practicality, entropy maps establish the theoretical foundations for space-optimal approximate computation. They demonstrate that the gap between latent mathematical functions and their computational observations can be bridged optimally through information-theoretic coding.
 
 \bibliography{references}
+
+% Shared one-page cheat sheet at end for quick reference
+\input{appendix_cheat_sheet.tex}
 
 \end{document}

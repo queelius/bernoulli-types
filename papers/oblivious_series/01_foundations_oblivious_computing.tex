@@ -1,0 +1,502 @@
+\documentclass[11pt,final,hidelinks]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage[activate={true,nocompatibility},final,tracking=true,kerning=true,spacing=true,factor=1100,stretch=10,shrink=10]{microtype}
+\usepackage{mathtools}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage[square,numbers]{natbib}
+\bibliographystyle{plainnat}
+\usepackage{cleveref}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric}
+
+% Theorem environments
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{axiom}{Axiom}
+
+% Custom commands for oblivious computing
+\newcommand{\Oblivious}[1]{\mathcal{O}\langle #1 \rangle}
+\newcommand{\Hidden}[1]{\mathtt{hide}(#1)}
+\newcommand{\Reveal}[1]{\mathtt{reveal}(#1)}
+\newcommand{\Access}[1]{\mathtt{access}(#1)}
+\newcommand{\Pattern}[1]{\pi(#1)}
+\newcommand{\Leakage}[1]{\mathcal{L}(#1)}
+\newcommand{\Entropy}[1]{\mathcal{H}(#1)}
+\newcommand{\MutualInfo}[2]{\mathcal{I}(#1; #2)}
+
+% Reuse some notation from Bernoulli series
+\newcommand{\Prob}[1]{\mathbb{P}\left[#1\right]}
+\newcommand{\Expect}[1]{\mathbb{E}\left[#1\right]}
+\newcommand{\Bool}{\mathbb{B}}
+\newcommand{\True}{\mathtt{true}}
+\newcommand{\False}{\mathtt{false}}
+
+% Security parameters
+\newcommand{\negl}[1]{\mathtt{negl}(#1)}
+\newcommand{\poly}[1]{\mathtt{poly}(#1)}
+\newcommand{\Adversary}{\mathcal{A}}
+\newcommand{\Simulator}{\mathcal{S}}
+\newcommand{\View}[1]{\mathtt{View}(#1)}
+
+\title{Foundations of Oblivious Computing: Hidden Data, Observable Computation}
+\author{
+    Alexander Towell\\
+    \texttt{atowell@siue.edu}
+}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We present a unified framework for oblivious computing—systems that compute on hidden data while revealing only controlled information through observable side channels. While traditional computing assumes that data access patterns and intermediate values are irrelevant implementation details, modern security requirements demand that these observations reveal nothing about the underlying data. We formalize oblivious computing through the dual lens of information theory and cryptography, showing how to quantify and bound information leakage. Our key insight is that oblivious computing and probabilistic data structures (Bernoulli types) represent complementary approaches to the same fundamental problem: observing hidden information through constrained channels. Where Bernoulli types use probabilistic channels that trade space for accuracy, oblivious computing uses cryptographic channels that trade performance for privacy. We demonstrate that secure indexes, oblivious RAM, private information retrieval, and searchable encryption are all instances of this general framework, unified by the hidden/observable duality.
+\end{abstract}
+
+\section{Introduction}
+
+\subsection{The Fundamental Problem: Computing on Hidden Data}
+
+Modern computing increasingly requires processing sensitive data without revealing it. Consider:
+
+\begin{itemize}
+    \item \textbf{Cloud Storage}: Files stored encrypted, but the server must enable search without decryption
+    \item \textbf{Database Queries}: Retrieve records without revealing which records were accessed
+    \item \textbf{Secure Messaging}: Route messages without knowing sender or recipient
+    \item \textbf{Blockchain Smart Contracts}: Execute contracts on encrypted state
+\end{itemize}
+
+In each case, we must compute on \emph{hidden} data while ensuring that all \emph{observable} information reveals nothing sensitive.
+
+\subsection{The Hidden/Observable Duality}
+
+We formalize oblivious computing through a fundamental duality:
+
+\begin{itemize}
+    \item \textbf{Hidden Layer}: The actual data and computation, encrypted or otherwise concealed
+    \item \textbf{Observable Layer}: What an adversary can see—access patterns, timing, communication
+\end{itemize}
+
+This mirrors the latent/observed duality in Bernoulli types, but with a crucial difference:
+\begin{itemize}
+    \item \textbf{Bernoulli Types}: Observations are noisy due to space constraints (probabilistic channel)
+    \item \textbf{Oblivious Computing}: Observations are obscured for privacy (cryptographic channel)
+\end{itemize}
+
+\subsection{Contributions}
+
+We make the following contributions:
+
+\begin{enumerate}
+    \item \textbf{Unified Framework}: Formalize oblivious computing as hiding information through constrained observation channels
+    \item \textbf{Information-Theoretic Analysis}: Quantify privacy through entropy and mutual information
+    \item \textbf{Cryptographic Constructions}: Show how standard primitives implement oblivious channels
+    \item \textbf{Composition Theory}: Derive how privacy degrades through composed operations
+    \item \textbf{Connection to Probabilistic Computing}: Unify with Bernoulli types through channel theory
+\end{enumerate}
+
+\section{Mathematical Foundations}
+
+\subsection{Basic Definitions}
+
+\begin{definition}[Oblivious Type]
+For any type $T$, the oblivious type $\Oblivious{T}$ consists of:
+\begin{itemize}
+    \item A hidden value $x \in T$ (the actual data)
+    \item An observable trace $\Pattern{x}$ (what adversaries see)
+    \item A leakage function $\Leakage{}: T \to \mathcal{T}$ mapping hidden values to traces
+\end{itemize}
+\end{definition}
+
+\begin{definition}[Perfect Obliviousness]
+A computation is \emph{perfectly oblivious} if for all inputs $x, y \in T$:
+\begin{equation}
+\Pattern{x} \equiv \Pattern{y}
+\end{equation}
+That is, all inputs produce indistinguishable observable traces.
+\end{definition}
+
+\begin{definition}[Statistical Obliviousness]
+A computation is $\epsilon$-statistically oblivious if the statistical distance between trace distributions is bounded:
+\begin{equation}
+\Delta(\Pattern{x}, \Pattern{y}) \leq \epsilon
+\end{equation}
+for all $x, y \in T$.
+\end{definition}
+
+\begin{definition}[Computational Obliviousness]
+A computation is computationally oblivious if for all polynomial-time adversaries $\Adversary$:
+\begin{equation}
+\left|\Prob{\Adversary(\Pattern{x}) = 1} - \Prob{\Adversary(\Pattern{y}) = 1}\right| \leq \negl{\lambda}
+\end{equation}
+where $\lambda$ is the security parameter.
+\end{definition}
+
+\subsection{Information-Theoretic Characterization}
+
+We quantify privacy loss through information theory:
+
+\begin{theorem}[Privacy as Mutual Information]
+The privacy loss of an oblivious computation is:
+\begin{equation}
+\text{Privacy Loss} = \MutualInfo{X}{\Pattern{X}}
+\end{equation}
+where $X$ is the hidden data and $\Pattern{X}$ is its observable trace.
+\end{theorem}
+
+\begin{proof}
+By definition, mutual information measures the reduction in uncertainty about $X$ given $\Pattern{X}$:
+\begin{align}
+\MutualInfo{X}{\Pattern{X}} &= \Entropy{X} - \Entropy{X|\Pattern{X}} \\
+&= \text{Initial uncertainty} - \text{Remaining uncertainty}
+\end{align}
+Perfect obliviousness corresponds to $\MutualInfo{X}{\Pattern{X}} = 0$.
+\end{proof}
+
+\begin{corollary}[Entropy Bound]
+For hidden data with entropy $\Entropy{X}$ and observable trace with entropy $\Entropy{\Pattern{X}}$:
+\begin{equation}
+\MutualInfo{X}{\Pattern{X}} \leq \min(\Entropy{X}, \Entropy{\Pattern{X}})
+\end{equation}
+\end{corollary}
+
+\subsection{Channel Model}
+
+Oblivious computing implements a constrained channel from hidden to observable:
+
+\begin{definition}[Oblivious Channel]
+An oblivious channel is characterized by transition probabilities:
+\begin{equation}
+\Prob{\Pattern{} = \tau | X = x} = W(\tau|x)
+\end{equation}
+where $W$ is designed to minimize information leakage.
+\end{definition}
+
+\begin{example}[Differentially Private Channel]
+An $\epsilon$-differentially private channel satisfies:
+\begin{equation}
+e^{-\epsilon} \leq \frac{W(\tau|x)}{W(\tau|x')} \leq e^{\epsilon}
+\end{equation}
+for all neighboring inputs $x, x'$ and all traces $\tau$.
+\end{example}
+
+\section{Connection to Bernoulli Types}
+
+\subsection{Unified Channel Framework}
+
+Both Bernoulli types and oblivious computing use channels, but with different goals:
+
+\begin{center}
+\begin{tabular}{lll}
+\textbf{Aspect} & \textbf{Bernoulli Types} & \textbf{Oblivious Computing} \\
+\hline
+Hidden & Latent value & Secret data \\
+Observable & Approximate value & Access pattern \\
+Channel & Probabilistic (noise) & Cryptographic (encryption) \\
+Constraint & Space efficiency & Privacy preservation \\
+Error type & False positives/negatives & Information leakage \\
+Metric & Error rate & Mutual information \\
+\end{tabular}
+\end{center}
+
+\begin{theorem}[Channel Duality]
+Let $\mathcal{B}^n\langle T \rangle$ be a Bernoulli type with error rate $\epsilon$ and $\Oblivious{T}$ be an oblivious type with leakage $\delta$. There exists a mapping:
+\begin{equation}
+\phi: \mathcal{B}^n\langle T \rangle \to \Oblivious{T}
+\end{equation}
+that preserves channel capacity: $C(\mathcal{B}^n) = C(\Oblivious{})$ under appropriate error/leakage correspondence.
+\end{theorem}
+
+\subsection{Secure Indexes as Dual Construction}
+
+Secure indexes exemplify the duality:
+
+\begin{example}[Bloom Filter vs. Encrypted Bloom Filter]
+Consider a set $S \subseteq U$:
+\begin{itemize}
+    \item \textbf{Bloom Filter} (Bernoulli): Stores $S$ approximately, queries have false positives
+    \item \textbf{Encrypted Bloom Filter} (Oblivious): Stores $\text{Enc}(S)$, queries reveal access patterns
+\end{itemize}
+
+Both provide membership testing through constrained channels:
+\begin{itemize}
+    \item Bloom: $\Prob{\text{yes}|x \notin S} = \alpha$ (false positive rate)
+    \item Encrypted: $\MutualInfo{\text{query}; S} \leq \delta$ (leakage bound)
+\end{itemize}
+\end{example}
+
+\section{Core Oblivious Primitives}
+
+\subsection{Oblivious Transfer (OT)}
+
+The fundamental building block for oblivious computing:
+
+\begin{definition}[1-out-of-2 Oblivious Transfer]
+A protocol where:
+\begin{itemize}
+    \item Sender has two messages $m_0, m_1$
+    \item Receiver has choice bit $b \in \{0,1\}$
+    \item Receiver learns $m_b$ but not $m_{1-b}$
+    \item Sender learns nothing about $b$
+\end{itemize}
+\end{definition}
+
+\begin{theorem}[OT Completeness]
+Any oblivious computation can be built from oblivious transfer.
+\end{theorem}
+
+\subsection{Oblivious RAM (ORAM)}
+
+Hide memory access patterns:
+
+\begin{definition}[ORAM Security]
+An ORAM scheme is secure if for any two access sequences $\vec{a} = (a_1, \ldots, a_n)$ and $\vec{b} = (b_1, \ldots, b_n)$ of equal length:
+\begin{equation}
+\Pattern{\vec{a}} \approx_c \Pattern{\vec{b}}
+\end{equation}
+where $\approx_c$ denotes computational indistinguishability.
+\end{definition}
+
+\begin{example}[Path ORAM]
+Achieves $O(\log N)$ overhead by:
+\begin{itemize}
+    \item Organizing memory as binary tree
+    \item Each access reads entire path from root to leaf
+    \item Randomly shuffles and writes back
+    \item Access pattern independent of actual data location
+\end{itemize}
+\end{example}
+
+\subsection{Private Information Retrieval (PIR)}
+
+Retrieve database records without revealing which:
+
+\begin{definition}[PIR Security]
+A PIR protocol is secure if for any two queries $q_i, q_j$:
+\begin{equation}
+\View{\text{Server}}(q_i) \approx_c \View{\text{Server}}(q_j)
+\end{equation}
+\end{definition}
+
+\begin{theorem}[PIR Lower Bound]
+Information-theoretic PIR requires $\Omega(N)$ communication for database of size $N$.
+\end{theorem}
+
+\section{Composition and Error Propagation}
+
+\subsection{Sequential Composition}
+
+When composing oblivious operations, leakage accumulates:
+
+\begin{theorem}[Leakage Composition]
+For sequential operations with leakages $\delta_1, \ldots, \delta_n$:
+\begin{equation}
+\text{Total Leakage} \leq \sum_{i=1}^n \delta_i
+\end{equation}
+\end{theorem}
+
+\subsection{Parallel Composition}
+
+Parallel operations leak the maximum:
+
+\begin{theorem}[Parallel Leakage]
+For parallel operations with leakages $\delta_1, \ldots, \delta_n$:
+\begin{equation}
+\text{Total Leakage} = \max_{i} \delta_i
+\end{equation}
+assuming independent randomness.
+\end{theorem}
+
+\section{Oblivious Algorithms}
+
+\subsection{Oblivious Sorting}
+
+\begin{definition}[Sorting Network]
+A comparison-based sorting algorithm with data-independent comparisons.
+\end{definition}
+
+\begin{example}[Bitonic Sort]
+Sorts $n$ elements with:
+\begin{itemize}
+    \item $O(n \log^2 n)$ comparisons
+    \item Fixed comparison pattern independent of input
+    \item Perfectly oblivious (zero leakage)
+\end{itemize}
+\end{example}
+
+\subsection{Oblivious Data Structures}
+
+\begin{example}[Oblivious Priority Queue]
+Maintains heap property while hiding access patterns:
+\begin{itemize}
+    \item Each operation touches $O(\log N)$ random locations
+    \item Real operation hidden among dummy accesses
+    \item Leakage bounded by $\delta = 2^{-\lambda}$ for security parameter $\lambda$
+\end{itemize}
+\end{example}
+
+\section{Cryptographic Instantiations}
+
+\subsection{Homomorphic Encryption}
+
+Compute on encrypted data:
+
+\begin{definition}[Fully Homomorphic Encryption (FHE)]
+An encryption scheme where for any function $f$:
+\begin{equation}
+\text{Dec}(\text{Eval}(f, \text{Enc}(x))) = f(x)
+\end{equation}
+\end{definition}
+
+FHE provides perfect obliviousness but with computational overhead.
+
+\subsection{Secure Multi-Party Computation (MPC)}
+
+Multiple parties compute on joint hidden inputs:
+
+\begin{definition}[MPC Security]
+No coalition learns more than their inputs and the output:
+\begin{equation}
+\View{\text{Coalition}}(x_1, \ldots, x_n) \approx_c \Simulator(x_{\text{coalition}}, f(x_1, \ldots, x_n))
+\end{equation}
+\end{definition}
+
+\subsection{Garbled Circuits}
+
+One-time oblivious function evaluation:
+
+\begin{theorem}[Garbled Circuit Security]
+For circuit $C$ and input $x$:
+\begin{itemize}
+    \item Evaluator learns only $C(x)$, not $x$ or $C$
+    \item Generator learns nothing about evaluation
+\end{itemize}
+\end{theorem}
+
+\section{Applications}
+
+\subsection{Encrypted Search}
+
+Enable search on encrypted documents:
+
+\begin{example}[Searchable Symmetric Encryption (SSE)]
+\begin{itemize}
+    \item Documents encrypted with symmetric key
+    \item Search tokens enable specific queries
+    \item Leakage limited to search pattern (which queries repeat)
+    \item Access pattern hidden through ORAM techniques
+\end{itemize}
+\end{example}
+
+\subsection{Anonymous Communication}
+
+Hide communication metadata:
+
+\begin{example}[Mix Networks]
+\begin{itemize}
+    \item Messages routed through multiple mix nodes
+    \item Each node shuffles and re-encrypts
+    \item Observer cannot link inputs to outputs
+    \item Provides unlinkability and unobservability
+\end{itemize}
+\end{example}
+
+\subsection{Private Cryptocurrencies}
+
+Hide transaction details:
+
+\begin{example}[Zero-Knowledge Transactions]
+\begin{itemize}
+    \item Amounts and parties hidden
+    \item Zero-knowledge proofs ensure validity
+    \item Oblivious Merkle tree updates
+    \item Complete transaction privacy
+\end{itemize}
+\end{example}
+
+\section{Performance Trade-offs}
+
+\subsection{The Obliviousness Tax}
+
+Achieving obliviousness incurs overhead:
+
+\begin{center}
+\begin{tabular}{lll}
+\textbf{Primitive} & \textbf{Non-Oblivious} & \textbf{Oblivious} \\
+\hline
+Array access & $O(1)$ & $O(\log N)$ (ORAM) \\
+Sorting & $O(n \log n)$ & $O(n \log^2 n)$ (Bitonic) \\
+Database query & $O(\log N)$ & $O(N)$ (PIR) \\
+Function evaluation & $O(|C|)$ & $O(|C| \cdot \poly(\lambda))$ (FHE) \\
+\end{tabular}
+\end{center}
+
+\subsection{Optimizations}
+
+Recent advances reduce overhead:
+\begin{itemize}
+    \item \textbf{Batch Processing}: Amortize cost over multiple operations
+    \item \textbf{Hardware Acceleration}: Trusted execution environments (TEEs)
+    \item \textbf{Relaxed Security}: Allow bounded leakage for better performance
+    \item \textbf{Preprocessing}: Offline/online phases separate expensive setup
+\end{itemize}
+
+\section{Future Directions}
+
+\subsection{Quantum Oblivious Computing}
+
+Quantum mechanics provides new primitives:
+\begin{itemize}
+    \item Quantum oblivious transfer with information-theoretic security
+    \item Quantum homomorphic encryption
+    \item Oblivious quantum computation
+\end{itemize}
+
+\subsection{Machine Learning on Hidden Data}
+
+Training models without seeing data:
+\begin{itemize}
+    \item Federated learning with differential privacy
+    \item Homomorphic neural network inference
+    \item Oblivious decision trees
+\end{itemize}
+
+\subsection{Unified Theory}
+
+Merge probabilistic and cryptographic approaches:
+\begin{itemize}
+    \item Bernoulli types with cryptographic guarantees
+    \item Oblivious computing with controlled approximation
+    \item Optimal space-privacy-accuracy trade-offs
+\end{itemize}
+
+\section{Conclusions}
+
+Oblivious computing provides a principled framework for computing on hidden data while controlling observable information leakage. The hidden/observable duality unifies diverse techniques from cryptography, showing that secure indexes, ORAM, PIR, and searchable encryption are all instances of the same pattern: transforming hidden data through constrained channels that limit observation.
+
+The connection to Bernoulli types reveals a deeper unity: both frameworks address the fundamental problem of observing hidden information through limited channels. While Bernoulli types use probabilistic channels for space efficiency, oblivious computing uses cryptographic channels for privacy. Understanding this duality enables:
+
+\begin{itemize}
+    \item \textbf{Cross-fertilization}: Techniques from one domain inform the other
+    \item \textbf{Hybrid approaches}: Combine probabilistic and cryptographic guarantees
+    \item \textbf{Principled trade-offs}: Navigate the space-privacy-accuracy trilemma
+    \item \textbf{Compositional reasoning}: Understand how guarantees degrade through complex systems
+\end{itemize}
+
+As computing increasingly involves sensitive data, oblivious computing transitions from theoretical curiosity to practical necessity. The framework presented here provides the mathematical foundation for building systems that compute meaningfully on data they cannot see.
+
+\bibliography{references}
+
+\end{document}

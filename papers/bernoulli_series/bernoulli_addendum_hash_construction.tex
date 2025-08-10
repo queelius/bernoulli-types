@@ -1,0 +1,322 @@
+\documentclass[11pt,final,hidelinks]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage[activate={true,nocompatibility},final,tracking=true,kerning=true,spacing=true,factor=1100,stretch=10,shrink=10]{microtype}
+\usepackage{mathtools}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{algorithm2e}
+\usepackage{hyperref}
+\usepackage[square,numbers]{natbib}
+\bibliographystyle{plainnat}
+\usepackage{cleveref}
+
+% Theorem environments
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{construction}[theorem]{Construction}
+
+% Notation
+\newcommand{\Encode}[1]{\mathsf{encode}(#1)}
+\newcommand{\ValidEnc}[1]{\mathsf{ValidEncodings}(#1)}
+\newcommand{\Hash}[1]{h(#1)}
+\newcommand{\Prob}[1]{\mathbb{P}[#1]}
+\newcommand{\Card}[1]{|#1|}
+\newcommand{\True}{\mathtt{true}}
+\newcommand{\False}{\mathtt{false}}
+\newcommand{\fprate}{\alpha}
+\newcommand{\fnrate}{\beta}
+
+\title{Addendum: Hash-Based Construction of Bernoulli Types}
+\author{
+    Alexander Towell\\
+    \texttt{atowell@siue.edu}
+}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We present a fundamental reconceptualization of Bernoulli types through hash-based constructions. Rather than viewing Bloom filters as bit arrays with multiple hash functions, we show that Bernoulli sets emerge naturally from finding seeds that map set elements to valid encodings of membership. This construction unifies Bloom filters, perfect hash filters, and other probabilistic data structures under a single framework where error rates are determined by encoding set sizes rather than explicit design choices. The key insight is that we only need to control mappings for known inputs; unknown inputs map randomly through the hash function, naturally providing the probabilistic guarantees that define Bernoulli types.
+\end{abstract}
+
+\section{Introduction}
+
+The traditional view of Bloom filters involves:
+\begin{itemize}
+    \item An array of $m$ bits
+    \item $k$ independent hash functions
+    \item Setting bits at positions $h_1(x), \ldots, h_k(x)$ for each element
+\end{itemize}
+
+We present an alternative construction:
+\begin{itemize}
+    \item A single hash function with a seed parameter
+    \item A set of valid encodings for each output value
+    \item Finding seeds where elements map to correct encodings
+\end{itemize}
+
+This reconceptualization reveals that Bernoulli types are not about explicit randomization but about controlled mappings with natural randomness for uncontrolled inputs.
+
+\section{The General Hash-Based Construction}
+
+\subsection{Framework}
+
+\begin{definition}[Hash-Based Bernoulli Type]
+For function $f: X \to Y$, a hash-based Bernoulli approximation consists of:
+\begin{itemize}
+    \item Input encoding: $\mathsf{encode}_X: X \to \{0,1\}^*$
+    \item Output encoding sets: $\mathsf{encode}_Y: Y \to \mathcal{P}(\{0,1\}^m)$
+    \item Hash function: $h: \{0,1\}^* \times \{0,1\}^s \to \{0,1\}^m$
+    \item Seed: $s \in \{0,1\}^s$
+\end{itemize}
+such that for most $x \in X$:
+\begin{equation}
+h(\Encode{x} \| s) \in \ValidEnc{f(x)}
+\end{equation}
+\end{definition}
+
+\subsection{Construction Algorithm}
+
+\begin{construction}[Finding Appropriate Seeds]
+\begin{algorithm}[H]
+\caption{Hash-Based Bernoulli Construction}
+\KwIn{Function $f: X \to Y$, allowed false negative rate $\fnrate$}
+\KwOut{Seed $s$ implementing Bernoulli approximation}
+\Repeat{success}{
+    $s \leftarrow \text{random seed}$\;
+    $\text{correct} \leftarrow 0$\;
+    \For{$x \in X$}{
+        \If{$\Hash{\Encode{x} \| s} \in \ValidEnc{f(x)}$}{
+            $\text{correct} \leftarrow \text{correct} + 1$\;
+        }
+    }
+    $\text{success} \leftarrow (\text{correct} \geq (1-\fnrate) \cdot \Card{X})$\;
+}
+\Return{$s$}
+\end{algorithm}
+\end{construction}
+
+\subsection{Natural Error Rates}
+
+The key insight: we don't explicitly design error rates; they emerge from encoding set sizes.
+
+\begin{theorem}[Emergent False Positive Rate]
+For set indicator function $I_X: U \to \{\True, \False\}$, if:
+\begin{itemize}
+    \item $\Card{\ValidEnc{\True}} = t$
+    \item $\Card{\ValidEnc{\False}} = 2^m - t$
+    \item Hash function $h$ approximates a random oracle
+\end{itemize}
+Then for $u \notin X$:
+\begin{equation}
+\Prob{\Hash{\Encode{u} \| s} \in \ValidEnc{\True}} = \frac{t}{2^m} = \fprate
+\end{equation}
+\end{theorem}
+
+\section{Bloom Filters as Natural Consequence}
+
+\subsection{Traditional vs. Hash-Based View}
+
+\begin{center}
+\begin{tabular}{ll}
+\textbf{Traditional Bloom Filter} & \textbf{Hash-Based Construction} \\
+\hline
+$k$ hash functions & Single hash with seed \\
+Set $k$ bits per element & Map to valid encoding \\
+Check all $k$ bits & Check single hash value \\
+Design for target $\fprate$ & $\fprate$ emerges from encoding size \\
+\end{tabular}
+\end{center}
+
+\subsection{Equivalence Result}
+
+\begin{theorem}[Bloom Filters are Hash-Based Sets]
+A Bloom filter with false positive rate $\fprate$ is equivalent to:
+\begin{itemize}
+    \item $\ValidEnc{\True} = \{0, 1, \ldots, \lfloor\fprate \cdot 2^m\rfloor - 1\}$
+    \item Finding seed where all $x \in X$ satisfy $\Hash{\Encode{x} \| s} \in \ValidEnc{\True}$
+\end{itemize}
+\end{theorem}
+
+This provides the same false positive rate with a single hash evaluation instead of $k$.
+
+\section{The Spectrum of Encoding Strategies}
+
+\subsection{Singular Encoding (Most Restrictive)}
+
+Each output has exactly one valid encoding:
+\begin{equation}
+\Card{\ValidEnc{y}} = 1 \quad \forall y \in Y
+\end{equation}
+
+Properties:
+\begin{itemize}
+    \item Hardest seed finding (may be impossible)
+    \item Most space efficient if achievable
+    \item Potentially leaks information through uniqueness
+\end{itemize}
+
+\subsection{Entropy-Optimal Encoding}
+
+Encoding sizes proportional to frequency:
+\begin{equation}
+\Card{\ValidEnc{y}} \propto \Card{\{x \in X : f(x) = y\}}
+\end{equation}
+
+Properties:
+\begin{itemize}
+    \item Balances seed finding difficulty
+    \item Optimal for compression
+    \item Natural for data structures
+\end{itemize}
+
+\subsection{Privacy-Optimal Encoding}
+
+Encoding sizes chosen for uniform output distribution:
+\begin{equation}
+\Card{\ValidEnc{y}} \cdot \Prob{f(x) = y} = \text{constant}
+\end{equation}
+
+Properties:
+\begin{itemize}
+    \item Hides frequency distribution
+    \item Best for oblivious computing
+    \item May require more space
+\end{itemize}
+
+\section{Noise and Invalid Inputs}
+
+\subsection{The Beauty of Uncontrolled Mappings}
+
+For inputs $u \notin X$:
+\begin{itemize}
+    \item We don't specify where $\Hash{\Encode{u} \| s}$ maps
+    \item Hash function provides uniform distribution
+    \item Natural source of noise for privacy
+    \item No additional work required
+\end{itemize}
+
+\begin{remark}[Free Noise Injection]
+Invalid inputs automatically provide noise that:
+\begin{itemize}
+    \item Makes frequency analysis harder
+    \item Provides plausible deniability
+    \item Requires no explicit handling
+\end{itemize}
+\end{remark}
+
+\section{Implications for Bernoulli Type Theory}
+
+\subsection{Simplified Theoretical Framework}
+
+Instead of analyzing:
+\begin{itemize}
+    \item Probability of $k$ hash collisions
+    \item Bit array fill rates
+    \item Independence assumptions
+\end{itemize}
+
+We need only:
+\begin{itemize}
+    \item Encoding set sizes
+    \item Hash function randomness
+    \item Seed finding probability
+\end{itemize}
+
+\subsection{Composition}
+
+Hash-based construction naturally composes:
+
+\begin{theorem}[Composition of Hash-Based Types]
+For $f: X \to Y$ and $g: Y \to Z$ with seeds $s_f, s_g$:
+\begin{equation}
+(g \circ f)(x) \approx \text{decode}(\Hash{\Hash{\Encode{x} \| s_f} \| s_g})
+\end{equation}
+Invalid intermediate values propagate as uniform noise.
+\end{theorem}
+
+\section{Practical Advantages}
+
+\subsection{Implementation Simplicity}
+
+\begin{verbatim}
+class HashBasedBernoulliSet:
+    def __init__(self, elements, fp_rate):
+        self.fp_rate = fp_rate
+        self.encoding_size = int(fp_rate * 2**m)
+        self.seed = self.find_seed(elements)
+    
+    def contains(self, x):
+        return hash(encode(x) + self.seed) < self.encoding_size
+    
+    def find_seed(self, elements):
+        while True:
+            seed = random()
+            if all(hash(encode(x) + seed) < self.encoding_size 
+                   for x in elements):
+                return seed
+\end{verbatim}
+
+\subsection{Performance Benefits}
+
+\begin{itemize}
+    \item Single hash computation per query
+    \item Better cache locality
+    \item Vectorizable operations
+    \item No bit array management
+\end{itemize}
+
+\section{Extending to General Bernoulli Types}
+
+\subsection{Bernoulli Maps}
+
+For $f: X \to Y$ with multiple outputs:
+\begin{itemize}
+    \item Partition $\{0,1\}^m$ into regions for each $y \in Y$
+    \item Region sizes determine error characteristics
+    \item Natural generalization of set membership
+\end{itemize}
+
+\subsection{Bernoulli Relations}
+
+For relations $R \subseteq X \times Y$:
+\begin{itemize}
+    \item Encode pairs $(x,y)$
+    \item Valid encodings for "related" vs "unrelated"
+    \item Supports approximate relational queries
+\end{itemize}
+
+\section{Conclusion}
+
+The hash-based construction reveals that Bernoulli types are not about explicit randomization but about:
+\begin{itemize}
+    \item \textbf{Controlled mappings}: We control what we care about
+    \item \textbf{Natural randomness}: Hash functions provide randomness for free
+    \item \textbf{Emergent properties}: Error rates emerge from encoding choices
+\end{itemize}
+
+This view:
+\begin{itemize}
+    \item Simplifies theoretical analysis
+    \item Unifies diverse probabilistic data structures
+    \item Provides cleaner implementations
+    \item Naturally incorporates privacy through noise
+\end{itemize}
+
+The traditional Bloom filter is just one point in a rich space of hash-based Bernoulli types, where encoding set sizes provide a principled way to navigate trade-offs between space, accuracy, and privacy.
+
+\bibliography{references}
+
+\end{document}

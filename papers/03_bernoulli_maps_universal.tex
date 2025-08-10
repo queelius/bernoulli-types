@@ -12,10 +12,14 @@
 \usepackage{amssymb}
 \usepackage{algorithm2e}
 % \usepackage{minted} % Disabled - using verbatim instead
+\usepackage{booktabs}
 \usepackage{hyperref}
 \usepackage[square,numbers]{natbib}
 \bibliographystyle{plainnat}
 \usepackage{cleveref}
+
+% Include unified notation definitions shared across the Bernoulli series
+\input{unified_notation.tex}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning}
 
@@ -28,10 +32,7 @@
 \newtheorem{example}[theorem]{Example}
 \newtheorem{remark}[theorem]{Remark}
 
-% Unified notation for latent/observed framework
-\newcommand{\obs}[1]{\widetilde{#1}}  % Universal observation operator
-\newcommand{\latent}[1]{#1}           % Explicit latent marker (optional)
-\newcommand{\observed}[1]{\widetilde{#1}}  % Explicit observed marker
+% Unified notation - defined in unified_notation.tex
 
 % Functions (no decoration for latent, tilde for observed)
 \newcommand{\Fun}[1]{\mathsf{#1}}     % Latent function (kept for clarity)
@@ -43,24 +44,14 @@
 \newcommand{\Set}[1]{#1}              % Just use S instead of \Set{S}
 \newcommand{\ASet}[1]{\obs{#1}}       % Use \obs{S} instead
 
-% Types and probability
-\newcommand{\Type}[1]{\mathtt{#1}}
-\newcommand{\Prob}[1]{\mathbb{P}\left[#1\right]}
-\newcommand{\ProbCond}[2]{\mathbb{P}\left[#1 \mid #2\right]}
-\newcommand{\Expect}[1]{\mathbb{E}\left[#1\right]}
-
-% Error rates
-\newcommand{\fprate}{\alpha}
-\newcommand{\fnrate}{\beta}
+% Types and probability - defined in unified_notation.tex
+% Error rates - defined in unified_notation.tex
 \newcommand{\error}{\epsilon}
-\newcommand{\Bool}{\Type{Bool}}
 \newcommand{\Nat}{\mathbb{N}}
 \newcommand{\Real}{\mathbb{R}}
 \newcommand{\Maybe}[1]{\Type{Maybe}[#1]}
 \newcommand{\Unit}{\Type{Unit}}
 \newcommand{\Void}{\Type{Void}}
-\newcommand{\True}{\mathtt{true}}
-\newcommand{\False}{\mathtt{false}}
 \newcommand{\Nothing}{\mathtt{nothing}}
 \newcommand{\Just}[1]{\mathtt{just}(#1)}
 % \newcommand{\mapsto}{\rightarrow} % Already defined in LaTeX
@@ -80,6 +71,7 @@
 
 \begin{document}
 \maketitle
+\NotationSection
 
 \begin{abstract}
 We introduce Bernoulli maps as a general framework for understanding computation through the distinction between latent functions (the true mathematical mappings) and their observations (the computed approximations). Every practical algorithm observes a latent function through a noisy channel—whether due to randomization, resource bounds, or intentional approximation. We show that randomized algorithms, sketching techniques, hash functions, and lossy compression are unified by this perspective: they all implement observed functions that approximate latent mathematical functions with controlled error. By making the latent/observed distinction explicit at the type level, we enable compositional reasoning about error propagation and provide a foundation for designing algorithms with predictable approximation characteristics. The framework reveals that approximation is not a compromise but a fundamental aspect of bridging mathematical functions with computational reality.
@@ -119,6 +111,8 @@ The observation quality is characterized by:
 
 This exemplifies the key principle: we observe latent mathematical truth through practical computation.
 
+\paragraph{Scope and organization.}  This paper is the third part of our Bernoulli series.  It extends the latent/observed framework from sets (Part~2) to functions by introducing Bernoulli maps.  We build on the foundational definitions of Part~1 (the latent/observed duality and channel models) and the set-theoretic algebra of Part~2 (error propagation through Boolean operations) to develop a universal theory of approximate computation.  Subsequent parts examine regular types (Part~4), information retrieval (Part~5), space–optimal implementations (Part~6), and statistical analysis (Part~7).
+
 \section{Theory of Bernoulli Maps}
 
 \subsection{Basic Definitions}
@@ -156,9 +150,9 @@ where $f_1, \ldots, f_n$ enumerate all functions from $X$ to $Y$.
 \end{definition}
 
 \begin{example}[Boolean Function Confusion Matrix]
-For $\Bool \mapsto \Bool$, there are 4 functions: $\mathsf{id}$, $\mathsf{not}$, $\mathsf{true}$, $\mathsf{false}$. A first-order Bernoulli approximation has confusion matrix:
-
-\begin{center}
+For $\Bool \mapsto \Bool$, there are 4 functions: $\mathsf{id}$, $\mathsf{not}$, $\mathsf{true}$, $\mathsf{false}$. A first-order Bernoulli approximation has the mini confusion matrix in Figure~\ref{fig:bool-func-confusion}.
+\begin{figure}[t]
+\centering
 \begin{tabular}{c|cccc}
 latent \textbackslash observed & $\mathsf{id}$ & $\mathsf{not}$ & $\mathsf{true}$ & $\mathsf{false}$ \\
 \hline
@@ -167,9 +161,10 @@ $\mathsf{not}$ & $\epsilon/3$ & $1-\epsilon$ & $\epsilon/3$ & $\epsilon/3$ \\
 $\mathsf{true}$ & $\epsilon/3$ & $\epsilon/3$ & $1-\epsilon$ & $\epsilon/3$ \\
 $\mathsf{false}$ & $\epsilon/3$ & $\epsilon/3$ & $\epsilon/3$ & $1-\epsilon$
 \end{tabular}
-\end{center}
-
-This represents maximum entropy distribution over errors.
+\caption{Mini confusion matrix for $\Bool\to\Bool$ under a first-order (symmetric) error model.}
+\label{fig:bool-func-confusion}
+\end{figure}
+This represents a maximum-entropy distribution over off-diagonal errors.
 \end{example}
 
 \begin{proposition}[Function Confusion Matrix Properties]
@@ -710,6 +705,82 @@ When composing observed relations, errors become non-uniformly distributed. For 
 The error rate for $(x,z)$ depends on the number of intermediate elements $y$ satisfying the relation.
 \end{proposition}
 
+\section{Composition and Error Propagation}
+
+Let $f:X\to Y$ and $g:Y\to Z$ be latent, and let $\obs{f},\obs{g}$ be observed through independent memoryless channels with pointwise error rates $\error_f(x)=\Prob\{\obs{f}(x)\neq f(x)\}$ and $\error_g(y)=\Prob\{\obs{g}(y)\neq g(y)\}$. Consider the composition $h=g\circ f$ with observation $\obs{h}=\obs{g}\circ\obs{f}$.
+
+\begin{proposition}[Union bound for composition]
+For any $x\in X$,
+\begin{equation}
+\Prob\{\obs{h}(x)\neq h(x)\} \;\le\; \error_f(x) + \Expect{\error_g\bigl(f(x)\bigr)}.
+\end{equation}
+If $\error_f$ and $\error_g$ are bounded by constants $\epsilon_f,\epsilon_g$, then
+\begin{equation}
+\Prob\{\obs{h}(x)\neq h(x)\} \;\le\; 1-(1-\epsilon_f)(1-\epsilon_g).
+\end{equation}
+\end{proposition}
+
+\begin{remark}
+Channel composition corresponds to matrix multiplication of confusion matrices. The diagonal dominance of the product controls overall fidelity; the simple bound above is often tight enough for design.
+\end{remark}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[node distance=2.0cm]
+  \node (X) {$X$};
+  \node (f) [right=of X, draw, rounded corners, inner sep=5pt] {$f$};
+  \node (Y) [right=of f] {$Y$};
+  \node (g) [right=of Y, draw, rounded corners, inner sep=5pt] {$g$};
+  \node (Z) [right=of g] {$Z$};
+  \draw[-{Latex[length=3mm]}] (X) -- (f) node[midway, above] {latent};
+  \draw[-{Latex[length=3mm]}] (f) -- (Y);
+  \draw[-{Latex[length=3mm]}] (Y) -- (g);
+  \draw[-{Latex[length=3mm]}] (g) -- (Z);
+  \draw[red, dashed, -{Latex[length=3mm]}] (X) to[bend left=20] node[midway, above] {$\obs{f}$} (Y);
+  \draw[red, dashed, -{Latex[length=3mm]}] (Y) to[bend left=20] node[midway, above] {$\obs{g}$} (Z);
+\end{tikzpicture}
+\caption{Function composition with observed channels $\obs{f},\obs{g}$.}
+\end{figure}
+
+\subsection{Composition via Confusion Matrices}
+
+For finite codomains, channel composition is algebraic. Let $Y$ be finite and let $W_f(y\mid y')$ be the pointwise channel of $\obs{f}$ and $W_g(z\mid z')$ the pointwise channel of $\obs{g}$. The composed pointwise channel is
+\begin{equation}
+    W_{g\circ f}(z\mid y') \,=\, \sum_{y\in Y} W_g(z\mid y)\,W_f(y\mid y').
+\end{equation}
+In particular, if both are binary symmetric channels (BSC) with crossover $\epsilon_f$ and $\epsilon_g$, then $W_{g\circ f}$ is BSC with crossover
+\begin{equation}
+    \epsilon_{g\circ f} = 1-(1-\epsilon_f)(1-\epsilon_g) = \epsilon_f+\epsilon_g-\epsilon_f\epsilon_g.
+\end{equation}
+
+\subsection{Worked Example: $\Bool\to\Bool$}
+
+Let $f(x)=x$ (identity) and suppose we observe $\obs{f}$ through a BSC with $\epsilon_f=0.1$. Let $g(x)=\mathsf{not}(x)$ with observation $\epsilon_g=0.2$. Then for any input $x\in\Bool$,
+\begin{equation}
+    \Prob\{\obs{(g\circ f)}(x)\neq (g\circ f)(x)\} \le 1-(1-0.1)(1-0.2)=0.28.
+\end{equation}
+Equivalently, the composed pointwise channel is a BSC with crossover $0.28$.
+
+\paragraph{Sampling equality in the example.} If two Boolean functions disagree on a $\delta=0.1$ fraction of inputs and we sample $n=50$ points uniformly at random, the probability of falsely accepting equality is $\le e^{-0.1\cdot 50} \approx 0.0067$.
+
+\subsection{Related Results}
+See Cover and Thomas for channel composition and data-processing inequalities \cite{cover2006}, Motwani and Raghavan for randomized algorithm tail bounds \cite{motwani1995}, and Goldreich for property testing perspectives on function equality \cite{goldreich2017}.
+
+\section{Sampling-Based Function Equality}
+
+Given black-box access to functions $f,g:X\to Y$ over finite $X$, define the disagreement set $D=\{x\in X: f(x)\neq g(x)\}$. The classic sampling test draws i.i.d. $x_1,\dots,x_n\sim\mathrm{Unif}(X)$ and accepts if $f(x_i)=g(x_i)$ for all $i$.
+
+\begin{theorem}[Soundness of sampling equality]
+If $|D|/|X|=\delta>0$, then the probability of (falsely) accepting equality is
+\begin{equation}
+\Prob\{ \forall i,\; f(x_i)=g(x_i) \} \;=\; (1-\delta)^n \;\le\; e^{-\delta n}.
+\end{equation}
+\end{theorem}
+
+\begin{remark}
+In the Bernoulli map setting, the test operates on observations $\obs{f},\obs{g}$; the analysis then compounds with the channels' error rates, yielding slightly looser but still exponential bounds.
+\end{remark}
+
 \section{Related Work}
 
 \begin{itemize}
@@ -743,5 +814,8 @@ Future directions include:
 The universality of Bernoulli maps demonstrates that computation is fundamentally about observing the uncomputable through the lens of the computable.
 
 \bibliography{references}
+
+% Shared one-page cheat sheet at end for quick reference
+\input{appendix_cheat_sheet.tex}
 
 \end{document}

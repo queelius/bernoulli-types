@@ -18,6 +18,9 @@
 \bibliographystyle{plainnat}
 \usepackage{cleveref}
 
+% Include unified notation definitions shared across the Bernoulli series
+\input{unified_notation.tex}
+
 % Theorem environments
 \newtheorem{theorem}{Theorem}[section]
 \newtheorem{lemma}[theorem]{Lemma}
@@ -28,27 +31,14 @@
 \newtheorem{remark}[theorem]{Remark}
 \newtheorem{axiom}{Axiom}
 
-% Unified notation for latent/observed framework
-\newcommand{\obs}[1]{\widetilde{#1}}  % Universal observation operator
-\newcommand{\latent}[1]{#1}           % Explicit latent marker (optional)
-\newcommand{\observed}[1]{\widetilde{#1}}  % Explicit observed marker
+% Unified notation - defined in unified_notation.tex
 
 % Sets
 \newcommand{\Set}[1]{#1}
 \newcommand{\ASet}[1]{\obs{#1}}  % Observed/approximate set
 \newcommand{\SetIndicator}[1]{\mathbf{1}_{#1}}
-\newcommand{\SetComplement}[1]{\overline{#1}}
-\newcommand{\SetUnion}{\cup}
-\newcommand{\SetIntersection}{\cap}
-\newcommand{\EmptySet}{\emptyset}
-\newcommand{\PS}[1]{\mathcal{P}(#1)}  % Power set
-\newcommand{\Card}[1]{\lvert#1\rvert}
-
-% Probability and statistics
-\newcommand{\Prob}[1]{\mathbb{P}\left[#1\right]}
-\newcommand{\ProbCond}[2]{\mathbb{P}\left[#1 \mid #2\right]}
-\newcommand{\Expect}[1]{\mathbb{E}\left[#1\right]}
-\newcommand{\Var}[1]{\mathrm{Var}\left[#1\right]}
+% Set operations - defined in unified_notation.tex
+% Set and probability notation - defined in unified_notation.tex
 \newcommand{\PDF}[2]{p_{#1}\left(#2\right)}
 \newcommand{\CDF}[2]{F_{#1}\left(#2\right)}
 
@@ -58,18 +48,14 @@
 \newcommand{\FN}{\mathsf{FN}}  % False negatives
 \newcommand{\TP}{\mathsf{TP}}  % True positives
 \newcommand{\TN}{\mathsf{TN}}  % True negatives
-\newcommand{\FPR}{\mathsf{FPR}}  % False positive rate
-\newcommand{\FNR}{\mathsf{FNR}}  % False negative rate
+% FPR and FNR defined in unified_notation.tex
 \newcommand{\TPR}{\mathsf{TPR}}  % True positive rate
 \newcommand{\TNR}{\mathsf{TNR}}  % True negative rate
 \newcommand{\PPV}{\mathsf{PPV}}  % Positive predictive value
 \newcommand{\NPV}{\mathsf{NPV}}  % Negative predictive value
 
-% Error rates
-\newcommand{\fprate}{\alpha}
-\newcommand{\fnrate}{\beta}
-\newcommand{\tprate}{\tau}
-\newcommand{\tnrate}{\nu}
+% Error rates - defined in unified_notation.tex
+% Note: tprate and tnrate are defined in unified_notation.tex
 
 % Distributions
 \newcommand{\Binomial}[2]{\mathrm{Binomial}(#1, #2)}
@@ -79,8 +65,6 @@
 \newcommand{\Interval}[2]{[#1, #2]}
 
 % Types
-\newcommand{\Type}[1]{\mathtt{#1}}
-\newcommand{\Bool}{\Type{Bool}}
 
 \title{Statistical Analysis of Bernoulli Sets: Distributions, Confidence Intervals, and Performance Measures}
 \author{
@@ -91,12 +75,15 @@
 
 \begin{document}
 \maketitle
+\NotationSection
 
 \begin{abstract}
 While the latent/observed framework provides conceptual clarity for Bernoulli types, practical applications require understanding the statistical properties of these observations. We present a comprehensive analysis of the distributions that arise when observing latent sets through noisy channels. For finite sets, the number of false positives and false negatives follow binomial distributions, leading to beta-distributed error rates. We derive asymptotic normal approximations, confidence intervals, and the distributions of key performance measures including positive predictive value (precision). Additionally, we develop interval arithmetic methods for propagating uncertainty when error rates themselves are uncertain. These results enable practitioners to quantify uncertainty, design systems with statistical guarantees, and analyze the performance of probabilistic data structures in real-world applications.
 \end{abstract}
 
 \section{Introduction}
+
+\paragraph{Scope and organization.}  This final installment (Part~7) of our Bernoulli series provides the statistical analysis of the observations introduced in earlier parts.  Building on the foundations (Part~1: channel models and Bayesian inference), the set and function frameworks (Parts~2 and~3: error propagation and composition), the reinterpretation of regular types (Part~4: probabilistic equality), search applications (Part~5: Boolean retrieval), and implementation techniques (Part~6: entropy-optimal coding), we quantify the distributions, confidence intervals, and uncertainty measures that arise when working with finite samples of Bernoulli observations.
 
 The Bernoulli framework distinguishes between latent mathematical objects and their computational observations. While this provides theoretical elegance, practical applications demand answers to statistical questions:
 \begin{itemize}
@@ -550,6 +537,22 @@ A Bloom filter with $m$ bits and $k$ hash functions storing approximately $n$ el
 \end{equation}
 \end{example}
 
+\section{Aggregation via Majority Vote}
+
+Suppose we obtain $k$ independent observations of a latent Boolean via a first-order channel with error $\epsilon<\tfrac12$. Let $\hat{x}_k$ be the majority vote. By Hoeffding's inequality,
+\begin{equation}
+\Prob\{\hat{x}_k \neq x\} \;\le\; \exp\bigl(-2(\tfrac12-\epsilon)^2 k\bigr),
+\end{equation}
+so the error decays exponentially in $k$. For asymmetric channels $(\fprate,\fnrate)$, choose a biased threshold using log-likelihood ratios to minimize risk.
+
+\section{Estimating Error Rates and Sample Complexity}
+
+Let $\widehat{\FPR}=\FP_n/n$ and $\widehat{\FNR}=\FN_p/p$ be the empirical rates. The MLEs for $(\fprate,\fnrate)$ under independence are the empirical fractions, with asymptotic normality given earlier. To obtain $(1-\delta)$-accurate estimates with additive error $\pm \varepsilon$, it suffices (by Hoeffding) to take
+\begin{equation}
+ n \ge \frac{\ln(2/\delta)}{2\varepsilon^2},\qquad p \ge \frac{\ln(2/\delta)}{2\varepsilon^2}.
+\end{equation}
+For precision and recall targets, propagate these uncertainties via the delta method or interval arithmetic to produce conservative bounds.
+
 \section{Related Work}
 
 This statistical analysis builds on:
@@ -583,5 +586,8 @@ These results enable practitioners to:
 The statistical view complements the algebraic view of Bernoulli types, providing the quantitative tools necessary for real-world deployment.
 
 \bibliography{references}
+
+% Shared one-page cheat sheet at end for quick reference
+\input{appendix_cheat_sheet.tex}
 
 \end{document}

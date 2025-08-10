@@ -1,0 +1,592 @@
+\documentclass[11pt,final,hidelinks]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage[activate={true,nocompatibility},final,tracking=true,kerning=true,spacing=true,factor=1100,stretch=10,shrink=10]{microtype}
+\usepackage{mathtools}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{algorithm2e}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[square,numbers]{natbib}
+\bibliographystyle{plainnat}
+\usepackage{cleveref}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,calc}
+
+% Include unified notation for oblivious computing
+\input{unified_notation_oblivious.tex}
+
+% PIR-specific notation
+\newcommand{\DB}{\mathcal{D}}
+\newcommand{\Query}{\mathsf{Query}}
+\newcommand{\Response}{\mathsf{Response}}
+\newcommand{\Retrieve}{\mathsf{Retrieve}}
+\newcommand{\Server}{\mathcal{S}}
+\newcommand{\Client}{\mathcal{C}}
+\newcommand{\Index}[1]{[#1]}
+\newcommand{\Block}{\mathsf{Block}}
+\newcommand{\ComCost}{\mathsf{CC}}
+\newcommand{\CompCost}{\mathsf{Comp}}
+
+% Boolean algebra notation (from previous papers)
+\newcommand{\OR}{\lor}
+\newcommand{\AND}{\land}
+\newcommand{\XOR}{\oplus}
+\newcommand{\HashOR}[1]{\mathcal{H}_{\OR}(#1)}
+\newcommand{\HashXOR}[1]{\mathcal{H}_{\XOR}(#1)}
+
+% Theorem environments
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{construction}[theorem]{Construction}
+
+\title{Private Information Retrieval: Oblivious Access to Public Data}
+\author{
+    Alexander Towell\\
+    \texttt{atowell@siue.edu}
+}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Private Information Retrieval (PIR) enables clients to retrieve data from servers without revealing which data was accessed. We present PIR as a fundamental instance of oblivious computing where the query itself must be oblivious. We explore the spectrum of PIR constructions from information-theoretic (multi-server) to computational (single-server) schemes, showing how they relate to our broader framework of oblivious types. We demonstrate surprising connections between PIR and the Boolean algebra approaches from cipher sets: OR-based constructions enable sublinear PIR through hierarchical hashing, while XOR-based constructions enable efficient batch PIR. We introduce the concept of approximate PIR, where queries return Bernoulli types with controlled error rates, achieving better communication complexity at the cost of perfect accuracy. The framework unifies diverse PIR schemes under the notation $\Obv{\Query} \to \Response$, where the oblivious query hides the access pattern while returning the desired data.
+\end{abstract}
+
+\ObliviousNotationGuide
+
+\section{Introduction}
+
+\subsection{The PIR Problem}
+
+Consider a public database $\DB$ with $n$ items. A client wants item $i$ without the server learning $i$. The naive solution—download the entire database—requires $O(n)$ communication. PIR seeks to do better while hiding the query.
+
+\begin{example}[Real-World PIR Scenarios]
+\begin{itemize}
+    \item \textbf{Patent searches}: Companies query patent databases without revealing research directions
+    \item \textbf{Stock quotes}: Traders retrieve prices without exposing trading strategies  
+    \item \textbf{DNS queries}: Users resolve domains without revealing browsing habits
+    \item \textbf{Certificate transparency}: Check certificates without exposing which sites you visit
+\end{itemize}
+\end{example}
+
+\subsection{PIR in the Oblivious Framework}
+
+PIR fits naturally into our oblivious type system:
+
+\begin{definition}[PIR as Oblivious Function]
+A PIR scheme implements:
+\begin{equation}
+\mathsf{PIR}: \Obv{\Index{n}} \to \DB\Index{i}
+\end{equation}
+where:
+\begin{itemize}
+    \item $\Obv{\Index{n}}$: Oblivious query for index $i \in [n]$
+    \item $\DB\Index{i}$: The $i$-th database item (cleartext result)
+    \item Server cannot distinguish queries for different indices
+\end{itemize}
+\end{definition}
+
+\subsection{The Fundamental Trade-off}
+
+\begin{theorem}[Information-Theoretic Lower Bound]
+Single-server information-theoretic PIR requires $\Omega(n)$ communication.
+\end{theorem}
+
+This motivates three approaches:
+\begin{enumerate}
+    \item \textbf{Multiple servers}: Information-theoretic security with replication
+    \item \textbf{Computational assumptions}: Sublinear communication with cryptography
+    \item \textbf{Approximate retrieval}: Allow errors for better efficiency
+\end{enumerate}
+
+\section{Information-Theoretic PIR}
+
+\subsection{Multi-Server PIR}
+
+\begin{construction}[2-Server XOR-Based PIR]
+Database $\DB \in \{0,1\}^n$ replicated at two non-colluding servers:
+\begin{algorithm}[H]
+\caption{2-Server PIR Protocol}
+\KwIn{Index $i \in [n]$}
+\KwOut{Bit $\DB[i]$}
+\Client generates random set $S \subseteq [n]$\;
+\Client sends $S$ to $\Server_1$\;
+\Client sends $S \oplus \{i\}$ to $\Server_2$\;
+$\Server_1$ responds: $a_1 = \bigoplus_{j \in S} \DB[j]$\;
+$\Server_2$ responds: $a_2 = \bigoplus_{j \in S \oplus \{i\}} \DB[j]$\;
+\Client computes: $\DB[i] = a_1 \oplus a_2$\;
+\end{algorithm}
+Communication: $O(\sqrt{n})$ with proper encoding.
+\end{construction}
+
+\begin{theorem}[Security]
+Each server's view is uniformly random, revealing nothing about $i$.
+\end{theorem}
+
+\begin{proof}
+$\Server_1$ sees random $S$. $\Server_2$ sees $S \oplus \{i\}$, also uniformly random.
+Neither can determine $i$ without the other's query.
+\end{proof}
+
+\subsection{Connection to XOR Boolean Rings}
+
+The 2-server PIR uses XOR properties from our Boolean ring framework:
+
+\begin{remark}[XOR Linearity in PIR]
+The server's response is exactly the XOR-hash of selected database bits:
+\begin{equation}
+\Response = \HashXOR{\{DB[j] : j \in S\}}
+\end{equation}
+This leverages XOR's self-inverse property for extraction.
+\end{remark}
+
+\section{Computational PIR}
+
+\subsection{Single-Server PIR}
+
+\begin{construction}[Quadratic Residuosity PIR]
+Based on the hardness of deciding quadratic residues mod $N = pq$:
+\begin{enumerate}
+    \item Database viewed as $\sqrt{n} \times \sqrt{n}$ matrix
+    \item Query: Encrypted column indices using QR
+    \item Response: Homomorphically computed row sums
+    \item Decrypt to recover desired element
+\end{enumerate}
+Communication: $O(\sqrt{n})$ under QR assumption.
+\end{construction}
+
+\subsection{Lattice-Based PIR}
+
+\begin{construction}[LWE-Based PIR]
+Using Learning With Errors:
+\begin{algorithm}[H]
+\caption{LWE PIR Query Generation}
+\KwIn{Index $i$, dimension $d = \log n$}
+\KwOut{Query matrix $Q$}
+$\mathbf{s} \leftarrow \mathbb{Z}_q^m$ (secret)\;
+$\mathbf{A} \leftarrow \mathbb{Z}_q^{m \times d}$ (random)\;
+$\mathbf{e} \leftarrow \chi^d$ (error from distribution $\chi$)\;
+$\mathbf{b} = \mathbf{A}^T \mathbf{s} + \mathbf{e} + q/2 \cdot \mathbf{e}_i$\;
+\Return{$Q = (\mathbf{A}, \mathbf{b})$}
+\end{algorithm}
+Server computes on encrypted query, client decrypts result.
+\end{construction}
+
+\section{OR-Based PIR through Hierarchical Hashing}
+
+\subsection{Single-Hash Bloom Filters for PIR}
+
+Inspired by OR-based Boolean algebras, we can build PIR using hierarchical single-hash Bloom filters:
+
+\begin{construction}[OR-Hash PIR]
+Preprocess database into hierarchical structure:
+\begin{enumerate}
+    \item Partition $\DB$ into $\sqrt{n}$ blocks of size $\sqrt{n}$
+    \item For each block $B_j$, compute OR-hash: $h_j = \HashOR{B_j}$
+    \item Create index: $I = \{(j, h_j)\}$
+    \item Query phase:
+    \begin{itemize}
+        \item Client retrieves all block hashes (sublinear)
+        \item Identifies correct block via OR-membership test
+        \item Retrieves only that block
+    \end{itemize}
+\end{enumerate}
+\end{construction}
+
+\begin{theorem}[OR-Hash PIR Complexity]
+Communication: $O(\sqrt{n} \cdot m)$ where $m$ is hash size.
+False positive rate: $\alpha^m$ per block (as proven in Boolean algebra paper).
+\end{theorem}
+
+\subsection{Recursive OR-Hashing}
+
+\begin{construction}[Multi-Level OR-PIR]
+Build $k$-level hierarchy:
+\begin{enumerate}
+    \item Level 0: Individual database items
+    \item Level $i$: OR-hash of $n^{1/k}$ items from level $i-1$
+    \item Query descends tree using OR-membership tests
+\end{enumerate}
+Communication: $O(k \cdot n^{1/k} \cdot m)$.
+\end{construction}
+
+\section{Approximate PIR with Bernoulli Types}
+
+\subsection{Allowing Errors for Efficiency}
+
+\begin{definition}[Approximate PIR]
+An $(\alpha, \beta)$-approximate PIR returns:
+\begin{equation}
+\mathsf{ApproxPIR}: \Obv{\Index{n}} \to \Bernoulli{\DB[i]}{2}
+\end{equation}
+where the result has:
+\begin{itemize}
+    \item False positive rate $\alpha$: Returns wrong item
+    \item False negative rate $\beta$: Returns $\bot$ instead of item
+\end{itemize}
+\end{definition}
+
+\begin{construction}[Probabilistic Batch Codes]
+Encode database with redundancy:
+\begin{enumerate}
+    \item Each item stored in $t$ random locations
+    \item Query $t$ locations, each with probability $p$
+    \item Expected $pt$ responses
+    \item Decode using majority voting
+\end{enumerate}
+Error rate: $\exp(-\Omega(t))$ with $O(t \log n)$ communication.
+\end{construction}
+
+\subsection{Bloom Filter PIR}
+
+\begin{construction}[BF-PIR]
+Combine Bloom filters with PIR:
+\begin{enumerate}
+    \item Store database in Bloom filter tree
+    \item Each node: BF of items in subtree
+    \item Query: Test membership at each level
+    \item May retrieve wrong item (false positive)
+    \item Communication: $O(\log n \cdot m)$
+\end{enumerate}
+\end{construction}
+
+\section{Batch PIR}
+
+\subsection{Retrieving Multiple Items}
+
+\begin{definition}[Batch PIR]
+Retrieve $k$ items with indices $i_1, \ldots, i_k$:
+\begin{equation}
+\mathsf{BatchPIR}: \Obv{\{i_1, \ldots, i_k\}} \to \{\DB[i_1], \ldots, \DB[i_k]\}
+\end{equation}
+\end{definition}
+
+\subsection{XOR-Based Batch PIR}
+
+\begin{construction}[XOR Batch Retrieval]
+Using XOR properties:
+\begin{algorithm}[H]
+\caption{XOR-Based Batch PIR}
+\KwIn{Indices $I = \{i_1, \ldots, i_k\}$}
+\KwOut{Items $\{\DB[i_j]\}_{j \in [k]}$}
+Encode $I$ as sum of codewords: $I = C_1 \oplus \cdots \oplus C_t$\;
+\For{each codeword $C_j$}{
+    Query PIR for $\bigoplus_{i \in C_j} \DB[i]$\;
+}
+Solve linear system over $GF(2)$ to recover items\;
+\end{algorithm}
+Communication: $O(k + \sqrt{n})$ for $k$ items.
+\end{construction}
+
+\section{PIR with Preprocessing}
+
+\subsection{Offline/Online Model}
+
+\begin{construction}[PIR with Preprocessing]
+\textbf{Offline phase} (query-independent):
+\begin{enumerate}
+    \item Download hints $H$ of size $s < n$
+    \item Hints are oblivious to future queries
+\end{enumerate}
+\textbf{Online phase} (per query):
+\begin{enumerate}
+    \item Use hints to generate compact query
+    \item Server responds based on query and database
+\end{enumerate}
+Trade-off: Preprocessing $s$ bits enables $O(n/s)$ online communication.
+\end{construction}
+
+\subsection{Connection to Oblivious Data Structures}
+
+PIR with preprocessing creates an oblivious index:
+
+\begin{remark}[PIR as Oblivious Map]
+Preprocessed PIR implements:
+\begin{equation}
+\ObvMap{[n]}{\DB[i]}
+\end{equation}
+where the map structure (hints) is public but queries are oblivious.
+\end{remark}
+
+\section{Function Secret Sharing for PIR}
+
+\subsection{FSS-Based PIR}
+
+\begin{definition}[Function Secret Sharing]
+Split function $f$ into shares $f_1, f_2$ such that:
+\begin{itemize}
+    \item $f(x) = f_1(x) + f_2(x)$ for all $x$
+    \item Each $f_i$ reveals nothing about $f$
+\end{itemize}
+\end{definition}
+
+\begin{construction}[2-Server FSS-PIR]
+For point function $f_i(x) = \mathbf{1}_{x = i}$:
+\begin{enumerate}
+    \item Client generates FSS shares $(k_1, k_2)$ of $f_i$
+    \item Server $j$ expands $k_j$ to evaluate on entire database
+    \item Server $j$ returns $\sum_x f_j(x) \cdot \DB[x]$
+    \item Client combines responses
+\end{enumerate}
+Communication: $O(\log n)$ with FSS from PRG.
+\end{construction}
+
+\section{PIR Variants}
+
+\subsection{Symmetric PIR (SPIR)}
+
+\begin{definition}[Symmetric PIR]
+PIR with additional requirement:
+\begin{itemize}
+    \item Client learns only $\DB[i]$, nothing else
+    \item Server learns nothing about $i$
+\end{itemize}
+\end{definition}
+
+\begin{construction}[OT-Based SPIR]
+Use 1-out-of-$n$ Oblivious Transfer:
+\begin{enumerate}
+    \item Server inputs $(\DB[1], \ldots, \DB[n])$
+    \item Client inputs $i$
+    \item OT protocol ensures mutual privacy
+\end{enumerate}
+\end{construction}
+
+\subsection{PIR with Access Control}
+
+\begin{construction}[Authorized PIR]
+Combine PIR with authentication:
+\begin{enumerate}
+    \item Client proves membership in access group
+    \item Without revealing identity (zero-knowledge)
+    \item Server responds only to authorized queries
+    \item Query index remains hidden
+\end{enumerate}
+\end{construction}
+
+\subsection{Updateable PIR}
+
+\begin{definition}[Dynamic PIR]
+Support database updates while maintaining query privacy:
+\begin{itemize}
+    \item $\mathsf{Update}(j, v)$: Set $\DB[j] = v$
+    \item Updates don't invalidate preprocessing
+    \item Queries hide access pattern across updates
+\end{itemize}
+\end{definition}
+
+\section{Lower Bounds and Optimality}
+
+\subsection{Communication Lower Bounds}
+
+\begin{theorem}[Single-Server IT Lower Bound]
+Any single-server information-theoretic PIR requires $\Omega(n)$ bits.
+\end{theorem}
+
+\begin{theorem}[Multi-Server Lower Bound]
+$k$-server information-theoretic PIR requires $\Omega(n^{1/(2k-1)})$ bits.
+\end{theorem}
+
+\subsection{Computation Lower Bounds}
+
+\begin{theorem}[Server Computation]
+Any single-server PIR with $o(n)$ communication requires server to read $\Omega(n)$ database bits.
+\end{theorem}
+
+This shows PIR trades communication for computation.
+
+\section{Practical Considerations}
+
+\subsection{Real-World Performance}
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Scheme} & \textbf{Comm.} & \textbf{Comp.} & \textbf{Assumption} \\
+\midrule
+Trivial download & $O(n)$ & $O(n)$ & None \\
+2-server XOR & $O(\sqrt{n})$ & $O(n)$ & Non-collusion \\
+LWE PIR & $O(\log n)$ & $O(n)$ & LWE \\
+FSS PIR & $O(\log n)$ & $O(n)$ & PRG \\
+Preprocessed & $O(1)$ & $O(\sqrt{n})$ & Storage \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Implementation Optimizations}
+
+\begin{enumerate}
+    \item \textbf{Vectorization}: Process multiple bits in parallel
+    \item \textbf{Batching}: Amortize costs over multiple queries
+    \item \textbf{Caching}: Reuse computations across queries
+    \item \textbf{GPU acceleration}: Parallelize server computation
+    \item \textbf{Compression}: Reduce response size
+\end{enumerate}
+
+\section{Connections to Other Oblivious Primitives}
+
+\subsection{PIR vs ORAM}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Property} & \textbf{PIR} & \textbf{ORAM} \\
+\midrule
+Database location & Server & Client \\
+Write support & No & Yes \\
+Communication & Sublinear & $O(\log n)$ \\
+Server computation & $O(n)$ & $O(1)$ \\
+Client storage & $O(1)$ & $O(n)$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{PIR and Secure Indexes}
+
+PIR can be viewed as querying an oblivious index:
+
+\begin{remark}[PIR as Oblivious Bernoulli Map]
+Approximate PIR implements:
+\begin{equation}
+\ObvMap{[n]}{\Bernoulli{\DB[i]}{2}}
+\end{equation}
+where queries are oblivious and results are approximate.
+\end{remark}
+
+\section{Applications}
+
+\subsection{Privacy-Preserving DNS}
+
+\begin{example}[Oblivious DNS]
+\begin{enumerate}
+    \item DNS database of domain $\to$ IP mappings
+    \item Client queries domain without revealing it
+    \item Server responds with IP address
+    \item Hides browsing patterns from DNS provider
+\end{enumerate}
+\end{example}
+
+\subsection{Private Media Streaming}
+
+\begin{example}[Oblivious Video Retrieval]
+\begin{enumerate}
+    \item Video library stored on CDN
+    \item User retrieves videos privately
+    \item Batch PIR for efficient streaming
+    \item Provider cannot track viewing habits
+\end{enumerate}
+\end{example}
+
+\subsection{Certificate Transparency}
+
+\begin{example}[Private Certificate Checking]
+\begin{enumerate}
+    \item Public log of SSL certificates
+    \item Check if certificate is valid
+    \item Don't reveal which domains you're visiting
+    \item Detect fraudulent certificates privately
+\end{enumerate}
+\end{example}
+
+\section{Advanced Topics}
+
+\subsection{Multi-Query PIR}
+
+\begin{construction}[Adaptive Queries]
+Handle sequences of dependent queries:
+\begin{enumerate}
+    \item Query $i_1$ based on initial knowledge
+    \item Query $i_2$ based on $\DB[i_1]$
+    \item Maintain privacy across query sequence
+    \item Use techniques from adaptive security
+\end{enumerate}
+\end{construction}
+
+\subsection{Verifiable PIR}
+
+\begin{definition}[PIR with Integrity]
+Ensure server returns correct data:
+\begin{itemize}
+    \item Server cannot return wrong item
+    \item Verification doesn't leak query
+    \item Use Merkle trees or polynomial commitments
+\end{itemize}
+\end{definition}
+
+\subsection{Quantum PIR}
+
+\begin{remark}[Quantum Advantages]
+Quantum computing offers new possibilities:
+\begin{itemize}
+    \item Quantum fingerprinting for verification
+    \item Superposition queries (multiple indices simultaneously)
+    \item Potential for exponential improvements
+\end{itemize}
+\end{remark}
+
+\section{Future Directions}
+
+\subsection{Optimal Trade-offs}
+
+Open questions:
+\begin{itemize}
+    \item Close gap between upper and lower bounds
+    \item Optimal preprocessing vs online trade-off
+    \item Best approximate PIR error rates
+\end{itemize}
+
+\subsection{New Models}
+
+\begin{itemize}
+    \item PIR with differential privacy
+    \item PIR for structured databases (graphs, matrices)
+    \item PIR with computation (retrieve $f(\DB[i])$)
+\end{itemize}
+
+\subsection{Practical Deployment}
+
+\begin{itemize}
+    \item Standardization efforts
+    \item Integration with existing systems
+    \item Real-world performance benchmarks
+\end{itemize}
+
+\section{Conclusions}
+
+Private Information Retrieval exemplifies oblivious computing principles:
+
+\textbf{Key Insights:}
+\begin{itemize}
+    \item \textbf{Oblivious queries}: Hide access patterns completely
+    \item \textbf{Fundamental trade-offs}: Communication vs computation vs assumptions
+    \item \textbf{Boolean algebra connections}: XOR and OR operations enable efficient constructions
+    \item \textbf{Approximate retrieval}: Bernoulli types improve efficiency
+\end{itemize}
+
+\textbf{Unifying Framework:}
+PIR fits naturally into our notation:
+\begin{itemize}
+    \item Standard PIR: $\Obv{[n]} \to \DB[i]$
+    \item Approximate PIR: $\Obv{[n]} \to \Bernoulli{\DB[i]}{2}$
+    \item Batch PIR: $\Obv{\{i_1, \ldots, i_k\}} \to \{\DB[i_1], \ldots, \DB[i_k]\}$
+\end{itemize}
+
+\textbf{The Broader Picture:}
+PIR demonstrates that oblivious computing isn't just about hiding data—it's about hiding access patterns, computations, and intentions. The techniques from Boolean algebras (XOR for batching, OR for hierarchical indexing) show how algebraic properties enable practical privacy-preserving systems.
+
+\bibliography{references}
+
+\end{document}

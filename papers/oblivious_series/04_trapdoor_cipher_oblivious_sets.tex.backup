@@ -1,0 +1,566 @@
+\documentclass[11pt,final,hidelinks]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage[activate={true,nocompatibility},final,tracking=true,kerning=true,spacing=true,factor=1100,stretch=10,shrink=10]{microtype}
+\usepackage{mathtools}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{algorithm2e}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[square,numbers]{natbib}
+\bibliographystyle{plainnat}
+\usepackage{cleveref}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric}
+
+% Include unified notation for oblivious computing
+\input{unified_notation_oblivious.tex}
+
+% Additional notation for trapdoor/cipher constructions
+\newcommand{\Trapdoor}{\mathsf{TD}}
+\newcommand{\Cipher}{\mathsf{Cipher}}
+\newcommand{\KeyGen}{\mathsf{KeyGen}}
+\newcommand{\Encode}{\mathsf{Encode}}
+\newcommand{\Decode}{\mathsf{Decode}}
+\newcommand{\PairingFn}{\mathsf{pair}}
+\newcommand{\HashFn}{\mathsf{hash}}
+\newcommand{\PRF}{\mathsf{PRF}}
+\newcommand{\Bernoulli}[2]{\mathcal{B}^{#2}\langle #1 \rangle}
+\newcommand{\BernSet}{\mathcal{B}\langle \mathcal{P} \rangle}
+\newcommand{\PowerSet}[1]{\mathcal{P}(#1)}
+
+% Theorem environments
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{construction}[theorem]{Construction}
+
+\title{Trapdoor and Cipher-Based Oblivious Sets: An Alternative to Hash-Based Constructions}
+\author{
+    Alexander Towell\\
+    \texttt{atowell@siue.edu}
+}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We present an alternative approach to constructing oblivious sets using trapdoor functions and ciphers rather than hash functions. While hash-based Bernoulli sets (like Bloom filters) generate false positives through hash collisions, trapdoor-based constructions use cryptographic one-way functions with secret inversion keys. This enables unique capabilities: controlled false positive generation, verifiable membership proofs, and dynamic error rate adjustment. We formalize the relationship between these two paradigms, showing that trapdoor constructions provide stronger security properties at the cost of key management complexity. The cipher-based approach extends naturally to searchable encryption, where the trapdoor serves as both a search token and a membership witness. We analyze the trade-offs: hash-based constructions offer simplicity and public verifiability, while trapdoor-based constructions provide cryptographic security and fine-grained access control. Both approaches yield oblivious Bernoulli types, but through fundamentally different mechanisms.
+\end{abstract}
+
+\ObliviousNotationGuide
+
+\section{Introduction}
+
+\subsection{Two Paths to Oblivious Sets}
+
+We have seen two approaches to constructing oblivious sets with Bernoulli membership:
+
+\begin{enumerate}
+\item \textbf{Hash-Based (Bloom Filters)}: 
+   \begin{itemize}
+   \item Use multiple hash functions to set bits
+   \item False positives from hash collisions
+   \item No secret key required
+   \item Public membership testing
+   \end{itemize}
+
+\item \textbf{Trapdoor-Based (This Work)}:
+   \begin{itemize}
+   \item Use trapdoor function with secret key
+   \item False positives from controlled randomness
+   \item Secret key enables/controls queries
+   \item Private membership testing
+   \end{itemize}
+\end{enumerate}
+
+\subsection{The Power of Trapdoors}
+
+Trapdoor functions provide capabilities impossible with hash functions:
+
+\begin{example}[Delegated Membership Testing]
+Alice creates set $S$ with trapdoor $\Trapdoor$:
+\begin{itemize}
+    \item Generates search token $\Token{w} = \PRF(\Trapdoor, w)$
+    \item Bob can test if $w \in S$ using only $\Token{w}$
+    \item Bob learns nothing about other elements
+    \item Alice controls false positive rate per token
+\end{itemize}
+\end{example}
+
+\begin{example}[Dynamic Error Adjustment]
+Same oblivious set, different error rates:
+\begin{itemize}
+    \item High-privilege users: Get tokens with low false positive rate
+    \item Low-privilege users: Get tokens with high false positive rate
+    \item Same underlying data structure
+\end{itemize}
+\end{example}
+
+\subsection{The Cost of Cryptography}
+
+Trapdoor constructions are more powerful but also more complex:
+\begin{itemize}
+    \item Require key generation and management
+    \item Membership queries need token generation
+    \item Often slower than hash-based approaches
+    \item Security depends on cryptographic assumptions
+\end{itemize}
+
+\section{Mathematical Framework}
+
+\subsection{Trapdoor Functions}
+
+\begin{definition}[Trapdoor Function]
+A trapdoor function family consists of:
+\begin{itemize}
+    \item $\KeyGen(1^\lambda) \to (\mathsf{pk}, \mathsf{td})$: Generate public key and trapdoor
+    \item $F_{\mathsf{pk}}: X \to Y$: Forward function (easy to compute)
+    \item $F^{-1}_{\mathsf{td}}: Y \to X$: Inverse function (requires trapdoor)
+\end{itemize}
+Security: Given only $\mathsf{pk}$ and $y = F_{\mathsf{pk}}(x)$, finding $x$ is hard.
+\end{definition}
+
+\begin{example}[RSA as Trapdoor]
+\begin{itemize}
+    \item Public key: $(N, e)$ where $N = pq$
+    \item Trapdoor: $(p, q, d)$ where $ed \equiv 1 \pmod{\phi(N)}$
+    \item Forward: $F(x) = x^e \bmod N$
+    \item Inverse: $F^{-1}(y) = y^d \bmod N$
+\end{itemize}
+\end{example}
+
+\subsection{Cipher-Based Oblivious Sets}
+
+\begin{definition}[Cipher Set]
+A cipher set for $S \subseteq U$ consists of:
+\begin{itemize}
+    \item Secret key $k$
+    \item Cipher function $\Cipher_k: U \to \{0,1\}^n$
+    \item Membership encoding: Store $\{\Cipher_k(s) : s \in S\}$
+\end{itemize}
+\end{definition}
+
+\begin{construction}[Basic Cipher Set]
+\begin{algorithm}[H]
+\caption{Cipher Set Construction}
+\KwIn{Set $S$, Key $k$}
+\KwOut{Oblivious set representation}
+$T \gets \emptyset$\;
+\For{each $s \in S$}{
+    $c \gets \Cipher_k(s)$\;
+    $T \gets T \cup \{c\}$\;
+}
+\Return{$T$}
+\end{algorithm}
+Membership test for $x$: Check if $\Cipher_k(x) \in T$.
+\end{construction}
+
+\subsection{Trapdoor-Induced False Positives}
+
+Unlike hash collisions, trapdoor false positives are controlled:
+
+\begin{definition}[Controlled False Positives]
+Design cipher $\Cipher_k$ such that:
+\begin{equation}
+\Prob{\Cipher_k(x) = \Cipher_k(y) | x \neq y} = \alpha
+\end{equation}
+where $\alpha$ is chosen at construction time.
+\end{definition}
+
+\begin{construction}[Truncated PRF for False Positives]
+Let $\PRF_k: U \to \{0,1\}^\ell$ be a pseudorandom function.
+\begin{enumerate}
+    \item Full output: $\ell$ bits, negligible collision probability
+    \item Truncate to $m < \ell$ bits: $\alpha \approx 2^{-m}$ false positive rate
+    \item Dynamic truncation: Different $m$ for different users/queries
+\end{enumerate}
+\end{construction}
+
+\section{Comparison with Hash-Based Approaches}
+
+\subsection{Structural Differences}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Aspect} & \textbf{Hash-Based} & \textbf{Trapdoor-Based} \\
+\midrule
+Key requirement & None & Secret key \\
+False positive source & Hash collisions & Controlled truncation \\
+Query generation & Direct hash & Token generation \\
+Access control & All-or-nothing & Fine-grained \\
+Error rate & Fixed at construction & Adjustable per query \\
+Verification & Public & Private \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Security Properties}
+
+\begin{theorem}[Security Comparison]
+For oblivious set containing $S$:
+\begin{itemize}
+    \item \textbf{Hash-based}: Adversary with oracle access can enumerate $S \cup FP$ where $FP$ is false positive set
+    \item \textbf{Trapdoor-based}: Adversary with oracle access learns only queried elements (with false positives)
+\end{itemize}
+\end{theorem}
+
+\begin{proof}
+Hash-based: Adversary can test all $x \in U$ directly.
+Trapdoor-based: Each query requires a token; without trapdoor, cannot generate new tokens.
+\end{proof}
+
+\section{Advanced Trapdoor Constructions}
+
+\subsection{Hierarchical Trapdoors}
+
+\begin{construction}[Multi-Level Access]
+Create hierarchy of trapdoors:
+\begin{itemize}
+    \item Master trapdoor $\Trapdoor_0$
+    \item Derive $\Trapdoor_i = \PRF(\Trapdoor_{i-1}, i)$
+    \item Level $i$ users get $\Trapdoor_i$
+    \item Higher levels have lower false positive rates
+\end{itemize}
+\end{construction}
+
+\begin{algorithm}[H]
+\caption{Hierarchical Token Generation}
+\KwIn{Element $x$, User level $\ell$, Master trapdoor $\Trapdoor_0$}
+\KwOut{Search token with level-appropriate error rate}
+$\Trapdoor_\ell \gets \Trapdoor_0$\;
+\For{$i = 1$ to $\ell$}{
+    $\Trapdoor_\ell \gets \PRF(\Trapdoor_\ell, i)$\;
+}
+$\mathsf{precision} \gets \max(m_{\min}, m_{\max} - \ell \cdot \Delta m)$\;
+$\mathsf{token} \gets \PRF(\Trapdoor_\ell, x)[1:\mathsf{precision}]$\;
+\Return{$\mathsf{token}$}
+\end{algorithm}
+
+\subsection{Pairing-Based Constructions}
+
+\begin{construction}[Bilinear Map Oblivious Sets]
+Using pairing $e: G_1 \times G_2 \to G_T$:
+\begin{enumerate}
+    \item Set elements: $s_i \in G_1$
+    \item Trapdoor: $\mathsf{td} \in G_2$
+    \item Membership witness: $e(s_i, \mathsf{td}) \in G_T$
+    \item Allows homomorphic operations on encrypted sets
+\end{enumerate}
+\end{construction}
+
+\subsection{Lattice-Based Constructions}
+
+\begin{construction}[Post-Quantum Oblivious Sets]
+Using lattice trapdoors:
+\begin{itemize}
+    \item Based on SIS/LWE problems
+    \item Quantum-resistant
+    \item Supports fully homomorphic operations
+    \item Higher overhead but future-proof
+\end{itemize}
+\end{construction}
+
+\section{Searchable Encryption via Trapdoors}
+
+\subsection{Basic Searchable Encryption}
+
+\begin{definition}[Searchable Symmetric Encryption (SSE)]
+SSE scheme consists of:
+\begin{itemize}
+    \item $\mathsf{Setup}(S) \to (I, k)$: Create encrypted index $I$ and key $k$
+    \item $\mathsf{Token}(k, w) \to \mathsf{tk}_w$: Generate search token
+    \item $\mathsf{Search}(I, \mathsf{tk}_w) \to R$: Return matching documents
+\end{itemize}
+\end{definition}
+
+\begin{construction}[Trapdoor SSE]
+Build SSE using oblivious sets:
+\begin{enumerate}
+    \item For each document $d$, create cipher set $C_d$ of keywords
+    \item Search token: $\mathsf{tk}_w = \Cipher_k(w)$
+    \item Search: Return $\{d : \mathsf{tk}_w \in C_d\}$
+    \item False positives provide plausible deniability
+\end{enumerate}
+\end{construction}
+
+\subsection{Dynamic SSE with Trapdoors}
+
+\begin{construction}[Forward-Secure SSE]
+Trapdoors enable forward security:
+\begin{enumerate}
+    \item Each update gets new trapdoor: $\Trapdoor_t = \PRF(\Trapdoor_0, t)$
+    \item Old tokens cannot search new additions
+    \item Prevents file injection attacks
+\end{enumerate}
+\end{construction}
+
+\section{Oblivious Relations via Trapdoors}
+
+\subsection{Binary Relations}
+
+\begin{definition}[Oblivious Relation]
+For relation $R \subseteq U \times V$:
+\begin{equation}
+\Obv{R}: \ObvMap{(U \times V)}{\Obv{\BernBool}}
+\end{equation}
+Query $(u,v)$ returns encrypted approximate membership.
+\end{definition}
+
+\begin{construction}[Trapdoor Relation Encoding]
+Encode relations using pairing functions:
+\begin{enumerate}
+    \item Pairing: $\PairingFn: U \times V \to W$
+    \item Apply trapdoor: $\Cipher_k(\PairingFn(u,v))$
+    \item Store cipher texts of related pairs
+    \item Controlled collisions in pairing or cipher
+\end{enumerate}
+\end{construction}
+
+\subsection{N-ary Relations}
+
+\begin{construction}[Recursive Pairing]
+For $n$-ary relation over $U_1 \times \cdots \times U_n$:
+\begin{align}
+\PairingFn_2(x_1, x_2) &= \text{standard pairing}\\
+\PairingFn_n(x_1, \ldots, x_n) &= \PairingFn_2(x_1, \PairingFn_{n-1}(x_2, \ldots, x_n))
+\end{align}
+Apply trapdoor to flattened representation.
+\end{construction}
+
+\section{Performance Analysis}
+
+\subsection{Time Complexity}
+
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Operation} & \textbf{Hash-Based} & \textbf{Trapdoor-Based} \\
+\midrule
+Construction & $O(n \cdot k)$ & $O(n \cdot \mathsf{Cipher})$ \\
+Token generation & N/A & $O(\mathsf{PRF})$ \\
+Membership test & $O(k)$ hashes & $O(1)$ lookup \\
+Union & $O(m)$ bit ops & $O(n_1 + n_2)$ set ops \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Space Complexity}
+
+\begin{theorem}[Space Comparison]
+For $n$ elements with false positive rate $\alpha$:
+\begin{itemize}
+    \item Bloom filter: $-n \log_2 \alpha / \ln 2$ bits
+    \item Trapdoor set: $n \cdot \log_2(1/\alpha)$ bits minimum
+    \item Perfect hash filter: $(n \log_2 e) / \alpha$ bits
+\end{itemize}
+\end{theorem}
+
+\subsection{Communication Complexity}
+
+\begin{itemize}
+    \item \textbf{Hash-based}: Send entire filter ($O(n \log(1/\alpha))$ bits)
+    \item \textbf{Trapdoor-based}: Send tokens only ($O(q \log(1/\alpha))$ for $q$ queries)
+    \item Trapdoor wins when $q \ll n$
+\end{itemize}
+
+\section{Hybrid Constructions}
+
+\subsection{Hash-Trapdoor Hybrid}
+
+\begin{construction}[Best of Both Worlds]
+Combine hash and trapdoor approaches:
+\begin{enumerate}
+    \item Public layer: Bloom filter for common queries
+    \item Private layer: Trapdoor set for sensitive queries
+    \item Adaptive: Move frequent queries to public layer
+\end{enumerate}
+\end{construction}
+
+\subsection{Cascaded Filters}
+
+\begin{construction}[Multi-Stage Filtering]
+\begin{enumerate}
+    \item Stage 1: Coarse Bloom filter (high $\alpha$)
+    \item Stage 2: Fine trapdoor filter (low $\alpha$)
+    \item Query passes both stages to confirm membership
+    \item Reduces token generation overhead
+\end{enumerate}
+\end{construction}
+
+\section{Security Analysis}
+
+\subsection{Threat Models}
+
+\begin{definition}[Adaptive Adversary]
+Adversary $\Adv$ can:
+\begin{itemize}
+    \item Request tokens for chosen elements
+    \item Observe query results
+    \item Goal: Learn non-queried elements of $S$
+\end{itemize}
+\end{definition}
+
+\begin{theorem}[Trapdoor Security]
+Against adaptive adversary with $q$ token queries:
+\begin{equation}
+\Prob{\Adv \text{ learns } x \in S | x \notin \text{queries}} \leq \alpha + \negl(\lambda)
+\end{equation}
+where $\alpha$ is false positive rate and $\lambda$ is security parameter.
+\end{theorem}
+
+\subsection{Information Leakage}
+
+\begin{theorem}[Leakage Bounds]
+For trapdoor oblivious set:
+\begin{itemize}
+    \item Per-query leakage: $\Leak{q} = \log(1/\alpha)$ bits
+    \item Total leakage for $q$ queries: $\Leak{total} \leq q \cdot \log(1/\alpha)$
+    \item Compare to hash-based: $\Leak{total} = n \cdot \log(1/\alpha)$ (entire set)
+\end{itemize}
+\end{theorem}
+
+\section{Applications}
+
+\subsection{Private Set Intersection}
+
+\begin{example}[PSI with Trapdoors]
+Alice and Bob compute $S_A \cap S_B$:
+\begin{enumerate}
+    \item Alice creates trapdoor set for $S_A$
+    \item Alice sends tokens for elements in $S_B$ to Bob
+    \item Bob tests tokens against his trapdoor set
+    \item Intersection revealed with false positive rate $\alpha^2$
+\end{enumerate}
+\end{example}
+
+\subsection{Encrypted Databases}
+
+\begin{example}[SQL with Trapdoor Predicates]
+\begin{verbatim}
+SELECT * FROM encrypted_table 
+WHERE TrapdoorMatch(column, token)
+\end{verbatim}
+Server cannot generate queries independently.
+\end{example}
+
+\subsection{Access Control Lists}
+
+\begin{example}[Cryptographic ACLs]
+\begin{itemize}
+    \item Each permission is trapdoor-encoded
+    \item Users get tokens for their permissions
+    \item Cannot forge tokens for unpermitted access
+    \item Supports hierarchical and role-based access
+\end{itemize}
+\end{example}
+
+\section{Limitations and Trade-offs}
+
+\subsection{When to Use Hash-Based}
+
+\begin{itemize}
+    \item Public/shared data structures
+    \item No key management infrastructure
+    \item Need simplicity and speed
+    \item Client-side filtering acceptable
+\end{itemize}
+
+\subsection{When to Use Trapdoor-Based}
+
+\begin{itemize}
+    \item Delegated computation (cloud storage)
+    \item Fine-grained access control needed
+    \item Adaptive security requirements
+    \item Communication-constrained scenarios
+\end{itemize}
+
+\subsection{Fundamental Trade-offs}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Property} & \textbf{Hash} & \textbf{Trapdoor} \\
+\midrule
+Setup complexity & Simple & Complex \\
+Query generation & None & Required \\
+Public verifiability & Yes & No \\
+Access control & Coarse & Fine \\
+False positive control & Static & Dynamic \\
+Security & Heuristic & Cryptographic \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Future Directions}
+
+\subsection{Functional Encryption Integration}
+
+\begin{itemize}
+    \item Trapdoors that reveal functions of data
+    \item Richer queries than membership
+    \item Attribute-based encryption for sets
+\end{itemize}
+
+\subsection{Zero-Knowledge Set Membership}
+
+\begin{itemize}
+    \item Prove membership without revealing element
+    \item Combine with SNARKs/STARKs
+    \item Verifiable computation on oblivious sets
+\end{itemize}
+
+\subsection{Quantum-Safe Constructions}
+
+\begin{itemize}
+    \item Lattice-based trapdoors
+    \item Code-based alternatives
+    \item Hash-based signatures for authentication
+\end{itemize}
+
+\section{Conclusions}
+
+Trapdoor and cipher-based constructions offer a fundamentally different approach to oblivious sets compared to hash-based methods:
+
+\textbf{Key Insights:}
+\begin{itemize}
+    \item \textbf{Controlled randomness}: False positives by design, not collision
+    \item \textbf{Cryptographic security}: Based on hardness assumptions
+    \item \textbf{Access control}: Fine-grained through token generation
+    \item \textbf{Dynamic properties}: Adjust error rates post-construction
+\end{itemize}
+
+\textbf{The Duality:}
+\begin{itemize}
+    \item Both achieve oblivious Bernoulli types
+    \item Hash-based: Simple, public, static
+    \item Trapdoor-based: Complex, private, dynamic
+    \item Choice depends on threat model and requirements
+\end{itemize}
+
+\textbf{Unified Framework:}
+Both approaches fit our notation system:
+\begin{itemize}
+    \item Result type: $\Obv{\Bernoulli{\Bool}{2}}$
+    \item Hash version: $\HashFn: U \to \Obv{\BernBool}$
+    \item Trapdoor version: $\Cipher_k: U \to \Obv{\BernBool}$
+    \item Difference is in key management and control
+\end{itemize}
+
+The existence of these two paradigms enriches the theory of oblivious computing, showing that the same abstract goal—hiding membership while allowing approximate queries—can be achieved through radically different mechanisms.
+
+\bibliography{references}
+
+\end{document}

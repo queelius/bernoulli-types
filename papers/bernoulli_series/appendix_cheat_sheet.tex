@@ -1,0 +1,41 @@
+% Shared appendix: Cheat Sheet for Bernoulli Series
+\section*{Appendix: Bernoulli Cheat Sheet}
+
+% Symbols
+\paragraph{Symbols}
+\begin{tabular}{@{}ll@{}}
+$\fprate$ & False positive rate $\Prob\{\obs{x}\in\obs{S}\mid x\notin S\}$ \\
+$\fnrate$ & False negative rate $\Prob\{\obs{x}\notin\obs{S}\mid x\in S\}$ \\
+$\tprate$ & True positive rate $1-\fnrate$; $\tnrate$: true negative rate $1-\fprate$ \\
+$\epsilon$ & Pointwise error for maps: $\epsilon(x)=\Prob\{\obs{f}(x)\neq f(x)\}$ \\
+$Q$ & Confusion matrix: $Q_{ij}=\Prob\{\text{obs } t_j\mid \text{lat } t_i\}$ \\
+$W(y\mid x)$ & Channel kernel for pointwise observation \\
+\end{tabular}
+
+% Set formulas
+\paragraph{Bernoulli sets (independent sub-queries)}
+\begin{align*}
+\fprate_{A\cap B} &= \fprate_A\,\fprate_B, & \fnrate_{A\cap B} &= 1-(1-\fnrate_A)(1-\fnrate_B), \\
+\fprate_{A\cup B} &= 1-(1-\fprate_A)(1-\fprate_B), & \fnrate_{A\cup B} &= \fnrate_A\,\fnrate_B, \\
+\fprate_{\overline{A}} &= \fnrate_A, & \fnrate_{\overline{A}} &= \fprate_A.
+\end{align*}
+
+% Maps formulas
+\paragraph{Bernoulli maps}
+Composition bound: $\Prob\{\obs{(g\circ f)}\neq g\circ f\} \le 1-(1-\epsilon_f)(1-\epsilon_g)$.  
+Channel composition: $W_{g\circ f}(z\mid y')=\sum_y W_g(z\mid y)W_f(y\mid y')$.  
+BSC composition: $\epsilon_{g\circ f}=\epsilon_f+\epsilon_g-\epsilon_f\epsilon_g$.
+
+% Bayes / MV
+\paragraph{Bayes and aggregation}
+Posterior membership: $\displaystyle \Prob\{x\in S\mid x\in \obs{S}\} = \frac{\pi(1-\fnrate)}{\pi(1-\fnrate)+(1-\pi)\fprate}$.  
+Majority vote (i.i.d., $\epsilon<\tfrac12$): $\Prob\{\hat{x}_k\neq x\} \le e^{-2(\tfrac12-\epsilon)^2 k}$.
+
+% Intervals
+\paragraph{Intervals}
+If $\fprate\in[\underline{\alpha},\overline{\alpha}]$ and $\fnrate\in[\underline{\beta},\overline{\beta}]$, propagate by endpoint evaluation due to monotonicity.
+
+% Assumptions
+\paragraph{Assumptions}
+Unless stated otherwise: (i) memoryless channels (independent across items), (ii) finite alphabets for confusion-matrix arguments, (iii) independence between sub-queries when using product-form laws, (iv) priors specified when applying Bayes.
+

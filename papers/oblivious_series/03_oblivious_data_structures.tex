@@ -1,0 +1,681 @@
+\documentclass[11pt,final,hidelinks]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage[activate={true,nocompatibility},final,tracking=true,kerning=true,spacing=true,factor=1100,stretch=10,shrink=10]{microtype}
+\usepackage{mathtools}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{algorithm2e}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[square,numbers]{natbib}
+\bibliographystyle{plainnat}
+\usepackage{cleveref}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,trees}
+
+% Include unified notation for oblivious computing
+\input{unified_notation_oblivious.tex}
+
+% Additional notation for this paper
+\newcommand{\Array}{\mathsf{Array}}
+\newcommand{\Tree}{\mathsf{Tree}}
+\newcommand{\Heap}{\mathsf{Heap}}
+\newcommand{\Stack}{\mathsf{Stack}}
+\newcommand{\Queue}{\mathsf{Queue}}
+\newcommand{\Graph}{\mathsf{Graph}}
+\newcommand{\Read}{\mathsf{read}}
+\newcommand{\Write}{\mathsf{write}}
+\newcommand{\Insert}{\mathsf{insert}}
+\newcommand{\Delete}{\mathsf{delete}}
+\newcommand{\Find}{\mathsf{find}}
+\newcommand{\Path}{\mathsf{path}}
+\newcommand{\Stash}{\mathsf{stash}}
+\newcommand{\Position}{\mathsf{pos}}
+
+% Theorem environments
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{construction}[theorem]{Construction}
+
+\title{Oblivious Data Structures: Hiding Access Patterns in Fundamental Operations}
+\author{
+    Alexander Towell\\
+    \texttt{atowell@siue.edu}
+}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We present a systematic study of oblivious data structures—fundamental data structures modified to hide access patterns while maintaining their essential functionality. Traditional data structures leak information through their access patterns: which elements are accessed, in what order, and how frequently. We develop a compositional framework showing how to transform standard data structures into oblivious variants with provable privacy guarantees. Our key insight is that obliviousness can be achieved through careful composition of simpler oblivious primitives. We distinguish between different granularities of obliviousness: fully oblivious structures that hide all operations, partially oblivious structures that hide only sensitive operations, and differentially oblivious structures that add calibrated noise to access patterns. We provide tight bounds on the overhead required for obliviousness in arrays ($O(\log N)$), trees ($O(\log^2 N)$), heaps ($O(\log^2 N)$), and graphs ($O(\sqrt{N})$), and show these bounds are optimal for certain security definitions. The framework extends naturally to support oblivious types with complex internal structure, where we must specify precisely which components are oblivious.
+\end{abstract}
+
+\ObliviousNotationGuide
+
+\section{Introduction}
+
+\subsection{The Access Pattern Problem}
+
+Every data structure operation generates an access pattern—a sequence of memory locations touched during execution. These patterns leak information:
+
+\begin{example}[Binary Search Leakage]
+Binary search for key $k$ in sorted array $A$:
+\begin{itemize}
+    \item Access pattern: $A[\text{mid}], A[\text{mid}/2], \ldots$
+    \item Reveals: Approximate position of $k$ in $A$
+    \item Leakage: $O(\log N)$ bits about $k$'s location
+\end{itemize}
+\end{example}
+
+\begin{example}[Heap Operation Leakage]
+Insert into min-heap:
+\begin{itemize}
+    \item Access pattern: Leaf to root path
+    \item Reveals: Final position of inserted element
+    \item Leakage: Relative ordering information
+\end{itemize}
+\end{example}
+
+\subsection{Granularity of Obliviousness}
+
+Not all parts of a data structure need to be oblivious:
+
+\begin{definition}[Obliviousness Granularity]
+For data structure $D$ with operations $O$ and state $S$:
+\begin{itemize}
+    \item $\Obv{D}$: Entire structure is oblivious
+    \item $D(\Obv{S})$: Only state is oblivious
+    \item $\Obv{O}(D)$: Only operations are oblivious
+    \item $(D, \Obv{O_{\text{sensitive}}})$: Only sensitive operations are oblivious
+\end{itemize}
+\end{definition}
+
+\begin{example}[Partially Oblivious Map]
+Consider map $M: K \to V$:
+\begin{itemize}
+    \item $\Obv{M}$: All operations hidden
+    \item $K \to \Obv{V}$: Keys visible, values hidden
+    \item $\Obv{K} \to V$: Keys hidden, values visible
+    \item $\ObvMap{K}{V}$: Lookups hidden, structure visible
+\end{itemize}
+\end{example}
+
+\section{Foundational Techniques}
+
+\subsection{Oblivious RAM (ORAM)}
+
+The fundamental building block for oblivious data structures:
+
+\begin{definition}[ORAM Interface]
+An ORAM provides:
+\begin{itemize}
+    \item $\Write(addr, data)$: Write data to address
+    \item $\Read(addr)$: Read from address
+    \item Security: Access patterns indistinguishable for equal-length sequences
+\end{itemize}
+\end{definition}
+
+\begin{construction}[Path ORAM]
+Organize $N$ blocks as complete binary tree:
+\begin{enumerate}
+    \item Each block assigned random leaf
+    \item Access: Read entire path from root to leaf
+    \item Invariant: Block lives on path to its assigned leaf
+    \item After access: Re-encrypt and write back path
+\end{enumerate}
+Overhead: $O(\log N)$ per access.
+\end{construction}
+
+\subsection{Oblivious Primitives}
+
+\begin{definition}[Oblivious Swap]
+Conditionally swap two values without revealing condition:
+\begin{equation}
+\mathsf{OSwap}(a, b, c) = \begin{cases}
+(a, b) & \text{if } c = 0\\
+(b, a) & \text{if } c = 1
+\end{cases}
+\end{equation}
+Implementation hides $c$ through arithmetic:
+\begin{equation}
+(a', b') = (a \cdot (1-c) + b \cdot c, b \cdot (1-c) + a \cdot c)
+\end{equation}
+\end{definition}
+
+\begin{definition}[Oblivious Select]
+Select between values without revealing choice:
+\begin{equation}
+\mathsf{OSelect}(a, b, c) = a \cdot (1-c) + b \cdot c
+\end{equation}
+\end{definition}
+
+\section{Oblivious Arrays}
+
+\subsection{Basic Oblivious Array}
+
+\begin{definition}[Oblivious Array Type]
+An oblivious array of type $T$ with size $N$:
+\begin{equation}
+\Obv{\Array[T, N]} : \ObvMap{[0, N)}{\Obv{T}}
+\end{equation}
+Operations hide which index is accessed.
+\end{definition}
+
+\begin{construction}[Linear Scan Array]
+Access index $i$ by scanning entire array:
+\begin{algorithm}[H]
+\caption{Linear Scan Read}
+\KwIn{Array $A$, Secret index $i$}
+\KwOut{$A[i]$}
+$result \gets \bot$\;
+\For{$j = 0$ to $N-1$}{
+    $result \gets \mathsf{OSelect}(result, A[j], (i == j))$\;
+}
+\Return{$result$}
+\end{algorithm}
+Overhead: $O(N)$ per access. Perfect security.
+\end{construction}
+
+\begin{construction}[ORAM-Based Array]
+Store array in Path ORAM:
+\begin{itemize}
+    \item Each array element is ORAM block
+    \item Access $A[i]$ via $\mathsf{ORAM}.\Read(i)$
+    \item Overhead: $O(\log N)$ per access
+    \item Security: Computational
+\end{itemize}
+\end{construction}
+
+\subsection{Oblivious Sorting}
+
+\begin{definition}[Oblivious Sorting Network]
+A sorting algorithm where comparison sequence is input-independent.
+\end{definition}
+
+\begin{construction}[Bitonic Sort]
+\begin{algorithm}[H]
+\caption{Bitonic Sort (Oblivious)}
+\KwIn{Array $A$ of size $N = 2^k$}
+\KwOut{Sorted array}
+\For{$i = 1$ to $k$}{
+    \For{$j = i$ down to $1$}{
+        \For{$\ell = 0$ to $N/2^j - 1$}{
+            \For{$m = 0$ to $2^{j-1} - 1$}{
+                $p \gets \ell \cdot 2^j + m$\;
+                $q \gets p + 2^{j-1}$\;
+                $dir \gets (\ell \gg (i-j)) \& 1$\;
+                \If{$(A[p] > A[q]) \oplus dir$}{
+                    $\mathsf{OSwap}(A[p], A[q], 1)$\;
+                }
+            }
+        }
+    }
+}
+\end{algorithm}
+Comparisons: $O(N \log^2 N)$. Depth: $O(\log^2 N)$.
+\end{construction}
+
+\begin{theorem}[Lower Bound for Oblivious Sorting]
+Any oblivious comparison-based sort requires $\Omega(N \log N)$ comparisons.
+\end{theorem}
+
+\section{Oblivious Trees}
+
+\subsection{Oblivious Binary Search Tree}
+
+\begin{definition}[Oblivious BST Operations]
+BST with hidden access patterns for:
+\begin{itemize}
+    \item $\Obv{\Find}(k)$: Search for key $k$
+    \item $\Obv{\Insert}(k, v)$: Insert key-value pair
+    \item $\Obv{\Delete}(k)$: Remove key
+\end{itemize}
+\end{definition}
+
+\begin{construction}[Path-Copying BST]
+\begin{enumerate}
+    \item Store tree nodes in ORAM
+    \item Each node contains: $(key, value, left\_ptr, right\_ptr)$
+    \item Search: Access all nodes on path (pad to max depth)
+    \item Insert/Delete: Rebalance using oblivious rotations
+\end{enumerate}
+\end{construction}
+
+\begin{algorithm}[H]
+\caption{Oblivious Tree Search}
+\KwIn{Root pointer $root$, Key $k$, Max depth $d$}
+\KwOut{Value associated with $k$ (or $\bot$)}
+$ptr \gets root$\;
+$result \gets \bot$\;
+\For{$i = 0$ to $d-1$}{
+    $node \gets \mathsf{ORAM}.\Read(ptr)$\;
+    $result \gets \mathsf{OSelect}(result, node.value, (node.key == k))$\;
+    $go\_left \gets (k < node.key)$\;
+    $ptr \gets \mathsf{OSelect}(node.right, node.left, go\_left)$\;
+    $ptr \gets \mathsf{OSelect}(ptr, \text{dummy}, (ptr == \text{null}))$\;
+}
+\Return{$result$}
+\end{algorithm}
+
+\subsection{Oblivious AVL Tree}
+
+Maintain balance while hiding rotations:
+
+\begin{construction}[Oblivious Rotations]
+Perform all possible rotations, select correct one obliviously:
+\begin{enumerate}
+    \item Compute all rotation outcomes
+    \item Use balance factors to determine needed rotation
+    \item Obliviously select correct outcome
+    \item Write back to ORAM
+\end{enumerate}
+\end{construction}
+
+\subsection{Oblivious B-Tree}
+
+For external memory obliviousness:
+
+\begin{construction}[Oblivious B-Tree]
+\begin{itemize}
+    \item Each node is ORAM block (size $B$)
+    \item Search: Read one node per level
+    \item Split/Merge: Oblivious data movement
+    \item Overhead: $O(\log_B N \cdot \log N)$ per operation
+\end{itemize}
+\end{construction}
+
+\section{Oblivious Heaps and Priority Queues}
+
+\subsection{Oblivious Binary Heap}
+
+\begin{definition}[Heap Obliviousness Requirements]
+Hide:
+\begin{itemize}
+    \item Which elements are compared during heapify
+    \item Final positions after insertion
+    \item Path taken during extraction
+\end{itemize}
+\end{definition}
+
+\begin{construction}[Path-Oblivious Heap]
+\begin{algorithm}[H]
+\caption{Oblivious Heap Insert}
+\KwIn{Heap $H$, Element $e$}
+$pos \gets H.size$\;
+$H[pos] \gets e$\;
+$H.size \gets H.size + 1$\;
+\For{$level = \lfloor \log pos \rfloor$ down to $0$}{
+    \For{each node $n$ at $level$ (including dummies)}{
+        $parent \gets n / 2$\;
+        $should\_swap \gets (H[n] < H[parent]) \land (n == pos)$\;
+        $\mathsf{OSwap}(H[n], H[parent], should\_swap)$\;
+        $pos \gets \mathsf{OSelect}(pos, parent, should\_swap)$\;
+    }
+}
+\end{algorithm}
+\end{construction}
+
+\subsection{Oblivious Binomial Heap}
+
+Better for merge operations:
+
+\begin{construction}[Oblivious Binomial Heap]
+\begin{itemize}
+    \item Store binomial trees in ORAM
+    \item Merge: Obliviously combine trees of same rank
+    \item Extract-min: Scan all roots obliviously
+    \item Overhead: $O(\log^2 N)$ per operation
+\end{itemize}
+\end{construction}
+
+\section{Oblivious Stacks and Queues}
+
+\subsection{Oblivious Stack}
+
+\begin{definition}[Stack with Hidden Size]
+Stack where adversary cannot determine number of elements.
+\end{definition}
+
+\begin{construction}[Circular Buffer Stack]
+\begin{algorithm}[H]
+\caption{Oblivious Stack Push/Pop}
+\KwIn{Stack $S$, Operation $op \in \{\text{push}, \text{pop}\}$, Value $v$}
+\KwOut{Popped value (or $\bot$)}
+$is\_push \gets (op == \text{push})$\;
+$new\_top \gets \mathsf{OSelect}(S.top - 1, S.top + 1, is\_push)$\;
+$result \gets \mathsf{OSelect}(S[S.top], \bot, is\_push)$\;
+$S[new\_top] \gets \mathsf{OSelect}(\bot, v, is\_push)$\;
+$S.top \gets new\_top \bmod N$\;
+\Return{$result$}
+\end{algorithm}
+Access pattern independent of operation type.
+\end{construction}
+
+\subsection{Oblivious Queue}
+
+\begin{construction}[Two-Stack Queue]
+Implement using two oblivious stacks:
+\begin{itemize}
+    \item Enqueue: Push to stack 1
+    \item Dequeue: Pop from stack 2
+    \item If stack 2 empty: Transfer all from stack 1
+    \item Hide transfer using dummy operations
+\end{itemize}
+\end{construction}
+
+\section{Oblivious Graphs}
+
+\subsection{Graph Representation}
+
+\begin{definition}[Oblivious Graph Types]
+For graph $G = (V, E)$:
+\begin{itemize}
+    \item $\Obv{G}$: Entire graph structure hidden
+    \item $(V, \Obv{E})$: Vertices public, edges hidden
+    \item $(\Obv{V}, \Obv{E})$: Both vertices and edges hidden
+\end{itemize}
+\end{definition}
+
+\subsection{Oblivious Graph Algorithms}
+
+\begin{construction}[Oblivious BFS]
+\begin{algorithm}[H]
+\caption{Oblivious Breadth-First Search}
+\KwIn{Graph $\Obv{G}$, Start vertex $s$}
+\KwOut{BFS tree}
+Initialize $\Obv{\Queue}$ with $s$\;
+Initialize $visited$ array in ORAM\;
+\While{not finished maximum $|V|$ iterations}{
+    $v \gets \Obv{\Queue}.\text{dequeue}()$\;
+    \For{each potential neighbor $u$ (all vertices)}{
+        $is\_edge \gets \Obv{G}.\text{hasEdge}(v, u)$\;
+        $is\_unvisited \gets \neg visited[u]$\;
+        $should\_add \gets is\_edge \land is\_unvisited$\;
+        $\Obv{\Queue}.\text{enqueue}(u, should\_add)$\;
+        $visited[u] \gets visited[u] \lor should\_add$\;
+    }
+}
+\end{algorithm}
+Overhead: $O(|V|^2 \log |V|)$ vs. $O(|V| + |E|)$ non-oblivious.
+\end{construction}
+
+\begin{theorem}[Graph Algorithm Lower Bounds]
+For oblivious graph algorithms on $n$-vertex graphs:
+\begin{itemize}
+    \item BFS/DFS: $\Omega(n^2)$ time
+    \item Shortest path: $\Omega(n^2 \log n)$ time
+    \item MST: $\Omega(n^2)$ time
+\end{itemize}
+\end{theorem}
+
+\section{Oblivious Hash Tables}
+
+\subsection{Oblivious Hashing}
+
+\begin{definition}[Oblivious Hash Table]
+Hash table where:
+\begin{itemize}
+    \item Hash function evaluation is hidden
+    \item Collision resolution doesn't leak
+    \item Load factor is obscured
+\end{itemize}
+\end{definition}
+
+\begin{construction}[Cuckoo Hashing with ORAM]
+\begin{enumerate}
+    \item Store two tables $T_1, T_2$ in ORAM
+    \item Use two hash functions $h_1, h_2$
+    \item Lookup: Check both locations obliviously
+    \item Insert: Use oblivious eviction sequence
+\end{enumerate}
+\begin{algorithm}[H]
+\caption{Oblivious Cuckoo Lookup}
+\KwIn{Key $k$}
+\KwOut{Value associated with $k$}
+$loc_1 \gets h_1(k)$\;
+$loc_2 \gets h_2(k)$\;
+$(k_1, v_1) \gets \mathsf{ORAM}.\Read(T_1[loc_1])$\;
+$(k_2, v_2) \gets \mathsf{ORAM}.\Read(T_2[loc_2])$\;
+$found_1 \gets (k_1 == k)$\;
+$found_2 \gets (k_2 == k)$\;
+\Return{$\mathsf{OSelect}(v_2, v_1, found_1)$}
+\end{algorithm}
+\end{construction}
+
+\subsection{Oblivious Robin Hood Hashing}
+
+\begin{construction}[Oblivious Linear Probing]
+\begin{itemize}
+    \item Scan fixed-size window around hash location
+    \item Obliviously swap elements based on distances
+    \item Hide actual probe sequence length
+\end{itemize}
+\end{construction}
+
+\section{Composition of Oblivious Types}
+
+\subsection{Nested Oblivious Structures}
+
+\begin{example}[Oblivious Map of Oblivious Sets]
+Type: $\ObvMap{K}{\Obv{\mathcal{P}(V)}}$
+\begin{itemize}
+    \item Outer map: Lookups are oblivious
+    \item Inner sets: Membership tests are oblivious
+    \item Composition: Both levels maintain obliviousness
+\end{itemize}
+\end{example}
+
+\begin{theorem}[Composition Overhead]
+For nested oblivious structures with depths $d_1, \ldots, d_k$ and overheads $O_1, \ldots, O_k$:
+\begin{equation}
+\text{Total Overhead} = \prod_{i=1}^k O_i(N^{1/k})
+\end{equation}
+\end{theorem}
+
+\subsection{Partial Obliviousness Patterns}
+
+\begin{example}[Selectively Oblivious Operations]
+Database table with:
+\begin{itemize}
+    \item Public schema: $(id, \text{name}, \Obv{\text{salary}})$
+    \item Oblivious salary field
+    \item Clear name lookups
+    \item Oblivious salary queries
+\end{itemize}
+Implementation:
+\begin{verbatim}
+struct Record {
+    int id;                    // Clear
+    string name;               // Clear
+    Oblivious<int> salary;     // Hidden
+};
+\end{verbatim}
+\end{example}
+
+\section{Differential Obliviousness}
+
+\subsection{Relaxed Security Definition}
+
+\begin{definition}[$(\epsilon, \delta)$-Differential Obliviousness]
+Access patterns $\Pattern{x}$ and $\Pattern{y}$ for neighboring inputs satisfy:
+\begin{equation}
+\Prob{\Pattern{x} \in S} \leq e^\epsilon \cdot \Prob{\Pattern{y} \in S} + \delta
+\end{equation}
+\end{definition}
+
+\subsection{Differentially Oblivious Structures}
+
+\begin{construction}[DO-Tree]
+Binary search tree with noise:
+\begin{enumerate}
+    \item Add dummy nodes with probability $p$
+    \item Randomly traverse extra paths
+    \item Provides $(\epsilon, 0)$-differential obliviousness
+    \item Overhead: $O(\log N \cdot e^\epsilon)$
+\end{enumerate}
+\end{construction}
+
+\begin{theorem}[DO-Overhead Trade-off]
+For $\epsilon$-differentially oblivious data structure:
+\begin{equation}
+\text{Overhead} \geq \Omega\left(\frac{\log N}{e^\epsilon}\right)
+\end{equation}
+\end{theorem}
+
+\section{Performance Optimizations}
+
+\subsection{Batching and Amortization}
+
+\begin{construction}[Batched Oblivious Operations]
+Process $B$ operations together:
+\begin{enumerate}
+    \item Sort operations by key obliviously
+    \item Scan structure once, handling all operations
+    \item Amortized overhead: $O(\log N / B)$ per operation
+\end{enumerate}
+\end{construction}
+
+\subsection{Hardware Acceleration}
+
+\begin{example}[SGX-Accelerated Oblivious Structures]
+\begin{itemize}
+    \item Store plaintext structure in enclave
+    \item Access patterns hidden by hardware
+    \item Orders of magnitude faster than pure ORAM
+    \item Trust hardware security guarantees
+\end{itemize}
+\end{example}
+
+\subsection{Parallel Oblivious Algorithms}
+
+\begin{construction}[Parallel Oblivious Sort]
+AKS sorting network:
+\begin{itemize}
+    \item $O(\log N)$ depth
+    \item $O(N \log N)$ comparisons
+    \item Fully parallelizable
+    \item Theoretically optimal, high constants
+\end{itemize}
+\end{construction}
+
+\section{Applications}
+
+\subsection{Oblivious Databases}
+
+\begin{example}[ObliDB Architecture]
+\begin{itemize}
+    \item Tables stored as oblivious B-trees
+    \item Indexes use oblivious hash tables
+    \item Joins via oblivious sorting
+    \item Query planning hides access patterns
+\end{itemize}
+\end{example}
+
+\subsection{Secure Multi-Party Computation}
+
+\begin{example}[MPC with Oblivious Data Structures]
+\begin{itemize}
+    \item Parties share data in oblivious structures
+    \item Operations hide both data and access patterns
+    \item Combine with secret sharing or garbled circuits
+    \item Applications: Private set intersection, auctions
+\end{itemize}
+\end{example}
+
+\subsection{Privacy-Preserving Analytics}
+
+\begin{example}[Oblivious Aggregation]
+\begin{verbatim}
+ObliviousMap<UserID, Oblivious<Stats>> userStats;
+for (auto& [user, stats] : obliviously_iterate(userStats)) {
+    stats.update(new_data);  // Hidden update
+}
+\end{verbatim}
+Updates don't reveal which users are active.
+\end{example}
+
+\section{Lower Bounds and Impossibility Results}
+
+\begin{theorem}[Goldreich-Ostrovsky Lower Bound]
+Any oblivious simulation of arbitrary RAM programs requires:
+\begin{equation}
+\Omega(\log N) \text{ overhead per access}
+\end{equation}
+\end{theorem}
+
+\begin{theorem}[Sorting Network Lower Bound]
+Any oblivious sorting network requires:
+\begin{equation}
+\Omega(N \log N) \text{ comparisons}
+\end{equation}
+\end{theorem}
+
+\begin{theorem}[Graph Algorithm Lower Bounds]
+For dense graphs with $\Theta(n^2)$ edges:
+\begin{itemize}
+    \item Cannot achieve $o(n^2)$ oblivious traversal
+    \item Matches naive scanning lower bound
+\end{itemize}
+\end{theorem}
+
+\section{Future Directions}
+
+\subsection{Learned Oblivious Structures}
+
+\begin{itemize}
+    \item Use ML to predict access patterns
+    \item Optimize dummy accesses based on workload
+    \item Maintain obliviousness guarantee
+\end{itemize}
+
+\subsection{Quantum Oblivious Data Structures}
+
+\begin{itemize}
+    \item Quantum superposition of access patterns
+    \item Grover's algorithm with hidden queries
+    \item Potential quadratic speedups
+\end{itemize}
+
+\subsection{Oblivious Persistent Data Structures}
+
+\begin{itemize}
+    \item Hide version history access patterns
+    \item Oblivious fork and merge operations
+    \item Applications to version control systems
+\end{itemize}
+
+\section{Conclusions}
+
+Oblivious data structures provide systematic ways to hide access patterns while maintaining functionality. Key insights:
+
+\begin{itemize}
+    \item \textbf{Granularity matters}: Not all parts need obliviousness
+    \item \textbf{Composition is powerful}: Build complex structures from simple oblivious primitives
+    \item \textbf{Trade-offs are fundamental}: Cannot avoid overhead for perfect obliviousness
+    \item \textbf{Relaxation helps}: Differential obliviousness reduces overhead significantly
+\end{itemize}
+
+The notation system for specifying which parts are oblivious proves essential:
+\begin{itemize}
+    \item $\Obv{T}$ vs. $T$ with $\Obv{}$ components
+    \item Clear specification enables precise security analysis
+    \item Supports fine-grained privacy policies
+\end{itemize}
+
+As data privacy becomes critical, oblivious data structures transition from theoretical curiosity to practical necessity. The framework presented here provides the foundation for building systems that compute on sensitive data without leaking information through access patterns.
+
+\bibliography{references}
+
+\end{document}

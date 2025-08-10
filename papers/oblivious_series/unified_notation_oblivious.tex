@@ -1,0 +1,200 @@
+% Unified Notation for Oblivious Computing Series
+% Focus: Precisely specifying WHICH parts are oblivious
+
+% ============================================
+% Core Oblivious Type Constructors
+% ============================================
+
+% Basic oblivious wrapper - makes entire type oblivious
+\newcommand{\Obv}[1]{\mathcal{O}\langle #1 \rangle}
+
+% Partial oblivious - only specific components are oblivious
+% Examples:
+%   (T, \Obv{U}) - second component oblivious
+%   \Obv{(T, U)} - entire tuple oblivious (entangled)
+%   (\Obv{T}, \Obv{U}) - both components independently oblivious
+
+% ============================================
+% Granularity Markers
+% ============================================
+
+% Component-level oblivious (independent)
+\newcommand{\ObvComp}[1]{\mathcal{O}_c\langle #1 \rangle}
+
+% Structure-level oblivious (entangled)
+\newcommand{\ObvStruct}[1]{\mathcal{O}_s\langle #1 \rangle}
+
+% Type-level oblivious (even the type itself is hidden)
+\newcommand{\ObvType}[1]{\mathcal{O}_t\langle #1 \rangle}
+
+% ============================================
+% Oblivious Product Types
+% ============================================
+
+% Independent oblivious components
+\newcommand{\ObvProd}[2]{(\Obv{#1}, \Obv{#2})}
+
+% Entangled oblivious pair
+\newcommand{\ObvPair}[2]{\Obv{(#1, #2)}}
+
+% Mixed oblivious (first clear, second oblivious)
+\newcommand{\MixedProd}[2]{(#1, \Obv{#2})}
+
+% ============================================
+% Oblivious Sum Types
+% ============================================
+
+% Tag is clear, value is oblivious
+\newcommand{\ObvSum}[2]{#1 + \Obv{#2}}
+
+% Both tag and value are oblivious
+\newcommand{\ObvTagSum}[2]{\Obv{(#1 + #2)}}
+
+% ============================================
+% Oblivious Function Types
+% ============================================
+
+% Function with oblivious output
+\newcommand{\ObvOut}[2]{#1 \to \Obv{#2}}
+
+% Function with oblivious input
+\newcommand{\ObvIn}[2]{\Obv{#1} \to #2}
+
+% Fully oblivious function
+\newcommand{\ObvFun}[2]{\Obv{(#1 \to #2)}}
+
+% Oblivious function application
+\newcommand{\ObvApp}[2]{\Obv{#1}(#2)}
+
+% ============================================
+% Oblivious Collections
+% ============================================
+
+% Oblivious set - membership is oblivious
+\newcommand{\ObvSet}[1]{\Obv{\mathcal{P}(#1)}}
+
+% Set of oblivious elements
+\newcommand{\SetObv}[1]{\mathcal{P}(\Obv{#1})}
+
+% Oblivious map - lookups are oblivious
+\newcommand{\ObvMap}[2]{\Obv{(#1 \to #2)}}
+
+% Map with oblivious values
+\newcommand{\MapObv}[2]{#1 \to \Obv{#2}}
+
+% ============================================
+% Access Patterns and Leakage
+% ============================================
+
+% What leaks from accessing x
+\newcommand{\Leak}[1]{\mathcal{L}(#1)}
+
+% Access pattern for operation
+\newcommand{\Pattern}[1]{\pi(#1)}
+
+% Observable trace
+\newcommand{\Trace}[1]{\tau(#1)}
+
+% Hidden value
+\newcommand{\Hidden}[1]{\mathsf{h}(#1)}
+
+% Revealed/Observable value
+\newcommand{\Reveal}[1]{\tilde{#1}}
+
+% ============================================
+% Leakage Specifications
+% ============================================
+
+% No leakage
+\newcommand{\NoLeak}{\bot}
+
+% Size leakage only
+\newcommand{\SizeLeak}{\mathsf{size}}
+
+% Pattern leakage
+\newcommand{\PatternLeak}{\mathsf{pattern}}
+
+% Full leakage
+\newcommand{\FullLeak}{\top}
+
+% ============================================
+% Examples of Notation Usage
+% ============================================
+
+% Example 1: Oblivious map returning tuple
+% \ObvMap{K}{(T, U)} - entire map is oblivious, returns clear tuple
+% K \to \Obv{(T, U)} - clear map, returns oblivious tuple
+% K \to (\Obv{T}, \Obv{U}) - clear map, returns tuple with both components oblivious
+% \ObvMap{K}{(\Obv{T}, U)} - oblivious map, returns tuple with first component oblivious
+
+% Example 2: Nested oblivious structures
+% \Obv{\Obv{T}} - double oblivious (observation of an observation)
+% \ObvSet{\ObvPair{T}{U}} - oblivious set of oblivious pairs
+% \SetObv{(T, U)} - clear set of oblivious tuples
+
+% ============================================
+% Composition Rules
+% ============================================
+
+% Leakage composition (sequential)
+\newcommand{\LeakSeq}[2]{\Leak{#1} \oplus \Leak{#2}}
+
+% Leakage composition (parallel)
+\newcommand{\LeakPar}[2]{\Leak{#1} \parallel \Leak{#2}}
+
+% Leakage bound
+\newcommand{\LeakBound}[2]{\Leak{#1} \leq #2}
+
+% ============================================
+% Security Definitions
+% ============================================
+
+% Indistinguishability
+\newcommand{\Indist}{\approx}
+\newcommand{\CompIndist}{\approx_c}
+\newcommand{\StatIndist}{\approx_s}
+
+% Security parameter
+\newcommand{\SecParam}{\lambda}
+
+% Negligible function
+\newcommand{\Negl}[1]{\mathsf{negl}(#1)}
+
+% ============================================
+% Common Patterns
+% ============================================
+
+% Searchable encryption pattern
+\newcommand{\SearchEnc}[2]{\ObvMap{#1}{#2}}
+
+% PIR pattern (oblivious index, clear value)
+\newcommand{\PIR}[2]{\ObvIn{#1}{#2}}
+
+% ORAM pattern (oblivious address, oblivious value)
+\newcommand{\ORAM}[2]{\ObvFun{#1}{#2}}
+
+% ============================================
+% Notation Guide Box
+% ============================================
+
+\newcommand{\ObliviousNotationGuide}{%
+\begin{center}
+\fbox{
+\begin{minipage}{0.9\textwidth}
+\textbf{Oblivious Type Notation Guide}\\[0.5em]
+\begin{tabular}{ll}
+\textbf{Notation} & \textbf{Meaning} \\
+\hline
+$\Obv{T}$ & Type $T$ is oblivious \\
+$(T, \Obv{U})$ & Tuple with second component oblivious \\
+$\Obv{(T, U)}$ & Entire tuple is oblivious (entangled) \\
+$(\Obv{T}, \Obv{U})$ & Both components independently oblivious \\
+$\ObvMap{K}{V}$ & Oblivious map (lookups don't leak) \\
+$K \to \Obv{V}$ & Clear map with oblivious values \\
+$\Leak{x} = \NoLeak$ & Operation on $x$ leaks nothing \\
+$\Leak{x} = \SizeLeak$ & Operation on $x$ leaks size only \\
+\end{tabular}
+\end{minipage}
+}
+\end{center}
+}
