@@ -23,7 +23,6 @@
 \input{unified_notation_oblivious.tex}
 
 % Additional notation for Bernoulli types (from Bernoulli series)
-\newcommand{\Bernoulli}[2]{\mathcal{B}^{#2}\langle #1 \rangle}
 \newcommand{\BernBool}{\mathcal{B}\langle \Bool \rangle}
 \newcommand{\fprate}{\alpha}
 \newcommand{\fnrate}{\beta}
@@ -36,6 +35,7 @@
 \newtheorem{definition}[theorem]{Definition}
 \newtheorem{example}[theorem]{Example}
 \newtheorem{remark}[theorem]{Remark}
+\newtheorem{construction}[theorem]{Construction}
 
 \title{Secure Indexes through Oblivious Bernoulli Types: When Approximation Meets Privacy}
 \author{
@@ -48,7 +48,7 @@
 \maketitle
 
 \begin{abstract}
-We present a unified framework for secure indexes that combines oblivious computing with Bernoulli types, yielding data structures that are both space-efficient and privacy-preserving. Traditional secure indexes focus on hiding access patterns while maintaining exact results. Bloom filters provide space-efficient approximate membership but leak access patterns. We introduce \emph{oblivious Bernoulli types}—data structures where queries return oblivious probabilistic results. A secure index with oblivious Bernoulli membership returns $\Obv{\BernBool}$: an encrypted or otherwise hidden approximate Boolean. This composition provides multiple layers of protection: the oblivious wrapper hides access patterns while the Bernoulli type provides plausible deniability through false positives. We analyze the information-theoretic properties of these constructions, showing how approximation and obliviousness interact to bound leakage. We demonstrate that perfect hash filters, when made oblivious, achieve space-optimal secure indexes with tunable privacy-accuracy trade-offs. The framework extends to oblivious maps, sets, and relations, each returning oblivious Bernoulli results for their respective operations.
+We present a unified framework for secure indexes that combines oblivious computing with Bernoulli types, yielding data structures that are both space-efficient and privacy-preserving. Traditional secure indexes focus on hiding access patterns while maintaining exact results. Bloom filters provide space-efficient approximate membership but leak access patterns. We introduce \emph{oblivious Bernoulli types}—data structures where queries return oblivious probabilistic results. A secure index with oblivious Bernoulli membership returns $\Obv{\BernBool}$: an encrypted or otherwise hidden approximate Boolean. This composition provides multiple layers of protection: the oblivious wrapper hides access patterns while the Bernoulli type provides plausible deniability through false positives. We analyze the information-theoretic properties of these constructions, showing how approximation and obliviousness interact to bound leakage. We demonstrate that Bernoulli map constructions, when made oblivious, achieve efficient secure indexes with tunable privacy-accuracy trade-offs through our hash-based encoding framework. The framework extends to oblivious maps, sets, and relations, each returning oblivious Bernoulli results for their respective operations.
 \end{abstract}
 
 \ObliviousNotationGuide
@@ -195,25 +195,61 @@ When $\fprate = 1/2$ (random guessing), $\MutInfo{x \in S}{\BernBool} = 0$.
 
 \section{Constructions}
 
-\subsection{Oblivious Perfect Hash Filter}
+\subsection{The Representation as Random Noise Requirement}
 
-Perfect hash filters achieve space-optimal Bernoulli sets. Making them oblivious:
+\begin{definition}[Maximum Entropy Representation]
+A secure index representation $R$ achieves maximum entropy if:
+\begin{equation}
+H(R) = |R| \text{ bits}
+\end{equation}
+where $|R|$ is the bit length of the representation.
+\end{definition}
 
-\begin{definition}[Oblivious PHF]
-Given set $S$ and hash family $\mathcal{H}$:
+\begin{remark}[Why Bloom Filters Fall Short]
+Bloom filters do NOT achieve maximum entropy:
+\begin{itemize}
+    \item Bit patterns reveal load factor: $\rho = $ (number of 1s) / $m$
+    \item Can estimate number of elements: $n \approx -\frac{m \ln(1-\rho)}{k}$
+    \item Sparse filters are easily distinguished from dense ones
+    \item Pattern of set bits leaks insertion order information
+\end{itemize}
+The representation itself leaks information before any query!
+\end{remark}
+
+\begin{theorem}[Bernoulli Maps Achieve Maximum Entropy]
+The Bernoulli map construction produces representations indistinguishable from random:
+\begin{itemize}
+    \item Each encoding is a uniform 256-bit hash value
+    \item Cannot determine number of elements from representation
+    \item Cannot distinguish empty from full sets
+    \item Passes all statistical tests for randomness
+\end{itemize}
+\end{theorem}
+
+\begin{proof}
+By construction, ValidEncodings are sized to make the output distribution uniform over $\{0,1\}^{256}$. Any representation is equally likely regardless of the underlying set.
+\end{proof}
+
+\subsection{Oblivious Bernoulli Map Construction}
+
+Our approach uses the hash-based Bernoulli map construction with encoding sets, made oblivious:
+
+\begin{definition}[Oblivious Bernoulli Map]
+Given set $S$ and hash function $h$, for membership function $f: U \to \Bool$:
 \begin{enumerate}
-    \item Find $h \in \mathcal{H}$ such that $h$ is injective on $S$
-    \item Store encrypted bitmap $\Enc{B}$ where $B[h(x)] = 1 \iff x \in S$
-    \item Queries use oblivious access: $\ObvIn{x}{\Enc{B}[h(x)]}$
+    \item Find seed $s$ such that $\forall x \in S: h(x \| s) \in \text{ValidEncodings}(\True)$
+    \item Store encrypted mapping $\Enc{\hat{f}}$ where $\hat{f}(x) = h(x \| s)$
+    \item Queries use oblivious evaluation: $\Obv{\hat{f}(x)} \in \text{ValidEncodings}(x \in S)$
 \end{enumerate}
 \end{definition}
 
-\begin{theorem}[Space Optimality]
-Oblivious PHF achieves:
+\begin{theorem}[Properties]
+Oblivious Bernoulli map achieves:
 \begin{itemize}
-    \item Space: $n/\ln 2 + O(\log n)$ bits for $n$ elements
-    \item False positive rate: $\fprate = 2^{-k}$ for $k$ extra bits per element
+    \item Space: $O(n \log(1/\fprate))$ bits for $n$ elements
+    \item False positive rate: $\fprate = |\text{ValidEncodings}(\True)|/2^m$ 
     \item Access pattern leakage: $\Leak{} = \NoLeak$ (perfect obliviousness)
+    \item Single hash evaluation per query (vs. $k$ for Bloom filters)
 \end{itemize}
 \end{theorem}
 
@@ -305,8 +341,8 @@ Returns:
 \caption{PSI via Oblivious Bernoulli Types}
 \KwIn{Alice has $\Obv{S_A}$, Bob has $\Obv{S_B}$}
 \KwOut{$\Obv{S_A \cap S_B}$ with Bernoulli membership}
-Alice creates $\SI_A \gets \mathsf{ObliviousPHF}(S_A)$\;
-Bob creates $\SI_B \gets \mathsf{ObliviousPHF}(S_B)$\;
+Alice creates $\SI_A \gets \mathsf{ObliviousBernoulliMap}(S_A)$\;
+Bob creates $\SI_B \gets \mathsf{ObliviousBernoulliMap}(S_B)$\;
 \For{each $x \in \Universe$ (obliviously)}{
     $\Obv{b_A} \gets \SI_A.\mathsf{query}(x)$\;
     $\Obv{b_B} \gets \SI_B.\mathsf{query}(x)$\;
@@ -349,6 +385,63 @@ Information-theoretic minimum space is $n\log(1/\fprate)$ bits.
 Each bit of leakage can save at most 1 bit of space.
 With $\delta$ bits leaked per element, save at most $\delta \cdot n$ bits.
 \end{proof}
+
+\section{Correlation Hiding Through Tuple Encoding}
+
+\subsection{The Correlation Problem in Secure Indexes}
+
+\begin{definition}[Query Correlation Leakage]
+When querying for multiple terms, separate encodings reveal:
+\begin{itemize}
+    \item Which queries are related (temporal correlation)
+    \item How often terms co-occur (statistical correlation)
+    \item Query structure and relationships
+\end{itemize}
+\end{definition}
+
+\begin{construction}[Tuple-Based Secure Indexing]
+Instead of indexing terms separately:
+\begin{enumerate}
+    \item Index frequent term pairs as tuples: $h((t_1, t_2))$
+    \item Index frequent triples: $h((t_1, t_2, t_3))$
+    \item Size proportional to $1/p(tuple)$ for uniformity
+    \item Query becomes single hash lookup
+\end{enumerate}
+\end{construction}
+
+\begin{example}[Document Indexing with Tuples]
+Document contains: "encryption security protocol"
+\begin{itemize}
+    \item Traditional: Index $\{h(\text{encryption}), h(\text{security}), h(\text{protocol})\}$
+    \item With tuples: Also index $\{h((\text{encryption}, \text{security})),$ $h((\text{security}, \text{protocol}))\}$
+    \item Query "encryption AND security": Use $h((\text{encryption}, \text{security}))$
+    \item Observer cannot distinguish from single-term query
+\end{itemize}
+\end{example}
+
+\subsection{Adaptive Tuple Selection}
+
+\begin{construction}[Frequency-Based Tuple Creation]
+\begin{algorithm}[H]
+\caption{Adaptive Tuple Index Construction}
+\KwIn{Documents $D$, frequency threshold $\tau$}
+\KwOut{Secure index with tuples}
+// Count term co-occurrences\;
+\For{each document $d \in D$}{
+    \For{each term pair $(t_i, t_j)$ in $d$}{
+        $\text{count}[(t_i, t_j)]++$\;
+    }
+}
+// Create tuples for frequent pairs\;
+\For{each pair $(t_i, t_j)$}{
+    \If{$\text{count}[(t_i, t_j)] / |D| > \tau$}{
+        Create tuple encoding $h((t_i, t_j))$\;
+        Set $|\text{ValidEncodings}((t_i, t_j))| \propto 1/p(t_i, t_j)$\;
+    }
+}
+\Return{Index with both terms and tuples}
+\end{algorithm}
+\end{construction}
 
 \section{Security Analysis}
 

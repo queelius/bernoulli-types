@@ -114,6 +114,37 @@ Consider map $M: K \to V$:
 
 \section{Foundational Techniques}
 
+\subsection{Bernoulli Map Construction for Oblivious Structures}
+
+Our primary approach uses Bernoulli map constructions to achieve obliviousness:
+
+\begin{definition}[Oblivious Data Structure via Hash Encoding]
+For data structure $D$ with operations $\text{ops}: D \times \text{Query} \to \text{Result}$, we construct:
+\begin{equation}
+\widehat{\text{ops}}: \widehat{D} \times \widehat{\text{Query}} \to \widehat{\text{Result}}
+\end{equation}
+where all observable values are uniform hash values.
+\end{definition}
+
+\textbf{Key Insight}: Rather than hiding access patterns through complex protocols (like ORAM), we make all accesses look uniformly random by encoding data as hash values with appropriate distributions.
+
+\begin{example}[Oblivious Map via Bernoulli Construction]
+For map $M: K \to V$:
+\begin{enumerate}
+    \item Encode each $(k, v)$ pair using hash $h(k \| \text{seed}) \in \text{ValidEncodings}(v)$
+    \item Size encodings to achieve uniformity: $|\text{ValidEncodings}(v)| \propto 1/\Prob{v}$
+    \item All lookups appear as uniform hash evaluations
+    \item Invalid keys naturally produce random outputs
+\end{enumerate}
+\end{example}
+
+This approach provides:
+\begin{itemize}
+    \item \textbf{Perfect obliviousness}: All operations look like random hash evaluations
+    \item \textbf{Efficiency}: Single hash computation per operation
+    \item \textbf{Composability}: Complex structures built from simpler oblivious maps
+\end{itemize}
+
 \subsection{Oblivious RAM (ORAM)}
 
 The fundamental building block for oblivious data structures:
@@ -462,6 +493,60 @@ $found_2 \gets (k_2 == k)$\;
     \item Obliviously swap elements based on distances
     \item Hide actual probe sequence length
 \end{itemize}
+\end{construction}
+
+\section{Tuple Encoding Strategies for Data Structures}
+
+\subsection{Composite Key Operations}
+
+\begin{definition}[Tuple-Based Operations]
+For operations on multiple keys:
+\begin{itemize}
+    \item \textbf{Separate}: $\text{op}(\hat{k}_1, \hat{k}_2)$ - reveals relationship
+    \item \textbf{Tuple}: $\text{op}(\widehat{(k_1, k_2)})$ - hides correlation
+\end{itemize}
+\end{definition}
+
+\begin{construction}[Oblivious Multi-Key Operations]
+\begin{algorithm}[H]
+\caption{Tuple-Based Batch Operations}
+\KwIn{Keys $(k_1, \ldots, k_n)$, operation type}
+\KwOut{Results without correlation leakage}
+// Determine correlation threshold\;
+$\tau \gets$ ComputeCorrelationThreshold()\;
+// Group correlated keys\;
+$groups \gets \emptyset$\;
+\For{each subset $S \subseteq \{k_1, \ldots, k_n\}$}{
+    \If{$\text{correlation}(S) > \tau$}{
+        $groups \gets groups \cup \{\text{EncodeTuple}(S)\}$\;
+    }
+}
+// Process as single operations\;
+\For{each $g \in groups$}{
+    ProcessOblivious($g$)\;
+}
+\end{algorithm}
+\end{construction}
+
+\begin{example}[Range Query as Tuple]
+Range query $[k_{\min}, k_{\max}]$:
+\begin{itemize}
+    \item Traditional: Reveals range boundaries separately
+    \item Tuple: $\widehat{(k_{\min}, k_{\max})}$ - single oblivious value
+    \item Server processes entire range atomically
+\end{itemize}
+\end{example}
+
+\subsection{Adaptive Granularity Selection}
+
+\begin{construction}[Dynamic Encoding Choice]
+Choose encoding based on:
+\begin{enumerate}
+    \item \textbf{Access frequency}: Common pairs $\to$ tuple encoding
+    \item \textbf{Correlation strength}: High correlation $\to$ tuple
+    \item \textbf{Security requirements}: Higher security $\to$ more tuples
+    \item \textbf{Performance constraints}: Balance with overhead
+\end{enumerate}
 \end{construction}
 
 \section{Composition of Oblivious Types}

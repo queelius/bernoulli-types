@@ -126,7 +126,7 @@ To hide real query patterns:
 \KwIn{Real queries $Q_{\text{real}}$, noise rate $\rho$}
 \For{$q \in Q_{\text{real}}$}{
     Submit $\hat{f}(\Encode{q})$\;
-    \With{probability $\rho$}{
+    \uIf{$\text{random}() < \rho$}{
         $u \leftarrow \text{random bits}$\;
         Submit $\hat{f}(u)$ \tcp{Invalid input, maps randomly}
     }
@@ -226,7 +226,7 @@ class ObliviousSystem:
         
         # Automatic noise
         if with_noise:
-            for _ in range(random_poisson(λ=1)):
+            for _ in range(random_poisson(lambda=1)):
                 noise = random_bits()
                 self.hash_eval(noise)  # Discarded but observable
                 

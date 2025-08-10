@@ -27,8 +27,8 @@
 \newcommand{\Query}{\mathsf{Query}}
 \newcommand{\Response}{\mathsf{Response}}
 \newcommand{\Retrieve}{\mathsf{Retrieve}}
-\newcommand{\Server}{\mathcal{S}}
-\newcommand{\Client}{\mathcal{C}}
+\newcommand{\Server}{\ensuremath{\mathcal{S}}}
+\newcommand{\Client}{\ensuremath{\mathcal{C}}}
 \newcommand{\Index}[1]{[#1]}
 \newcommand{\Block}{\mathsf{Block}}
 \newcommand{\ComCost}{\mathsf{CC}}
@@ -51,7 +51,7 @@
 \newtheorem{remark}[theorem]{Remark}
 \newtheorem{construction}[theorem]{Construction}
 
-\title{Private Information Retrieval: Oblivious Access to Public Data}
+\title{Private Information Retrieval: Oblivious Boolean Search and Document Retrieval}
 \author{
     Alexander Towell\\
     \texttt{atowell@siue.edu}
@@ -62,42 +62,59 @@
 \maketitle
 
 \begin{abstract}
-Private Information Retrieval (PIR) enables clients to retrieve data from servers without revealing which data was accessed. We present PIR as a fundamental instance of oblivious computing where the query itself must be oblivious. We explore the spectrum of PIR constructions from information-theoretic (multi-server) to computational (single-server) schemes, showing how they relate to our broader framework of oblivious types. We demonstrate surprising connections between PIR and the Boolean algebra approaches from cipher sets: OR-based constructions enable sublinear PIR through hierarchical hashing, while XOR-based constructions enable efficient batch PIR. We introduce the concept of approximate PIR, where queries return Bernoulli types with controlled error rates, achieving better communication complexity at the cost of perfect accuracy. The framework unifies diverse PIR schemes under the notation $\Obv{\Query} \to \Response$, where the oblivious query hides the access pattern while returning the desired data.
+Private Information Retrieval (PIR) enables clients to search and retrieve documents from servers without revealing their queries or which documents match. We present PIR not just as index-based retrieval but as oblivious Boolean search over document collections. Building on the Bernoulli framework for approximate search, we show how to make document retrieval oblivious: queries are hidden, access patterns are obscured, and results may be approximate (Bernoulli types). We explore the spectrum from simple keyword PIR to complex Boolean queries, showing how OR-based constructions enable membership testing while XOR-based constructions enable efficient batching. We demonstrate that accepting approximate results (documents with false positive matches) dramatically improves communication complexity. The framework unifies keyword search, Boolean queries, and ranked retrieval under the notation $\Obv{\text{Query}} \to \Bernoulli{\text{Documents}}{2}$, where both queries and results are oblivious.
 \end{abstract}
 
 \ObliviousNotationGuide
 
 \section{Introduction}
 
-\subsection{The PIR Problem}
+\subsection{The PIR Problem: From Index to Search}
 
-Consider a public database $\DB$ with $n$ items. A client wants item $i$ without the server learning $i$. The naive solution—download the entire database—requires $O(n)$ communication. PIR seeks to do better while hiding the query.
+Traditional PIR focuses on retrieving database items by index: given database $\DB[1..n]$, retrieve $\DB[i]$ without revealing $i$. But real information retrieval is about search: given a query $q$ (keywords, Boolean expression), retrieve matching documents without revealing $q$ or which documents match.
 
-\begin{example}[Real-World PIR Scenarios]
+We expand PIR to encompass:
 \begin{itemize}
-    \item \textbf{Patent searches}: Companies query patent databases without revealing research directions
-    \item \textbf{Stock quotes}: Traders retrieve prices without exposing trading strategies  
-    \item \textbf{DNS queries}: Users resolve domains without revealing browsing habits
-    \item \textbf{Certificate transparency}: Check certificates without exposing which sites you visit
+    \item \textbf{Keyword PIR}: Retrieve documents containing keyword $w$ obliviously
+    \item \textbf{Boolean PIR}: Retrieve documents matching Boolean query $(w_1 \land w_2) \lor w_3$
+    \item \textbf{Approximate PIR}: Accept false positives for better efficiency
+    \item \textbf{Ranked PIR}: Retrieve top-$k$ documents by relevance score
+\end{itemize}
+
+\begin{example}[Real-World Search Scenarios]
+\begin{itemize}
+    \item \textbf{Patent searches}: Search for patents with keywords like "blockchain AND consensus" without revealing research focus
+    \item \textbf{Medical literature}: Doctors search "symptom1 OR symptom2 AND treatment" privately
+    \item \textbf{Legal discovery}: Search documents for "fraud OR embezzlement" without revealing investigation
+    \item \textbf{News monitoring}: Track articles mentioning "company AND (merger OR acquisition)" obliviously
 \end{itemize}
 \end{example}
 
 \subsection{PIR in the Oblivious Framework}
 
-PIR fits naturally into our oblivious type system:
+PIR naturally extends to Boolean search within our oblivious type system:
 
-\begin{definition}[PIR as Oblivious Function]
-A PIR scheme implements:
+\begin{definition}[PIR as Oblivious Search]
+A PIR search scheme implements:
 \begin{equation}
-\mathsf{PIR}: \Obv{\Index{n}} \to \DB\Index{i}
+\mathsf{PIR}: \Obv{\text{Query}} \to \Bernoulli{\mathcal{P}(\text{Documents})}{2}
 \end{equation}
 where:
 \begin{itemize}
-    \item $\Obv{\Index{n}}$: Oblivious query for index $i \in [n]$
-    \item $\DB\Index{i}$: The $i$-th database item (cleartext result)
-    \item Server cannot distinguish queries for different indices
+    \item $\Obv{\text{Query}}$: Hidden Boolean query (keywords, AND/OR/NOT)
+    \item $\Bernoulli{\mathcal{P}(\text{Documents})}{2}$: Approximate result set with false positives
+    \item Server cannot determine query terms or matching documents
 \end{itemize}
 \end{definition}
+
+\begin{remark}[Connection to Bernoulli Search]
+This builds directly on the Bernoulli search framework:
+\begin{itemize}
+    \item Documents are indexed as Bernoulli sets (Bloom filters)
+    \item Queries return approximate results (false positives, no false negatives)
+    \item Obliviousness hides both queries and access patterns
+\end{itemize}
+\end{remark}
 
 \subsection{The Fundamental Trade-off}
 
@@ -111,6 +128,21 @@ This motivates three approaches:
     \item \textbf{Computational assumptions}: Sublinear communication with cryptography
     \item \textbf{Approximate retrieval}: Allow errors for better efficiency
 \end{enumerate}
+
+\section{Part I: Index-Based PIR}
+
+\subsection{The Simplest Case: Array Index Retrieval}
+
+\begin{definition}[Basic PIR]
+Retrieve element $\DB[i]$ from array $\DB[1..n]$ without revealing $i$.
+\end{definition}
+
+This is the classical PIR problem. While limited, it forms the foundation for more complex retrieval:
+\begin{itemize}
+    \item Documents can be viewed as array elements
+    \item Keywords map to array indices via hashing
+    \item Complex queries decompose to multiple index retrievals
+\end{itemize}
 
 \section{Information-Theoretic PIR}
 
@@ -221,6 +253,587 @@ Build $k$-level hierarchy:
     \item Query descends tree using OR-membership tests
 \end{enumerate}
 Communication: $O(k \cdot n^{1/k} \cdot m)$.
+\end{construction}
+
+\section{Part II: Keyword and Boolean Search PIR}
+
+\subsection{From Index-Based to Keyword-Based PIR}
+
+\begin{definition}[Keyword PIR]
+Given documents $D = \{d_1, \ldots, d_n\}$ indexed by keywords:
+\begin{itemize}
+    \item Client has keyword $w$
+    \item Server has inverted index: $I(w) = \{d : w \in d\}$
+    \item Goal: Retrieve $I(w)$ without revealing $w$
+\end{itemize}
+\end{definition}
+
+\begin{construction}[Oblivious Keyword Search]
+\begin{enumerate}
+    \item Each document indexed as Bernoulli set (Bloom filter)
+    \item Query: Oblivious membership test for keyword
+    \item Result: Documents with positive membership (may include false positives)
+\end{enumerate}
+\end{construction}
+
+\subsection{Boolean Query PIR}
+
+\begin{definition}[Boolean Query Language]
+Queries constructed from:
+\begin{itemize}
+    \item Atoms: Individual keywords $w$
+    \item Conjunction: $q_1 \land q_2$ (both terms)
+    \item Disjunction: $q_1 \lor q_2$ (either term)
+    \item Negation: $\neg q$ (not containing term)
+\end{itemize}
+\end{definition}
+
+\begin{theorem}[Error Propagation in Boolean PIR]
+For Bernoulli indexes with false positive rate $\alpha$:
+\begin{align}
+\text{FPR}(q_1 \land q_2) &= \alpha^2 \text{ (assuming independence)}\\
+\text{FPR}(q_1 \lor q_2) &= 1 - (1-\alpha)^2\\
+\text{FPR}(\neg q) &= 1 - \alpha \text{ (becomes false negative rate)}
+\end{align}
+\end{theorem}
+
+\begin{construction}[Oblivious Boolean Search]
+\begin{algorithm}[H]
+\caption{Private Boolean Query Evaluation}
+\KwIn{Oblivious query $\Obv{q}$, Document indexes $\{\text{BF}_1, \ldots, \text{BF}_n\}$}
+\KwOut{$\Obv{\text{ResultSet}}$}
+Parse $\Obv{q}$ into oblivious syntax tree\;
+\For{each document $d_i$}{
+    $\text{match}_i \gets$ EvaluateOblivious($\Obv{q}$, $\text{BF}_i$)\;
+    Add $d_i$ to result if $\text{match}_i = \text{true}$\;
+}
+\Return{Oblivious set of matching documents}
+\end{algorithm}
+\end{construction}
+
+\subsection{Space-Optimal Boolean PIR}
+
+\begin{theorem}[Bernoulli Map Advantage]
+Using Bernoulli map construction instead of standard Bloom filters:
+\begin{itemize}
+    \item Single hash evaluation per keyword (vs. $k$ for Bloom)
+    \item Uniform distribution of stored values (maximum entropy)
+    \item Cannot distinguish empty from full documents
+    \item Representation indistinguishable from random noise
+\end{itemize}
+\end{theorem}
+
+\begin{example}[Complex Query]
+Query: "(machine learning OR artificial intelligence) AND NOT classification"
+\begin{enumerate}
+    \item Hash each term to uniform value using Bernoulli map
+    \item Evaluate Boolean expression obliviously per document
+    \item Return documents matching (with false positive rate $\alpha_{\text{compound}}$)
+    \item Client filters false positives locally if needed
+\end{enumerate}
+\end{example}
+
+\section{Part III: Ranked Retrieval PIR}
+
+\subsection{From Boolean to Ranked Search}
+
+\begin{definition}[Ranked PIR]
+Retrieve top-$k$ documents by relevance score without revealing:
+\begin{itemize}
+    \item Query terms and their weights
+    \item Which documents are retrieved
+    \item The scoring function used
+\end{itemize}
+\end{definition}
+
+\subsection{TF-IDF with Oblivious Computation}
+
+\begin{construction}[Private TF-IDF]
+\begin{enumerate}
+    \item Precompute: Encrypted term frequencies per document
+    \item Query time: Obliviously compute TF-IDF scores
+    \item Use garbled circuits for comparison
+    \item Return top-$k$ without revealing scores
+\end{enumerate}
+\end{construction}
+
+\begin{theorem}[Ranked PIR Complexity]
+For $n$ documents, retrieving top-$k$ by TF-IDF:
+\begin{itemize}
+    \item Communication: $O(n)$ document scores
+    \item Computation: $O(n \log k)$ for top-$k$ selection
+    \item Can improve to $O(\sqrt{n})$ rounds with interaction
+\end{itemize}
+\end{theorem}
+
+\subsection{BM25 and Advanced Scoring}
+
+\begin{construction}[Oblivious BM25]
+BM25 scoring with parameters $k_1$, $b$:
+\begin{equation}
+\text{score}(d, q) = \sum_{t \in q} \text{IDF}(t) \cdot \frac{f(t, d) \cdot (k_1 + 1)}{f(t, d) + k_1 \cdot (1 - b + b \cdot |d|/\text{avgdl})}
+\end{equation}
+Computed obliviously using:
+\begin{itemize}
+    \item Homomorphic encryption for arithmetic
+    \item Secure multiparty computation for division
+    \item Differential privacy for score perturbation
+\end{itemize}
+\end{construction}
+
+\subsection{Approximate Ranked Retrieval}
+
+\begin{definition}[$(\epsilon, \delta)$-Approximate Ranking]
+Return ranking $\pi'$ where:
+\begin{equation}
+\Prob{|\text{rank}_{\pi'}(d) - \text{rank}_{\pi}(d)| \leq \epsilon} \geq 1 - \delta
+\end{equation}
+for true ranking $\pi$.
+\end{definition}
+
+\begin{construction}[Noisy Ranking]
+\begin{enumerate}
+    \item Add Laplace noise to scores: $\tilde{s} = s + \text{Lap}(\lambda)$
+    \item Sort by noisy scores
+    \item Provides differential privacy on ranking
+\end{enumerate}
+\end{construction}
+
+\section{Part IV: Advanced Query Techniques}
+
+\subsection{Tuple Encoding for Phrase Search}
+
+\begin{definition}[Tuple vs Independent Encoding]
+For terms $x, y$:
+\begin{itemize}
+    \item \textbf{Independent}: $\Obv{x}, \Obv{y}$ - two separate oblivious values
+    \item \textbf{Tuple}: $\Obv{(x,y)}$ - single oblivious value for the pair
+\end{itemize}
+\end{definition}
+
+\begin{construction}[N-gram Indexing to Hide Boolean AND Correlations]
+The PRIMARY purpose is hiding correlations in Boolean queries:
+\begin{enumerate}
+    \item \textbf{The correlation problem}:
+        \begin{itemize}
+            \item Query "encryption" AND "backdoor" reveals security research
+            \item Query "merger" AND "CompanyX" reveals business intelligence
+            \item Sending $h(x), h(y)$ separately exposes the correlation
+        \end{itemize}
+    \item \textbf{Solution - Index tuples}:
+        \begin{itemize}
+            \item Index unigrams: $\{h(w_1), h(w_2), \ldots, h(w_n)\}$
+            \item ALSO index bigrams: $\{h((w_i, w_j))\}$ for pairs
+            \item Can be adjacent pairs or all pairs depending on space
+        \end{itemize}
+    \item \textbf{Obfuscated Boolean AND}:
+        \begin{itemize}
+            \item Want: Documents with $x$ AND $y$
+            \item Send: $h((x,y))$ instead of $h(x), h(y)$
+            \item Server sees: Single hash lookup
+            \item Hidden: The correlation between terms
+        \end{itemize}
+\end{enumerate}
+\end{construction}
+
+\begin{remark}[The Real Purpose: Hiding Boolean AND Correlations]
+The PRIMARY goal is hiding correlations in Boolean queries:
+\begin{itemize}
+    \item Sending $h(x), h(y)$ reveals you want BOTH (correlation leak!)
+    \item Sending $h((x,y))$ hides both terms AND their relationship
+    \item Server cannot decompose hash to learn anything
+\end{itemize}
+Phrase search is a secondary benefit, not the main purpose.
+\end{remark}
+
+\begin{construction}[Frequency-Based N-gram Selection]
+Apply the same $1/p(x)$ encoding principle to n-gram creation:
+\begin{enumerate}
+    \item \textbf{Measure correlation frequency}: $p(x,y)$ = how often $x$ and $y$ searched together
+    \item \textbf{Create n-grams proportionally}: 
+        \begin{itemize}
+            \item High frequency pairs: Always create bigram $h((x,y))$
+            \item Medium frequency: Create with probability $\propto 1/p(x,y)$
+            \item Low frequency: Don't create (use individual hashes)
+        \end{itemize}
+    \item \textbf{Encoding count}: For frequent correlation $(x,y)$:
+        \begin{equation}
+        |\text{Encodings}((x,y))| \propto \frac{1}{p(x,y)}
+        \end{equation}
+    \item \textbf{Result}: Common correlations get better privacy protection
+\end{enumerate}
+\end{construction}
+
+\begin{remark}[Unified Principle]
+The $1/p(\cdot)$ principle applies at multiple levels:
+\begin{itemize}
+    \item \textbf{Single terms}: $|\text{Encodings}(x)| \propto 1/p(x)$ for uniform distribution
+    \item \textbf{Bigrams}: $|\text{Encodings}((x,y))| \propto 1/p(x,y)$ for correlation hiding
+    \item \textbf{N-grams}: Create n-gram if $p(x_1, \ldots, x_n) > \tau$ threshold
+    \item \textbf{Effect}: Most sensitive/common patterns get strongest protection
+\end{itemize}
+This is the same principle used in homophonic substitution ciphers!
+\end{remark}
+
+\begin{theorem}[Space Complexity with N-grams]
+For document with $m$ terms ($k$ unique):
+\begin{itemize}
+    \item Unigrams: $k$ entries
+    \item Plus bigrams: Up to $k + \min(m-1, k^2)$ entries
+    \item Plus all trigrams: Up to $k + k^2 + k^3$ (exponential!)
+    \item Practical approach: Index only frequent n-grams
+    \item Space for Bernoulli set: $O(-n \log \alpha)$ bits for $n$ n-grams
+\end{itemize}
+\end{theorem}
+
+\begin{construction}[Selective N-gram Indexing]
+To control space explosion:
+\begin{enumerate}
+    \item Always index all unigrams
+    \item Index all adjacent bigrams
+    \item Index only frequent trigrams (e.g., "New York City")
+    \item Use frequency threshold: index n-gram if $f(n\text{-gram}) > \tau$
+    \item Result: $O(m \cdot \text{avg-phrase-length})$ instead of $O(m^n)$
+\end{enumerate}
+\end{construction}
+
+\begin{example}[Query Ambiguity in Practice]
+Consider searching for "machine learning algorithms":
+\begin{itemize}
+    \item \textbf{Option 1}: Three unigrams $\{h(\text{machine}), h(\text{learning}), h(\text{algorithms})\}$
+        \begin{itemize}
+            \item Reveals searching for three terms
+            \item Shows they're independent
+        \end{itemize}
+    \item \textbf{Option 2}: Two bigrams $\{h((\text{machine}, \text{learning})), h((\text{learning}, \text{algorithms}))\}$
+        \begin{itemize}
+            \item Could be phrase search
+            \item Could be two unrelated bigrams
+        \end{itemize}
+    \item \textbf{Option 3}: Mix $\{h(\text{machine}), h((\text{learning}, \text{algorithms}))\}$
+        \begin{itemize}
+            \item Even more ambiguous
+        \end{itemize}
+    \item \textbf{Key}: Server cannot distinguish intent from hash values alone
+\end{itemize}
+\end{example}
+
+\begin{remark}[Optional Type Disambiguation]
+While ambiguity provides privacy, we CAN disambiguate when needed:
+\begin{itemize}
+    \item Index: $h((\text{phrase}, (x, y)))$ for phrase "x y"
+    \item Index: $h((x, y))$ for documents with both x and y
+    \item Index: $h((\text{proximity}, (x, y), k))$ for x within k words of y
+\end{itemize}
+But this is secondary - the ambiguity itself is often the desired feature for privacy.
+\end{remark}
+
+\begin{remark}[The Main Insight]
+The key is that ALL these are just hash values in a Bernoulli set:
+\begin{enumerate}
+    \item $h(x)$ - unigram
+    \item $h((x,y))$ - bigram (ambiguous intent)
+    \item $h((\text{phrase}, (x,y)))$ - explicitly marked phrase
+    \item $h((x,y,z))$ - trigram
+\end{enumerate}
+To the server, they're all just uniform 256-bit values being tested for membership. The structure and relationships are completely hidden in the hash.
+\end{remark}
+
+\subsection{N-gram Extensions}
+
+\begin{construction}[Trigrams and Beyond]
+Extend to longer phrases:
+\begin{itemize}
+    \item Trigrams: $(w_i, w_{i+1}, w_{i+2})$ for 3-word phrases
+    \item Skip-grams: $(w_i, w_{i+k})$ for proximity search
+    \item Positional: $(w_i, i)$ for position-aware search
+\end{itemize}
+Trade-off: Exponential growth in index size vs query capability.
+\end{construction}
+
+\subsection{Binary Functions and Compositional Query Processing}
+
+\begin{definition}[Binary Function Encoding in PIR]
+For search operations involving binary functions $f(x,y)$:
+\begin{itemize}
+    \item \textbf{Separate encoding}: Query as $\hat{f}(\hat{x}, \hat{y})$ - reveals correlation
+    \item \textbf{Tuple encoding}: Query as $\hat{f}(\widehat{(x,y)})$ - hides correlation
+\end{itemize}
+\end{definition}
+
+\begin{example}[Boolean Search as Binary Function]
+AND operation in search is a binary function:
+\begin{itemize}
+    \item Traditional: Send $h(\text{``encryption''})$, $h(\text{``backdoor''})$ separately
+    \item Tuple approach: Send $h((\text{``encryption''}, \text{``backdoor''}))$
+    \item Server cannot distinguish from single-term query
+\end{itemize}
+\end{example}
+
+\begin{theorem}[Query Encoding Propagation]
+The initial encoding choice affects entire query processing:
+\begin{enumerate}
+    \item Start with tuple $\widehat{(x,y)}$: Server processes as atomic unit
+    \item Start with $\hat{x}, \hat{y}$: Server can analyze correlation patterns
+    \item Mixed: Different privacy levels for different query components
+\end{enumerate}
+\end{theorem}
+
+\begin{construction}[Flexible Query Processing]
+Design servers to handle both encodings:
+\begin{verbatim}
+QueryResult process_query(ObliviousQuery q) {
+    if (is_tuple_query(q)) {
+        // Process as single lookup
+        return lookup_tuple(q);
+    } else {
+        // Process as Boolean combination
+        results = [];
+        for (term in q.terms) {
+            results.append(lookup_single(term));
+        }
+        return combine_results(results, q.operator);
+    }
+}
+\end{verbatim}
+\end{construction}
+
+\begin{construction}[Hierarchical Query Encoding]
+For complex queries with multiple operators:
+\begin{enumerate}
+    \item Parse query into syntax tree
+    \item For each node, decide: tuple or separate encoding
+    \item High-correlation nodes: Use tuple encoding
+    \item Independent nodes: Use separate encoding
+    \item Balance privacy vs. query complexity
+\end{enumerate}
+\end{construction}
+
+\begin{example}[Complex Query Encoding]
+Query: ``(encryption AND security) OR (privacy AND differential)''
+\begin{itemize}
+    \item Option 1: Four separate terms (maximum correlation exposure)
+    \item Option 2: Two tuples - $\widehat{(\text{enc}, \text{sec})}$, $\widehat{(\text{priv}, \text{diff})}$
+    \item Option 3: Single tuple - $\widehat{(\text{entire query})}$ (maximum privacy)
+\end{itemize}
+\end{example}
+
+\begin{remark}[Generalization to N-ary Operations]
+The principle extends to any n-ary search operation:
+\begin{itemize}
+    \item Proximity search: $\hat{f}(\widehat{(x, y, \text{distance})})$
+    \item Phrase search: $\hat{f}(\widehat{(w_1, w_2, \ldots, w_n)})$
+    \item Field search: $\hat{f}(\widehat{(\text{field}, \text{value})})$
+\end{itemize}
+All become uniform hashes, hiding operation type and parameters.
+\end{remark}
+
+\subsection{Query Uniformization}
+
+\begin{definition}[Uniform Query Distribution]
+All queries appear identically distributed to adversary:
+\begin{equation}
+\forall q_1, q_2: \quad \Prob{\text{Observe}(q_1)} = \Prob{\text{Observe}(q_2)}
+\end{equation}
+\end{definition}
+
+\begin{construction}[Query Padding and Normalization]
+\begin{enumerate}
+    \item \textbf{Length normalization}: Pad all queries to fixed length
+    \item \textbf{Vocabulary masking}: Include dummy terms from fixed vocabulary
+    \item \textbf{Frequency hiding}: Inject terms to flatten distribution
+    \item \textbf{Temporal uniformization}: Issue queries at regular intervals
+\end{enumerate}
+\end{construction}
+
+\subsection{Query Perturbation and Noise Injection}
+
+\begin{definition}[Query Stream Perturbation]
+Modify query stream to hide patterns:
+\begin{itemize}
+    \item \textbf{Authentic queries}: Real user searches
+    \item \textbf{Artificial queries}: Injected noise queries
+    \item \textbf{Perturbed stream}: Mix that hides patterns
+\end{itemize}
+\end{definition}
+
+\begin{construction}[Artificial Query Injection]
+Strategies for noise queries:
+\begin{enumerate}
+    \item \textbf{Random terms}: Sample from vocabulary uniformly
+    \item \textbf{Popular terms}: Inject common queries to hide rare ones
+    \item \textbf{Correlated noise}: Add queries related to real ones
+    \item \textbf{Temporal smoothing}: Regular intervals to hide bursts
+\end{enumerate}
+\end{construction}
+
+\begin{theorem}[Entropy Increase]
+With artificial query rate $\lambda_{\text{fake}}$ and real rate $\lambda_{\text{real}}$:
+\begin{equation}
+H(\text{perturbed}) \approx H(\text{real}) + \log_2\left(1 + \frac{\lambda_{\text{fake}}}{\lambda_{\text{real}}}\right)
+\end{equation}
+Entropy increases logarithmically with noise rate.
+\end{theorem}
+
+\subsection{Homophonic Encoding}
+
+\begin{construction}[Multiple Encodings per Term]
+Each term maps to multiple possible encodings:
+\begin{enumerate}
+    \item Popular term $w_{\text{popular}}$ → many encodings $\{h_1, h_2, \ldots, h_k\}$
+    \item Rare term $w_{\text{rare}}$ → few encodings $\{h_1, h_2\}$
+    \item Choose encoding randomly for each query
+    \item Flattens frequency distribution
+\end{enumerate}
+\end{construction}
+
+\begin{remark}[When to Refresh Encodings]
+The Moving Average Bootstrap method~\cite{towell2016estimating} estimates $N^*$, the minimum number of encrypted queries an adversary needs to observe to achieve decoding accuracy $p^*$ with probability $\theta$. This provides a principled approach for determining when to:
+\begin{itemize}
+    \item Generate new trapdoor functions when approaching $N^*$ observations
+    \item Re-encode the index with fresh randomness before adversary reaches target accuracy
+    \item Update homophonic encoding mappings based on observed query distribution
+\end{itemize}
+The method estimates $N^*$ in 5\% of the time defenders would need to wait for legitimate users to submit enough queries for direct calculation, enabling proactive security updates.
+\end{remark}
+
+\begin{theorem}[Frequency Hiding]
+With encoding counts proportional to $1/\sqrt{f(w)}$ for frequency $f(w)$:
+\begin{itemize}
+    \item Observable frequency becomes uniform
+    \item Space overhead: $O(\sqrt{n})$ for $n$ term vocabulary
+    \item Perfect frequency hiding impossible with bounded space
+\end{itemize}
+\end{theorem}
+
+\subsection{Advanced Noise Techniques}
+
+\begin{construction}[Comprehensive Query Generator]
+The query generator produces three types of queries to obscure patterns:
+\begin{enumerate}
+    \item \textbf{Real queries}: Actual user queries encoded as trapdoors
+    \item \textbf{Random noise queries}: Uniformly random terms from vocabulary
+    \item \textbf{Distribution-shifting queries}: Real terms but with altered frequency
+\end{enumerate}
+\end{construction}
+
+\begin{algorithm}[H]
+\caption{Advanced Query Generator with Multiple Strategies}
+\KwIn{User query $q$, noise rate $\epsilon$, shift factor $\gamma$}
+\KwOut{Query stream $Q$ hiding patterns}
+// Initialize query stream\;
+$Q \gets \emptyset$\;
+// Level 1: Encode real query\;
+$q_{\text{trapdoor}} \gets$ GenerateTrapdoor($q$)\;
+$Q \gets Q \cup \{q_{\text{trapdoor}}\}$\;
+// Level 2: Random noise injection\;
+\For{$i = 1$ to $\text{Poisson}(\epsilon)$}{
+    $term \gets$ UniformRandom(Vocabulary)\;
+    $q_{\text{noise}} \gets$ GenerateTrapdoor($term$)\;
+    $Q \gets Q \cup \{q_{\text{noise}}\}$\;
+}
+// Level 3: Distribution shifting\;
+\If{Random() $< \gamma$}{
+    $q_{\text{shift}} \gets$ SampleFromTargetDistribution()\;
+    $Q \gets Q \cup \{q_{\text{shift}}\}$\;
+}
+// Level 4: Temporal uniformization\;
+ShuffleAndSchedule($Q$)\;
+\Return{$Q$}
+\end{algorithm}
+
+\begin{construction}[Frequency Analysis Mitigation]
+To prevent frequency analysis attacks:
+\begin{algorithm}[H]
+\caption{Distribution-Flattening Query Generator}
+\KwIn{Query history $H$, target distribution $D_{\text{target}}$}
+\KwOut{Modified query stream}
+// Compute current observed distribution\;
+$D_{\text{observed}} \gets$ ComputeFrequencies($H$)\;
+// Identify underrepresented terms\;
+$\text{deficit} \gets D_{\text{target}} - D_{\text{observed}}$\;
+// Generate compensating queries\;
+\For{each term $t$ with $\text{deficit}[t] > 0$}{
+    \If{Random() $< \text{deficit}[t] / \text{maxDeficit}$}{
+        $q_{\text{compensate}} \gets$ GenerateTrapdoor($t$)\;
+        IssueQuery($q_{\text{compensate}}$)\;
+    }
+}
+// Add rare terms to hide real rare queries\;
+\For{$i = 1$ to $\text{RareTermCount}$}{
+    $t_{\text{rare}} \gets$ SampleRareTerm()\;
+    $q_{\text{rare}} \gets$ GenerateTrapdoor($t_{\text{rare}}$)\;
+    IssueQuery($q_{\text{rare}}$)\;
+}
+\end{algorithm}
+\end{construction}
+
+\begin{theorem}[Frequency Analysis Resistance]
+With distribution-shifting rate $\gamma$ and noise rate $\epsilon$:
+\begin{itemize}
+    \item Observed frequency: $f_{\text{obs}}(t) = (1-\gamma-\epsilon)f_{\text{real}}(t) + \gamma f_{\text{target}}(t) + \epsilon/|V|$
+    \item Adversary uncertainty: $H(\text{real}|\text{observed}) \geq \log(1 + \epsilon|V|) + \gamma H(D_{\text{target}})$
+    \item Required samples to distinguish: $\Omega(1/(\gamma + \epsilon)^2)$
+\end{itemize}
+\end{theorem}
+
+\begin{construction}[Comprehensive Query Obfuscation]
+\begin{algorithm}[H]
+\caption{Multi-Level Query Obfuscation with All Strategies}
+\KwIn{Real query $q$, parameters $(\epsilon, k, \tau, \gamma)$}
+\KwOut{Obfuscated query stream $Q$}
+// Level 1: Tuple encoding for phrases\;
+$q_{\text{encoded}} \gets$ EncodePhrases($q$)\;
+// Level 2: Add correlated terms\;
+$q_{\text{expanded}} \gets q_{\text{encoded}} \cup$ RelatedTerms($q$, $k$)\;
+// Level 3: Inject random noise queries\;
+$Q \gets \{q_{\text{expanded}}\}$\;
+\For{$i = 1$ to $\text{Geom}(\epsilon)$}{
+    $q_{\text{noise}} \gets$ GenerateRandomQuery()\;
+    $Q \gets Q \cup \{q_{\text{noise}}\}$\;
+}
+// Level 4: Distribution shifting\;
+\For{$i = 1$ to $\text{Binomial}(n, \gamma)$}{
+    $q_{\text{shift}} \gets$ GenerateDistributionShiftQuery()\;
+    $Q \gets Q \cup \{q_{\text{shift}}\}$\;
+}
+// Level 5: Temporal uniformization\;
+ScheduleQueries($Q$, $\tau$)\;
+\Return{$Q$}
+\end{algorithm}
+\end{construction}
+
+\begin{theorem}[Privacy-Utility Trade-off]
+With dummy query rate $\epsilon$:
+\begin{itemize}
+    \item Privacy: Adversary uncertainty increases by factor $(1 + \epsilon)$
+    \item Cost: Communication increases by factor $(1 + \epsilon)$
+    \item Optimal $\epsilon = \Theta(\sqrt{n}/k)$ for $k$ real queries over $n$ items
+\end{itemize}
+\end{theorem}
+
+\subsection{Differential Privacy for Queries}
+
+\begin{construction}[Differentially Private PIR]
+\begin{enumerate}
+    \item \textbf{Query perturbation}: Add noise to query terms
+    \item \textbf{Result perturbation}: Add/remove documents randomly
+    \item \textbf{Score perturbation}: Add Laplace noise to relevance scores
+\end{enumerate}
+Achieves $(\epsilon, \delta)$-differential privacy.
+\end{construction}
+
+\subsection{Batching and Caching}
+
+\begin{construction}[Oblivious Query Batching]
+\begin{enumerate}
+    \item Collect multiple queries into batch
+    \item Pad batch to fixed size with dummies
+    \item Shuffle queries within batch
+    \item Process entire batch obliviously
+    \item Return results in original order
+\end{enumerate}
+Hides individual query patterns within batch.
 \end{construction}
 
 \section{Approximate PIR with Bernoulli Types}

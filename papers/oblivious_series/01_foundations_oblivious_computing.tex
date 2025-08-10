@@ -144,6 +144,48 @@ A computation is computationally oblivious if for all polynomial-time adversarie
 where $\lambda$ is the security parameter.
 \end{definition}
 
+\subsection{The Bernoulli Map Construction}
+
+Our fundamental approach to oblivious computing uses Bernoulli map constructions over cryptographic hashes:
+
+\begin{definition}[Oblivious Program via Hash Encoding]
+Given a program $p: \text{Input} \to \text{Output}$, we construct an oblivious version $\hat{p}: \widehat{\text{Input}} \to \widehat{\text{Output}}$ where:
+\begin{itemize}
+    \item $\widehat{\text{Input}}$ and $\widehat{\text{Output}}$ are uniformly distributed hash values (e.g., 256-bit)
+    \item Each plaintext value $v \in T$ maps to a set of valid encodings $\text{ValidEncodings}(v)$
+    \item The encoding sizes are chosen to make the distribution uniform: $|\text{ValidEncodings}(v)| \propto 1/\Prob{v}$
+\end{itemize}
+\end{definition}
+
+\begin{theorem}[Optimal Obliviousness]
+If we can construct $\hat{p}$ such that both $\widehat{\text{Input}}$ and $\widehat{\text{Output}}$ are i.i.d. uniform random variables over hash values, then we achieve optimal obliviousness with zero information leakage about the underlying computation.
+\end{theorem}
+
+\textbf{Key Properties:}
+\begin{enumerate}
+    \item \textbf{Uniformity}: All observable values (inputs and outputs) appear as uniform random hash values
+    \item \textbf{Noise Injection}: Invalid inputs naturally map to random outputs, providing free noise
+    \item \textbf{Deterministic Function}: Like a random oracle, $\hat{p}$ always maps the same $\widehat{\text{Input}}_k$ to the same $\widehat{\text{Output}}_l$
+    \item \textbf{Correlation Preservation}: The functional relationship creates correlations between inputs and outputs
+\end{enumerate}
+
+\begin{example}[Ideal vs. Practical Construction]
+\textbf{Ideal}: Construct $\hat{p}$ directly as a single oblivious program with uniform I/O distributions.
+
+\textbf{Practical}: Due to space/time complexity constraints, we often must:
+\begin{itemize}
+    \item Compose multiple oblivious sub-programs
+    \item Accept weaker obliviousness guarantees
+    \item Trade perfect uniformity for efficiency
+\end{itemize}
+This compositional approach may leak information through:
+\begin{itemize}
+    \item Sequence correlations (even with noise injection)
+    \item Timing patterns
+    \item Resource usage patterns
+\end{itemize}
+\end{example}
+
 \subsection{Information-Theoretic Characterization}
 
 We quantify privacy loss through information theory:
@@ -206,7 +248,7 @@ Hidden & Latent value & Secret data \\
 Observable & Approximate value & Access pattern \\
 Channel & Probabilistic (noise) & Cryptographic (encryption) \\
 Constraint & Space efficiency & Privacy preservation \\
-Error type & False positives/negatives & Information leakage \\
+Error type & Probabilistic errors & Information leakage \\
 Metric & Error rate & Mutual information \\
 \end{tabular}
 \end{center}
@@ -294,6 +336,59 @@ A PIR protocol is secure if for any two queries $q_i, q_j$:
 Information-theoretic PIR requires $\Omega(N)$ communication for database of size $N$.
 \end{theorem}
 
+\section{Tuple Encoding and Correlation Management}
+
+\subsection{The Fundamental Choice}
+
+\begin{definition}[Encoding Granularity]
+For any multi-input function $f: X \times Y \to Z$, we face a fundamental choice:
+\begin{itemize}
+    \item \textbf{Separate encoding}: $\hat{f}(\hat{x}, \hat{y})$ where inputs encoded independently
+    \item \textbf{Tuple encoding}: $\hat{f}(\widehat{(x,y)})$ where inputs encoded jointly
+\end{itemize}
+\end{definition}
+
+\begin{theorem}[Correlation-Privacy Trade-off]
+\begin{itemize}
+    \item Separate encoding: Preserves input structure but reveals correlations
+    \item Tuple encoding: Hides correlations but requires larger encoding space
+    \item Space requirement: $|\text{Encodings}((x,y))| \propto 1/p(x,y)$ for uniformity
+\end{itemize}
+\end{theorem}
+
+\subsection{Propagation Through Computation}
+
+\begin{construction}[Flexible Function Design]
+Oblivious functions should handle both encoding types:
+\begin{enumerate}
+    \item Detect encoding type from input structure
+    \item Process accordingly (joint or separate)
+    \item Maintain uniformity regardless of input type
+    \item Allow switching between encodings at boundaries
+\end{enumerate}
+\end{construction}
+
+\begin{example}[Binary Operation Encoding]
+Consider AND operation in secure computation:
+\begin{itemize}
+    \item Separate: $\text{AND}(\hat{x}, \hat{y})$ - observer sees two inputs combined
+    \item Tuple: $\text{AND}(\widehat{(x,y)})$ - observer sees single atomic operation
+    \item Trade-off: Correlation hiding vs. computational flexibility
+\end{itemize}
+\end{example}
+
+\subsection{Frequency-Based Encoding Strategy}
+
+\begin{construction}[Adaptive Tuple Creation]
+For frequently correlated inputs $(x,y)$:
+\begin{enumerate}
+    \item Measure correlation frequency: $p(x,y)$
+    \item If $p(x,y) > \tau$ threshold, create tuple encoding
+    \item Size encoding set: $|\text{ValidEncodings}((x,y))| \propto 1/p(x,y)$
+    \item Result: Common correlations get better privacy protection
+\end{enumerate}
+\end{construction}
+
 \section{Composition and Error Propagation}
 
 \subsection{Sequential Composition}
@@ -351,7 +446,7 @@ Maintains heap property while hiding access patterns:
 
 \subsection{Homomorphic Encryption}
 
-Compute on encrypted data:
+Homomorphic encryption enables computation on encrypted data, representing a different point in the trade-off space:
 
 \begin{definition}[Fully Homomorphic Encryption (FHE)]
 An encryption scheme where for any function $f$:
@@ -360,7 +455,24 @@ An encryption scheme where for any function $f$:
 \end{equation}
 \end{definition}
 
-FHE provides perfect obliviousness but with computational overhead.
+\textbf{Key Trade-offs:}
+\begin{itemize}
+    \item \textbf{Perfect Correctness}: Unlike Bernoulli types, FHE preserves exact computation
+    \item \textbf{Computational Overhead}: 4-6 orders of magnitude slower than plaintext
+    \item \textbf{Space Expansion}: Ciphertexts are typically 1000-10000× larger than plaintexts
+    \item \textbf{Noise Management}: Bootstrapping required to manage noise growth
+\end{itemize}
+
+\begin{example}[FHE vs. Oblivious Bernoulli]
+Consider private set intersection:
+\begin{itemize}
+    \item \textbf{FHE Approach}: Exact result, $O(n \cdot \text{polylog}(n))$ encrypted operations
+    \item \textbf{Oblivious Bernoulli}: Approximate result with FPR $\epsilon$, $O(n/\epsilon)$ space, $O(1)$ operations
+\end{itemize}
+For many applications, the approximate solution is 1000× more efficient.
+\end{example}
+
+FHE provides perfect obliviousness but represents a different trade-off than the probabilistic approaches explored in this series.
 
 \subsection{Secure Multi-Party Computation (MPC)}
 

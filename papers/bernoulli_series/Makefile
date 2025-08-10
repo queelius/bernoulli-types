@@ -45,7 +45,7 @@ addendum: bernoulli_addendum_hash_construction.pdf
 # Clean targets
 clean:
 	@echo "Cleaning auxiliary files..."
-	@rm -f *.aux *.log *.bbl *.blg *.out *.toc *.lof *.lot *.nav *.snm *.vrb 2>/dev/null || true
+	@rm -f *.aux *.log *.bbl *.blg *.out *.toc *.lof *.lot *.nav *.snm *.vrb *.fls *.fdb_latexmk *.synctex.gz 2>/dev/null || true
 
 cleanall: clean
 	@echo "Cleaning PDF files..."

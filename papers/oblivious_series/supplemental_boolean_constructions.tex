@@ -1,0 +1,409 @@
+\documentclass[11pt,final,hidelinks]{article}
+% SUPPLEMENTAL MATERIAL - Boolean Constructions with Partial Oblivious Properties
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage[activate={true,nocompatibility},final,tracking=true,kerning=true,spacing=true,factor=1100,stretch=10,shrink=10]{microtype}
+\usepackage{mathtools}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{algorithm2e}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage[square,numbers]{natbib}
+\bibliographystyle{plainnat}
+\usepackage{cleveref}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric}
+
+% Include unified notation for oblivious computing
+\input{unified_notation_oblivious.tex}
+
+% Additional notation for Boolean rings
+\newcommand{\XOR}{\oplus}
+\newcommand{\AND}{\land}
+\newcommand{\HashRing}[1]{\mathcal{H}(#1)}
+\newcommand{\SymDiff}{\triangle}
+\newcommand{\Cat}{\parallel}
+\newcommand{\BitString}{\{0,1\}^m}
+\newcommand{\PowerSet}[1]{\mathcal{P}(#1)}
+\newcommand{\id}{\mathsf{id}}
+
+% Theorem environments
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{construction}[theorem]{Construction}
+
+\title{Supplemental: Boolean Algebra and Ring Constructions\\\small{Partial Oblivious Properties via OR and XOR Operations}}
+\author{
+    Alexander Towell\\
+    \texttt{atowell@siue.edu}
+}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This supplemental material explores two Boolean constructions that exhibit partial oblivious properties but do not achieve full obliviousness. We examine: (1) OR-based Boolean algebras that enable membership testing with false positives but no false negatives, producing Bernoulli boolean outputs, and (2) XOR-based Boolean rings that enable equality testing where the encoded values appear as random noise but equality tests return non-oblivious boolean results. While these constructions use techniques similar to our main oblivious framework (trapdoor encodings, uniform hash distributions), they fundamentally differ in that their outputs are standard Booleans that leak information, rather than uniformly distributed oblivious values. We include this material as it provides useful building blocks and demonstrates the boundary between partial and full obliviousness. These constructions produce Bernoulli types (probabilistic outputs) rather than truly oblivious types, highlighting why our main Bernoulli map approach is necessary for complete oblivious computing.
+\end{abstract}
+
+\ObliviousNotationGuide
+
+\section{Introduction: Why This is Supplemental}
+
+\subsection{The Boundary of Obliviousness}
+
+This supplemental material explores Boolean constructions that sit at the boundary between standard probabilistic data structures and fully oblivious computing. These constructions are instructive because they:
+
+\begin{enumerate}
+    \item Use similar techniques to our main approach (trapdoor/hash encodings)
+    \item Achieve some oblivious properties (uniform query patterns, random-looking encodings)
+    \item But critically fail to achieve full obliviousness (outputs are plain Booleans)
+\end{enumerate}
+
+\begin{remark}[Why These Don't Achieve Full Obliviousness]
+The fundamental limitation: while we can make queries use uniform trapdoor values, and while XOR encodings look like random noise, the outputs are standard Booleans that reveal information:
+\begin{itemize}
+    \item OR-based membership: Returns true/false, revealing presence/absence
+    \item XOR-based equality: Returns true/false, revealing whether sets match
+\end{itemize}
+Contrast with our main Bernoulli map approach where outputs are also uniform hash values.
+\end{remark}
+
+\subsection{Two Complementary Constructions}
+
+We examine two Boolean constructions:
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Construction} & \textbf{Operation} & \textbf{Output Type} \\
+\midrule
+OR-based algebra & Membership test & Bernoulli Bool (FP only) \\
+XOR-based ring & Equality test & Bernoulli Bool (probabilistic) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Both produce Bernoulli types with error rates, not oblivious types.
+
+\section{Part I: OR-Based Boolean Algebras for Membership}
+
+\subsection{The OR Construction}
+
+Using OR operations on hash/trapdoor values provides membership testing with specific error characteristics:
+
+\begin{definition}[OR-Based Set Encoding]
+For set $S = \{x_1, \ldots, x_n\}$:
+\begin{equation}
+G_{\OR}(S) = \bigvee_{i=1}^{n} h(x_i)
+\end{equation}
+where $h: U \to \{0,1\}^m$ is a hash function and $\vee$ is bitwise OR.
+\end{definition}
+
+\begin{theorem}[Membership False Positive Rate]
+For element $y \notin S$ with $|S| = n$:
+\begin{equation}
+\Prob{y \in G_{\OR}(S)} = \alpha^m(n)
+\end{equation}
+where $\alpha(n) = (1 - 2^{-(n+1)})$ as proven in the original Boolean algebra work.
+\end{theorem}
+
+Key properties:
+\begin{itemize}
+    \item \textbf{No false negatives}: If $x \in S$, test always returns true
+    \item \textbf{False positives}: Rate depends on set size and hash length
+    \item \textbf{One-way}: Cannot recover elements from $G_{\OR}(S)$
+    \item \textbf{Space efficient}: Single $m$-bit value regardless of $|S|$
+\end{itemize}
+
+\subsection{Attempting Obliviousness with Trapdoors}
+
+We can try to make OR-based membership testing oblivious using trapdoor encodings:
+
+\begin{construction}[OR with Trapdoor Encodings]
+\begin{enumerate}
+    \item Each value $v$ maps to multiple trapdoors: $\text{Trapdoors}(v)$
+    \item Size trapdoor sets: $|\text{Trapdoors}(v)| \propto 1/\Prob{v}$
+    \item For set $S$, insert all trapdoors: $G_{\OR}(S) = \bigvee_{x \in S} \bigvee_{t \in \text{Trapdoors}(x)} t$
+    \item Queries use uniform trapdoor distribution
+\end{enumerate}
+\end{construction}
+
+\begin{remark}[The Fundamental Limitation]
+While queries use uniform trapdoors (hiding what we're looking for), the output is a standard Boolean:
+\begin{itemize}
+    \item True $\Rightarrow$ element is (probably) in the set
+    \item False $\Rightarrow$ element is definitely not in the set
+\end{itemize}
+This leaks information! Unlike our main Bernoulli map approach where outputs are also uniform hashes.
+\end{remark}
+
+\subsection{OR-Based Equality Testing}
+
+Interestingly, OR can also test equality, though with worse error rates than membership:
+
+\begin{theorem}[Equality via OR]
+Two sets are equal if their OR-hashes match:
+\begin{equation}
+\Prob{G_{\OR}(A) = G_{\OR}(B) | A \neq B} \approx \text{(high, depends on set sizes)}
+\end{equation}
+Much higher false positive rate than XOR-based equality.
+\end{theorem}
+
+\section{Part II: XOR-Based Boolean Rings for Equality}
+
+\subsection{The XOR Construction}
+
+XOR operations provide equality testing with unique properties:
+
+\begin{definition}[XOR-Based Set Encoding]
+For set $S = \{x_1, \ldots, x_n\}$:
+\begin{equation}
+G_{\XOR}(S) = \bigoplus_{i=1}^{n} h(x_i)
+\end{equation}
+where $\oplus$ is bitwise XOR.
+\end{definition}
+
+Key XOR properties:
+\begin{itemize}
+    \item \textbf{Commutativity}: Order doesn't matter
+    \item \textbf{Self-inverse}: $a \oplus a = 0$ (duplicates cancel)
+    \item \textbf{Indistinguishable from random}: $G_{\XOR}(S)$ looks like noise
+    \item \textbf{No membership testing}: Cannot check individual elements
+\end{itemize}
+
+\subsection{XOR Properties for Equality}
+
+\begin{theorem}[Equality Testing]
+For sets $A$ and $B$:
+\begin{equation}
+\Prob{G_{\XOR}(A) = G_{\XOR}(B) | A \neq B} = 2^{-m}
+\end{equation}
+where $m$ is the hash size in bits.
+\end{theorem}
+
+\begin{proof}
+Since $h$ is a random oracle, $G_{\XOR}(A)$ and $G_{\XOR}(B)$ are independent uniform random strings when $A \neq B$. Collision probability is $2^{-m}$.
+\end{proof}
+
+\begin{remark}[No Membership Information]
+Given $G_{\XOR}(S)$ and element $x$, cannot determine if $x \in S$:
+\begin{itemize}
+    \item Cannot "subtract" $h(x)$ without knowing other elements
+    \item XOR of all elements reveals nothing about individuals
+    \item Only operation: compare with another XOR-hash
+\end{itemize}
+\end{remark}
+
+\subsection{Attempting Obliviousness with XOR}
+
+\begin{construction}[XOR with Trapdoor Encodings]
+Similar to OR, we could try:
+\begin{enumerate}
+    \item Map values to trapdoor sets sized by $1/\Prob{v}$
+    \item XOR all trapdoors for all elements
+    \item Result looks uniformly random
+\end{enumerate}
+\end{construction}
+
+\begin{remark}[The Same Limitation]
+While $G_{\XOR}(S)$ appears as random noise (good for hiding), equality testing still outputs a plain Boolean:
+\begin{itemize}
+    \item $G_{\XOR}(A) == G_{\XOR}(B)$ returns true/false
+    \item This reveals whether sets are equal
+    \item Not oblivious output like our main approach
+\end{itemize}
+\end{remark}
+
+\section{Comparison with Main Bernoulli Map Approach}
+
+\subsection{Why These Are Not Fully Oblivious}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Aspect} & \textbf{OR/XOR Constructions} & \textbf{Bernoulli Map} \\
+\midrule
+Query encoding & Uniform trapdoors & Uniform hashes \\
+Data encoding & OR/XOR of hashes & ValidEncodings sets \\
+Output type & Plain Boolean & Uniform hash \\
+Information leakage & Via Boolean output & None (uniform throughout) \\
+Error type & Bernoulli (probabilistic) & Can be deterministic \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{theorem}[Information Leakage]
+Both OR and XOR constructions leak 1 bit of information per query:
+\begin{itemize}
+    \item OR: Reveals membership (with false positive rate)
+    \item XOR: Reveals equality (with collision probability)
+\end{itemize}
+Contrast with Bernoulli maps where outputs are uniform hashes revealing nothing.
+\end{theorem}
+
+\subsection{When These Constructions Are Useful}
+
+Despite limitations, these constructions have uses:
+\begin{enumerate}
+    \item \textbf{Building blocks}: Can be components in larger oblivious systems
+    \item \textbf{Space efficiency}: $O(1)$ space regardless of set size  
+    \item \textbf{Algebraic properties}: Clean mathematical structure
+    \item \textbf{Partial privacy}: When full obliviousness is overkill
+\end{enumerate}
+
+\section{Mathematical Properties}
+
+\subsection{Boolean Algebra Structure (OR)}
+
+\begin{theorem}[OR Homomorphism]
+The OR construction gives a homomorphism from sets to bit strings:
+\begin{align}
+G_{\OR}(A \cup B) &\subseteq G_{\OR}(A) \lor G_{\OR}(B) \text{ (subset due to collisions)}\\
+G_{\OR}(\emptyset) &= 0^m
+\end{align}
+But intersection is not preserved cleanly.
+\end{theorem}
+
+\subsection{Boolean Ring Structure (XOR)}
+
+\begin{theorem}[XOR Homomorphism]
+The XOR construction gives a ring homomorphism:
+\begin{align}
+G_{\XOR}(A \triangle B) &= G_{\XOR}(A) \oplus G_{\XOR}(B)\\
+G_{\XOR}(\emptyset) &= 0^m
+\end{align}
+Symmetric difference is preserved perfectly.
+\end{theorem}
+
+\subsection{Complexity Bounds}
+
+\begin{theorem}[Space-Error Trade-off]
+For false positive rate $\epsilon$:
+\begin{itemize}
+    \item OR construction: $m = O(n \log(1/\epsilon))$ bits
+    \item XOR construction: $m = \log(1/\epsilon)$ bits
+    \item XOR is optimal for equality, OR suboptimal for membership
+\end{itemize}
+\end{theorem}
+
+\section{Example Applications}
+
+\subsection{Where OR Construction Fits}
+
+\begin{example}[Approximate Membership Testing]
+\begin{itemize}
+    \item When false positives are acceptable
+    \item Space is extremely constrained
+    \item Need to test membership but not enumerate
+    \item Example: Bloom filter alternative with different trade-offs
+\end{itemize}
+\end{example}
+
+\subsection{Where XOR Construction Fits}
+
+\begin{example}[Set Synchronization]
+\begin{itemize}
+    \item Detecting if replicated sets match
+    \item Version vector alternatives
+    \item Deduplication detection
+    \item When equality matters more than membership
+\end{itemize}
+\end{example}
+
+\subsection{Limitations in Practice}
+
+\begin{remark}[Not Suitable For]
+\begin{itemize}
+    \item Fully oblivious computing (outputs leak)
+    \item Scenarios requiring no information leakage
+    \item Systems where output patterns matter
+    \item Use cases needing uniform output distribution
+\end{itemize}
+For these, use the main Bernoulli map construction.
+\end{remark}
+
+\section{Relationship to Main Papers}
+
+\subsection{Connection to Bernoulli Types}
+
+These constructions produce Bernoulli types:
+\begin{itemize}
+    \item OR: $\Bernoulli{\Bool}{2}$ with false positive rate $\alpha^m(n)$
+    \item XOR: $\Bernoulli{\Bool}{2}$ with collision rate $2^{-m}$
+    \item Both have probabilistic correctness
+    \item Neither achieves uniform output distribution
+\end{itemize}
+
+\subsection{Connection to Oblivious Computing}
+
+Partial oblivious properties:
+\begin{itemize}
+    \item Can use uniform trapdoor encodings for queries
+    \item XOR results appear as random noise
+    \item But outputs are non-oblivious Booleans
+    \item Demonstrates the boundary of obliviousness
+\end{itemize}
+
+\subsection{Why Main Approach is Necessary}
+
+The Bernoulli map construction succeeds where these fail:
+\begin{enumerate}
+    \item \textbf{Uniform outputs}: Results are indistinguishable hashes
+    \item \textbf{Composability}: Can chain operations obliviously
+    \item \textbf{No leakage}: Information-theoretic security throughout
+    \item \textbf{General computation}: Not limited to membership/equality
+\end{enumerate}
+
+
+
+
+
+\section{Conclusions}
+
+This supplemental material demonstrates the boundary between partial and full obliviousness:
+
+\textbf{What These Constructions Achieve:}
+\begin{itemize}
+    \item Uniform query patterns (with trapdoor encodings)
+    \item Random-looking encodings (especially XOR)
+    \item Space-efficient representations
+    \item Useful algebraic properties
+\end{itemize}
+
+\textbf{What They Don't Achieve:}
+\begin{itemize}
+    \item Oblivious outputs (return plain Booleans)
+    \item Information-theoretic security throughout
+    \item Composability for complex computations
+    \item True oblivious computing
+\end{itemize}
+
+\textbf{The Key Lesson:}
+These constructions show why our main Bernoulli map approach is necessary. While OR and XOR operations provide useful building blocks with some oblivious-like properties, they fundamentally leak information through their Boolean outputs. True oblivious computing requires maintaining uniform hash distributions throughout the entire computation—from inputs through operations to outputs.
+
+\textbf{Practical Value:}
+Despite their limitations, these constructions remain useful:
+\begin{itemize}
+    \item As components in larger systems
+    \item When partial privacy is sufficient
+    \item For specific operations (membership/equality)
+    \item As pedagogical examples of the obliviousness boundary
+\end{itemize}
+
+They belong in the supplemental material precisely because they illuminate the challenges and boundaries of oblivious computing without being central to the main framework.
+
+\bibliography{references}
+
+\end{document}

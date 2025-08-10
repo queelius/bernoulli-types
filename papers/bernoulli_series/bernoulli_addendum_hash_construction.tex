@@ -90,23 +90,26 @@ h(\Encode{x} \| s) \in \ValidEnc{f(x)}
 \subsection{Construction Algorithm}
 
 \begin{construction}[Finding Appropriate Seeds]
+Input: Function $f: X \to Y$, allowed false negative rate $\beta$\\
+Output: Seed $s$ implementing Bernoulli approximation
+\end{construction}
+
 \begin{algorithm}[H]
 \caption{Hash-Based Bernoulli Construction}
-\KwIn{Function $f: X \to Y$, allowed false negative rate $\fnrate$}
+\KwIn{Function $f: X \to Y$, allowed false negative rate $\beta$}
 \KwOut{Seed $s$ implementing Bernoulli approximation}
 \Repeat{success}{
     $s \leftarrow \text{random seed}$\;
     $\text{correct} \leftarrow 0$\;
     \For{$x \in X$}{
-        \If{$\Hash{\Encode{x} \| s} \in \ValidEnc{f(x)}$}{
+        \If{$h(\text{encode}(x) \| s) \in \text{ValidEncodings}(f(x))$}{
             $\text{correct} \leftarrow \text{correct} + 1$\;
         }
     }
-    $\text{success} \leftarrow (\text{correct} \geq (1-\fnrate) \cdot \Card{X})$\;
+    $\text{success} \leftarrow (\text{correct} \geq (1-\beta) \cdot |X|)$\;
 }
 \Return{$s$}
 \end{algorithm}
-\end{construction}
 
 \subsection{Natural Error Rates}
 

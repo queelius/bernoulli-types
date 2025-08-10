@@ -2,6 +2,27 @@
 % Focus: Precisely specifying WHICH parts are oblivious
 
 % ============================================
+% Basic Types (needed for Bernoulli references)
+% ============================================
+
+\newcommand{\Bool}{\mathbb{B}}
+\newcommand{\True}{\mathtt{true}}
+\newcommand{\False}{\mathtt{false}}
+\newcommand{\Bernoulli}[2]{\mathcal{B}^{#2}(#1)}  % Bernoulli type constructor
+\newcommand{\BF}{\mathsf{BF}}  % Bloom Filter notation
+\newcommand{\Enc}[1]{\mathsf{Enc}(#1)}  % Encryption notation
+\newcommand{\Universe}{\mathcal{U}}  % Universal set
+\newcommand{\SI}[2]{\mathsf{SI}(#1, #2)}  % Secure Index
+\newcommand{\MutInfo}[2]{I(#1 ; #2)}  % Mutual Information
+\newcommand{\Info}[1]{H(#1)}  % Information/Entropy
+\newcommand{\CondInfo}[2]{H(#1 | #2)}  % Conditional Entropy
+\newcommand{\Prob}[1]{\mathbb{P}\left[#1\right]}  % Probability
+\newcommand{\Adv}{\mathcal{A}}  % Adversary
+\newcommand{\negl}{\mathsf{negl}}  % Negligible function
+\newcommand{\Token}[1]{\mathsf{Token}(#1)}  % Tokenization function
+\newcommand{\PRF}{\mathsf{PRF}}  % Pseudo-random function
+
+% ============================================
 % Core Oblivious Type Constructors
 % ============================================
 

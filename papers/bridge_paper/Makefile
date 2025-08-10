@@ -24,7 +24,7 @@ $(PDF): $(PAPER).tex references.bib
 # Clean auxiliary files
 clean:
 	@echo "Cleaning auxiliary files..."
-	@rm -f *.aux *.log *.bbl *.blg *.out *.toc *.lof *.lot *.nav *.snm *.vrb 2>/dev/null || true
+	@rm -f *.aux *.log *.bbl *.blg *.out *.toc *.lof *.lot *.nav *.snm *.vrb *.fls *.fdb_latexmk *.synctex.gz 2>/dev/null || true
 
 # Clean everything including PDF
 cleanall: clean

@@ -9,9 +9,10 @@ FLAGS = -interaction=nonstopmode -halt-on-error
 PAPERS = 01_foundations_oblivious_computing \
          02_secure_indexes_oblivious_bernoulli \
          03_oblivious_data_structures \
-         04_cipher_boolean_rings \
+         04_oblivious_random_oracles \
          05_private_information_retrieval \
          06_applications_systems \
+         supplemental_boolean_constructions \
          oblivious_addendum_uniform_encoding
 
 # Output files
@@ -35,15 +36,17 @@ all: $(PDFS)
 01: 01_foundations_oblivious_computing.pdf
 02: 02_secure_indexes_oblivious_bernoulli.pdf
 03: 03_oblivious_data_structures.pdf
-04: 04_cipher_boolean_rings.pdf
+04: 04_oblivious_random_oracles.pdf
 05: 05_private_information_retrieval.pdf
 06: 06_applications_systems.pdf
+supplemental: supplemental_boolean_constructions.pdf
 addendum: oblivious_addendum_uniform_encoding.pdf
 
 # Clean targets
 clean:
 	@echo "Cleaning auxiliary files..."
-	@rm -f *.aux *.log *.bbl *.blg *.out *.toc *.lof *.lot *.nav *.snm *.vrb 2>/dev/null || true
+	@rm -f *.aux *.log *.bbl *.blg *.out *.toc *.lof *.lot *.idx *.ind *.ilg *.nav *.snm *.vrb *.fls *.fdb_latexmk *.synctex.gz *.dvi *.ps 2>/dev/null || true
+	@rm -f *.bcf *.run.xml *-blx.bib *.brf *.mtc* *.maf *.ptc* 2>/dev/null || true
 
 cleanall: clean
 	@echo "Cleaning PDF files..."

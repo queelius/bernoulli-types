@@ -254,7 +254,7 @@ Generate proof of correct execution\;
 \end{algorithm}
 \end{construction}
 
-\subsection{Private DeFi]
+\subsection{Private DeFi}
 
 \begin{example}[Oblivious AMM]
 Automated market maker with hidden liquidity:
@@ -451,6 +451,60 @@ Complete private search system:
     \item \textbf{Results}: Oblivious selection of top-k
 \end{enumerate}
 \end{construction}
+
+\subsection{Tuple Encoding for Complex Queries}
+
+\begin{construction}[Query Processing with Tuple Encoding]
+Complex queries use tuple encoding to hide correlations:
+\begin{verbatim}
+class TupleAwareSearchEngine {
+    // Frequency-based tuple index
+    map<Hash, set<DocID>> tuple_index;
+    
+    void build_index(Documents docs) {
+        // Count term co-occurrences
+        map<Tuple, int> cooccur_counts;
+        for (doc : docs) {
+            for (auto [t1, t2] : pairs(doc.terms)) {
+                cooccur_counts[(t1, t2)]++;
+            }
+        }
+        
+        // Create tuples for frequent pairs
+        for (auto [tuple, count] : cooccur_counts) {
+            if (count / docs.size() > threshold) {
+                // Size proportional to 1/p(tuple)
+                int num_encodings = ceil(1.0 / frequency(tuple));
+                for (int i = 0; i < num_encodings; i++) {
+                    Hash h = hash(tuple, i);
+                    tuple_index[h] = docs_containing(tuple);
+                }
+            }
+        }
+    }
+    
+    Results search(Query q) {
+        if (is_correlated(q.terms)) {
+            // Use tuple encoding for correlated terms
+            Hash h = hash(make_tuple(q.terms));
+            return tuple_index[h];
+        } else {
+            // Process separately for independent terms
+            return intersect(lookup_individual(q.terms));
+        }
+    }
+};
+\end{verbatim}
+\end{construction}
+
+\begin{example}[Adaptive Query Encoding]
+The system chooses encoding based on query patterns:
+\begin{itemize}
+    \item "encryption AND security" → Tuple $h((\text{enc}, \text{sec}))$
+    \item "dog OR cat" → Separate $h(\text{dog}), h(\text{cat})$
+    \item Complex Boolean → Hierarchical tuple tree
+\end{itemize}
+\end{example}
 
 \subsection{Implementation Details}
 
