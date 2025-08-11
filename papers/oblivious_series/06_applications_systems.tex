@@ -1,22 +1,7 @@
-\documentclass[11pt,final,hidelinks]{article}
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
-\usepackage{lmodern}
-\usepackage[margin=1in]{geometry}
-\usepackage[english]{babel}
-\usepackage{graphicx}
-\usepackage[activate={true,nocompatibility},final,tracking=true,kerning=true,spacing=true,factor=1100,stretch=10,shrink=10]{microtype}
-\usepackage{mathtools}
-\usepackage{amsmath}
-\usepackage{amsthm}
-\usepackage{amssymb}
-\usepackage{algorithm2e}
-\usepackage{booktabs}
-\usepackage{hyperref}
-\usepackage[square,numbers]{natbib}
-\bibliographystyle{plainnat}
-\usepackage{cleveref}
-\usepackage{tikz}
+\documentclass[11pt,final]{article}
+\input{paper_preamble.tex}
+
+% Diagrams used here
 \usetikzlibrary{arrows.meta,positioning,shapes.geometric,calc}
 
 % Include unified notation for oblivious computing
@@ -53,6 +38,8 @@
 \begin{abstract}
 We present practical systems and applications that demonstrate oblivious computing principles in real-world deployments. Building on the theoretical foundations of oblivious types, secure indexes, data structures, and PIR, we show how these concepts combine to create complete privacy-preserving systems. We examine case studies ranging from encrypted databases and secure messaging to blockchain privacy and confidential cloud computing. For each application, we analyze how oblivious Bernoulli types provide the right balance of privacy, efficiency, and functionality. We discuss implementation challenges, performance optimizations, and deployment considerations. The paper demonstrates that oblivious computing has transitioned from theoretical curiosity to practical necessity, with production systems serving millions of users while maintaining strong privacy guarantees.
 \end{abstract}
+
+\keywords{systems, applications, encrypted databases, secure messaging, TEEs}
 
 \ObliviousNotationGuide
 

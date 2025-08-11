@@ -1,7 +1,7 @@
 # Makefile for Bridge Paper
 
-# LaTeX compiler
-LATEX = pdflatex
+# LaTeX compiler (default to xelatex for UTF-8 in verbatim)
+LATEX ?= xelatex
 BIBTEX = bibtex
 FLAGS = -interaction=nonstopmode -halt-on-error
 

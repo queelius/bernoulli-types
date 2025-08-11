@@ -1,20 +1,7 @@
-\documentclass[11pt,final,hidelinks]{article}
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
-\usepackage{lmodern}
-\usepackage[margin=1in]{geometry}
-\usepackage[english]{babel}
-\usepackage{graphicx}
-\usepackage[activate={true,nocompatibility},final,tracking=true,kerning=true,spacing=true,factor=1100,stretch=10,shrink=10]{microtype}
-\usepackage{mathtools}
-\usepackage{amsmath}
-\usepackage{amsthm}
-\usepackage{amssymb}
-\usepackage{hyperref}
-\usepackage[square,numbers]{natbib}
-\bibliographystyle{plainnat}
-\usepackage{cleveref}
-\usepackage{tikz}
+\documentclass[11pt,final]{article}
+\input{paper_preamble.tex}
+
+% Diagrams used here
 \usetikzlibrary{arrows.meta,positioning,shapes.geometric}
 
 % Theorem environments
@@ -26,26 +13,26 @@
 \newtheorem{example}[theorem]{Example}
 \newtheorem{remark}[theorem]{Remark}
 \newtheorem{axiom}{Axiom}
+\newtheorem{construction}[theorem]{Construction}
 
-% Custom commands for oblivious computing
+% Include unified notation and custom commands
+\input{unified_notation_oblivious.tex}
+
+% Custom commands for oblivious computing (paper-specific)
 \newcommand{\Oblivious}[1]{\mathcal{O}\langle #1 \rangle}
-\newcommand{\Hidden}[1]{\mathtt{hide}(#1)}
-\newcommand{\Reveal}[1]{\mathtt{reveal}(#1)}
+\renewcommand{\Hidden}[1]{\mathtt{hide}(#1)}
+\renewcommand{\Reveal}[1]{\mathtt{reveal}(#1)}
 \newcommand{\Access}[1]{\mathtt{access}(#1)}
-\newcommand{\Pattern}[1]{\pi(#1)}
+\renewcommand{\Pattern}[1]{\pi(#1)}
 \newcommand{\Leakage}[1]{\mathcal{L}(#1)}
 \newcommand{\Entropy}[1]{\mathcal{H}(#1)}
 \newcommand{\MutualInfo}[2]{\mathcal{I}(#1; #2)}
 
 % Reuse some notation from Bernoulli series
-\newcommand{\Prob}[1]{\mathbb{P}\left[#1\right]}
 \newcommand{\Expect}[1]{\mathbb{E}\left[#1\right]}
-\newcommand{\Bool}{\mathbb{B}}
-\newcommand{\True}{\mathtt{true}}
-\newcommand{\False}{\mathtt{false}}
 
 % Security parameters
-\newcommand{\negl}[1]{\mathtt{negl}(#1)}
+\renewcommand{\negl}[1]{\mathtt{negl}(#1)}
 \newcommand{\poly}[1]{\mathtt{poly}(#1)}
 \newcommand{\Adversary}{\mathcal{A}}
 \newcommand{\Simulator}{\mathcal{S}}
@@ -64,6 +51,8 @@
 \begin{abstract}
 We present a unified framework for oblivious computing—systems that compute on hidden data while revealing only controlled information through observable side channels. While traditional computing assumes that data access patterns and intermediate values are irrelevant implementation details, modern security requirements demand that these observations reveal nothing about the underlying data. We formalize oblivious computing through the dual lens of information theory and cryptography, showing how to quantify and bound information leakage. Our key insight is that oblivious computing and probabilistic data structures (Bernoulli types) represent complementary approaches to the same fundamental problem: observing hidden information through constrained channels. Where Bernoulli types use probabilistic channels that trade space for accuracy, oblivious computing uses cryptographic channels that trade performance for privacy. We demonstrate that secure indexes, oblivious RAM, private information retrieval, and searchable encryption are all instances of this general framework, unified by the hidden/observable duality.
 \end{abstract}
+
+\keywords{oblivious computing, information leakage, mutual information, Bernoulli types, cryptography}
 
 \section{Introduction}
 

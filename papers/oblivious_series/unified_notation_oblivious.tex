@@ -5,29 +5,29 @@
 % Basic Types (needed for Bernoulli references)
 % ============================================
 
-\newcommand{\Bool}{\mathbb{B}}
-\newcommand{\True}{\mathtt{true}}
-\newcommand{\False}{\mathtt{false}}
-\newcommand{\Bernoulli}[2]{\mathcal{B}^{#2}(#1)}  % Bernoulli type constructor
-\newcommand{\BF}{\mathsf{BF}}  % Bloom Filter notation
-\newcommand{\Enc}[1]{\mathsf{Enc}(#1)}  % Encryption notation
-\newcommand{\Universe}{\mathcal{U}}  % Universal set
-\newcommand{\SI}[2]{\mathsf{SI}(#1, #2)}  % Secure Index
-\newcommand{\MutInfo}[2]{I(#1 ; #2)}  % Mutual Information
-\newcommand{\Info}[1]{H(#1)}  % Information/Entropy
-\newcommand{\CondInfo}[2]{H(#1 | #2)}  % Conditional Entropy
-\newcommand{\Prob}[1]{\mathbb{P}\left[#1\right]}  % Probability
-\newcommand{\Adv}{\mathcal{A}}  % Adversary
-\newcommand{\negl}{\mathsf{negl}}  % Negligible function
-\newcommand{\Token}[1]{\mathsf{Token}(#1)}  % Tokenization function
-\newcommand{\PRF}{\mathsf{PRF}}  % Pseudo-random function
+\providecommand{\Bool}{\mathbb{B}}
+\providecommand{\True}{\mathtt{true}}
+\providecommand{\False}{\mathtt{false}}
+\providecommand{\Bernoulli}[2]{\mathcal{B}^{#2}(#1)}  % Bernoulli type constructor
+\providecommand{\BF}{\mathsf{BF}}  % Bloom Filter notation
+\providecommand{\Enc}[1]{\mathsf{Enc}(#1)}  % Encryption notation
+\providecommand{\Universe}{\mathcal{U}}  % Universal set
+\providecommand{\SI}[2]{\mathsf{SI}(#1, #2)}  % Secure Index
+\providecommand{\MutInfo}[2]{I(#1 ; #2)}  % Mutual Information
+\providecommand{\Info}[1]{H(#1)}  % Information/Entropy
+\providecommand{\CondInfo}[2]{H(#1 | #2)}  % Conditional Entropy
+\providecommand{\Prob}[1]{\mathbb{P}\left[#1\right]}  % Probability
+\providecommand{\Adv}{\mathcal{A}}  % Adversary
+\providecommand{\negl}{\mathsf{negl}}  % Negligible function
+\providecommand{\Token}[1]{\mathsf{Token}(#1)}  % Tokenization function
+\providecommand{\PRF}{\mathsf{PRF}}  % Pseudo-random function
 
 % ============================================
 % Core Oblivious Type Constructors
 % ============================================
 
 % Basic oblivious wrapper - makes entire type oblivious
-\newcommand{\Obv}[1]{\mathcal{O}\langle #1 \rangle}
+\providecommand{\Obv}[1]{\mathcal{O}\langle #1 \rangle}
 
 % Partial oblivious - only specific components are oblivious
 % Examples:
@@ -40,103 +40,103 @@
 % ============================================
 
 % Component-level oblivious (independent)
-\newcommand{\ObvComp}[1]{\mathcal{O}_c\langle #1 \rangle}
+\providecommand{\ObvComp}[1]{\mathcal{O}_c\langle #1 \rangle}
 
 % Structure-level oblivious (entangled)
-\newcommand{\ObvStruct}[1]{\mathcal{O}_s\langle #1 \rangle}
+\providecommand{\ObvStruct}[1]{\mathcal{O}_s\langle #1 \rangle}
 
 % Type-level oblivious (even the type itself is hidden)
-\newcommand{\ObvType}[1]{\mathcal{O}_t\langle #1 \rangle}
+\providecommand{\ObvType}[1]{\mathcal{O}_t\langle #1 \rangle}
 
 % ============================================
 % Oblivious Product Types
 % ============================================
 
 % Independent oblivious components
-\newcommand{\ObvProd}[2]{(\Obv{#1}, \Obv{#2})}
+\providecommand{\ObvProd}[2]{(\Obv{#1}, \Obv{#2})}
 
 % Entangled oblivious pair
-\newcommand{\ObvPair}[2]{\Obv{(#1, #2)}}
+\providecommand{\ObvPair}[2]{\Obv{(#1, #2)}}
 
 % Mixed oblivious (first clear, second oblivious)
-\newcommand{\MixedProd}[2]{(#1, \Obv{#2})}
+\providecommand{\MixedProd}[2]{(#1, \Obv{#2})}
 
 % ============================================
 % Oblivious Sum Types
 % ============================================
 
 % Tag is clear, value is oblivious
-\newcommand{\ObvSum}[2]{#1 + \Obv{#2}}
+\providecommand{\ObvSum}[2]{#1 + \Obv{#2}}
 
 % Both tag and value are oblivious
-\newcommand{\ObvTagSum}[2]{\Obv{(#1 + #2)}}
+\providecommand{\ObvTagSum}[2]{\Obv{(#1 + #2)}}
 
 % ============================================
 % Oblivious Function Types
 % ============================================
 
 % Function with oblivious output
-\newcommand{\ObvOut}[2]{#1 \to \Obv{#2}}
+\providecommand{\ObvOut}[2]{#1 \to \Obv{#2}}
 
 % Function with oblivious input
-\newcommand{\ObvIn}[2]{\Obv{#1} \to #2}
+\providecommand{\ObvIn}[2]{\Obv{#1} \to #2}
 
 % Fully oblivious function
-\newcommand{\ObvFun}[2]{\Obv{(#1 \to #2)}}
+\providecommand{\ObvFun}[2]{\Obv{(#1 \to #2)}}
 
 % Oblivious function application
-\newcommand{\ObvApp}[2]{\Obv{#1}(#2)}
+\providecommand{\ObvApp}[2]{\Obv{#1}(#2)}
 
 % ============================================
 % Oblivious Collections
 % ============================================
 
 % Oblivious set - membership is oblivious
-\newcommand{\ObvSet}[1]{\Obv{\mathcal{P}(#1)}}
+\providecommand{\ObvSet}[1]{\Obv{\mathcal{P}(#1)}}
 
 % Set of oblivious elements
-\newcommand{\SetObv}[1]{\mathcal{P}(\Obv{#1})}
+\providecommand{\SetObv}[1]{\mathcal{P}(\Obv{#1})}
 
 % Oblivious map - lookups are oblivious
-\newcommand{\ObvMap}[2]{\Obv{(#1 \to #2)}}
+\providecommand{\ObvMap}[2]{\Obv{(#1 \to #2)}}
 
 % Map with oblivious values
-\newcommand{\MapObv}[2]{#1 \to \Obv{#2}}
+\providecommand{\MapObv}[2]{#1 \to \Obv{#2}}
 
 % ============================================
 % Access Patterns and Leakage
 % ============================================
 
 % What leaks from accessing x
-\newcommand{\Leak}[1]{\mathcal{L}(#1)}
+\providecommand{\Leak}[1]{\mathcal{L}(#1)}
 
 % Access pattern for operation
-\newcommand{\Pattern}[1]{\pi(#1)}
+\providecommand{\Pattern}[1]{\pi(#1)}
 
 % Observable trace
-\newcommand{\Trace}[1]{\tau(#1)}
+\providecommand{\Trace}[1]{\tau(#1)}
 
 % Hidden value
-\newcommand{\Hidden}[1]{\mathsf{h}(#1)}
+\providecommand{\Hidden}[1]{\mathsf{h}(#1)}
 
 % Revealed/Observable value
-\newcommand{\Reveal}[1]{\tilde{#1}}
+\providecommand{\Reveal}[1]{\tilde{#1}}
 
 % ============================================
 % Leakage Specifications
 % ============================================
 
 % No leakage
-\newcommand{\NoLeak}{\bot}
+\providecommand{\NoLeak}{\bot}
 
 % Size leakage only
-\newcommand{\SizeLeak}{\mathsf{size}}
+\providecommand{\SizeLeak}{\mathsf{size}}
 
 % Pattern leakage
-\newcommand{\PatternLeak}{\mathsf{pattern}}
+\providecommand{\PatternLeak}{\mathsf{pattern}}
 
 % Full leakage
-\newcommand{\FullLeak}{\top}
+\providecommand{\FullLeak}{\top}
 
 % ============================================
 % Examples of Notation Usage
@@ -158,47 +158,47 @@
 % ============================================
 
 % Leakage composition (sequential)
-\newcommand{\LeakSeq}[2]{\Leak{#1} \oplus \Leak{#2}}
+\providecommand{\LeakSeq}[2]{\Leak{#1} \oplus \Leak{#2}}
 
 % Leakage composition (parallel)
-\newcommand{\LeakPar}[2]{\Leak{#1} \parallel \Leak{#2}}
+\providecommand{\LeakPar}[2]{\Leak{#1} \parallel \Leak{#2}}
 
 % Leakage bound
-\newcommand{\LeakBound}[2]{\Leak{#1} \leq #2}
+\providecommand{\LeakBound}[2]{\Leak{#1} \leq #2}
 
 % ============================================
 % Security Definitions
 % ============================================
 
 % Indistinguishability
-\newcommand{\Indist}{\approx}
-\newcommand{\CompIndist}{\approx_c}
-\newcommand{\StatIndist}{\approx_s}
+\providecommand{\Indist}{\approx}
+\providecommand{\CompIndist}{\approx_c}
+\providecommand{\StatIndist}{\approx_s}
 
 % Security parameter
-\newcommand{\SecParam}{\lambda}
+\providecommand{\SecParam}{\lambda}
 
 % Negligible function
-\newcommand{\Negl}[1]{\mathsf{negl}(#1)}
+\providecommand{\Negl}[1]{\mathsf{negl}(#1)}
 
 % ============================================
 % Common Patterns
 % ============================================
 
 % Searchable encryption pattern
-\newcommand{\SearchEnc}[2]{\ObvMap{#1}{#2}}
+\providecommand{\SearchEnc}[2]{\ObvMap{#1}{#2}}
 
 % PIR pattern (oblivious index, clear value)
-\newcommand{\PIR}[2]{\ObvIn{#1}{#2}}
+\providecommand{\PIR}[2]{\ObvIn{#1}{#2}}
 
 % ORAM pattern (oblivious address, oblivious value)
-\newcommand{\ORAM}[2]{\ObvFun{#1}{#2}}
+\providecommand{\ORAM}[2]{\ObvFun{#1}{#2}}
 
 % ============================================
 % Notation Guide Box
 % ============================================
 
-\newcommand{\ObliviousNotationGuide}{%
+\providecommand{\ObliviousNotationGuide}{%
 \begin{center}
 \fbox{
 \begin{minipage}{0.9\textwidth}

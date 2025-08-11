@@ -1,0 +1,57 @@
+% Common preamble for the Oblivious Computing paper series
+% Centralizes packages, typography, and consistent formatting.
+
+% Fonts, input, layout
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage[english]{babel}
+
+% Math and theorem machinery
+\usepackage{mathtools}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\numberwithin{equation}{section}
+
+% Figures, tables, graphics
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{subcaption}
+\captionsetup{font=small, labelfont=bf}
+
+% Algorithms (only used in some papers, harmless elsewhere)
+\usepackage[ruled,vlined]{algorithm2e}
+
+% Lists and spacing
+\usepackage{enumitem}
+\setlist{noitemsep, topsep=2pt, leftmargin=*}
+
+% Microtypography
+\usepackage[activate={true,nocompatibility},final,tracking=true,kerning=true,spacing=true,factor=1100,stretch=10,shrink=10]{microtype}
+
+% References and hyperlinks
+\usepackage[numbers,sort&compress]{natbib}
+\bibliographystyle{abbrvnat}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue,
+  pdfauthor={Alexander Towell},
+  pdftitle={},
+  pdfcreator={LaTeX},
+  pdfproducer={pdflatex}
+}
+
+% TikZ (diagrams)
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,trees,calc}
+
+% Utility commands
+\providecommand{\keywords}[1]{\vspace{0.5em}\noindent\textbf{Keywords:} #1}
+

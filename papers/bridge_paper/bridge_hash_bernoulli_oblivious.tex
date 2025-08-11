@@ -5,7 +5,14 @@
 \usepackage[margin=1in]{geometry}
 \usepackage[english]{babel}
 \usepackage{graphicx}
-\usepackage[activate={true,nocompatibility},final,tracking=true,kerning=true,spacing=true,factor=1100,stretch=10,shrink=10]{microtype}
+% Microtype: configure per engine (XeTeX can't do font expansion)
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[activate={true,nocompatibility},final,tracking=true,kerning=true,spacing=true,factor=1100,stretch=10,shrink=10]{microtype}
+\else
+  % With XeTeX/LuaTeX, only protrusion is widely supported. Disable expansion/tracking.
+  \usepackage[activate={true,nocompatibility},final,protrusion=true,expansion=false]{microtype}
+\fi
 \usepackage{mathtools}
 \usepackage{amsmath}
 \usepackage{amsthm}

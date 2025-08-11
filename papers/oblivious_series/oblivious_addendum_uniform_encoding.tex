@@ -1,20 +1,5 @@
-\documentclass[11pt,final,hidelinks]{article}
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
-\usepackage{lmodern}
-\usepackage[margin=1in]{geometry}
-\usepackage[english]{babel}
-\usepackage{graphicx}
-\usepackage[activate={true,nocompatibility},final,tracking=true,kerning=true,spacing=true,factor=1100,stretch=10,shrink=10]{microtype}
-\usepackage{mathtools}
-\usepackage{amsmath}
-\usepackage{amsthm}
-\usepackage{amssymb}
-\usepackage{algorithm2e}
-\usepackage{hyperref}
-\usepackage[square,numbers]{natbib}
-\bibliographystyle{plainnat}
-\usepackage{cleveref}
+\documentclass[11pt,final]{article}
+\input{paper_preamble.tex}
 
 % Include unified notation for oblivious computing
 \input{unified_notation_oblivious.tex}
@@ -50,6 +35,8 @@
 \begin{abstract}
 We present a fundamental principle for achieving perfect obliviousness in computing systems: maintaining uniform distribution at the observable layer through careful encoding design and natural noise injection. The key insight is that when we construct oblivious functions using hash-based encodings, we need not explicitly handle invalid inputs—they naturally map to random outputs, providing free noise that makes the system's observable behavior indistinguishable from random. By choosing encoding set sizes inversely proportional to value frequencies, we achieve uniform output distribution. Combined with deliberate noise queries using invalid inputs, this creates a system where real computations are perfectly hidden within random-looking behavior. This principle unifies and simplifies the construction of oblivious data structures, secure indexes, and private information retrieval systems.
 \end{abstract}
+
+\keywords{uniform encoding, invalid inputs, natural noise, obliviousness}
 
 \section{Introduction}
 

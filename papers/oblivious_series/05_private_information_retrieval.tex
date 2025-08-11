@@ -1,22 +1,7 @@
-\documentclass[11pt,final,hidelinks]{article}
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
-\usepackage{lmodern}
-\usepackage[margin=1in]{geometry}
-\usepackage[english]{babel}
-\usepackage{graphicx}
-\usepackage[activate={true,nocompatibility},final,tracking=true,kerning=true,spacing=true,factor=1100,stretch=10,shrink=10]{microtype}
-\usepackage{mathtools}
-\usepackage{amsmath}
-\usepackage{amsthm}
-\usepackage{amssymb}
-\usepackage{algorithm2e}
-\usepackage{booktabs}
-\usepackage{hyperref}
-\usepackage[square,numbers]{natbib}
-\bibliographystyle{plainnat}
-\usepackage{cleveref}
-\usepackage{tikz}
+\documentclass[11pt,final]{article}
+\input{paper_preamble.tex}
+
+% Diagrams used here
 \usetikzlibrary{arrows.meta,positioning,shapes.geometric,calc}
 
 % Include unified notation for oblivious computing
@@ -64,6 +49,8 @@
 \begin{abstract}
 Private Information Retrieval (PIR) enables clients to search and retrieve documents from servers without revealing their queries or which documents match. We present PIR not just as index-based retrieval but as oblivious Boolean search over document collections. Building on the Bernoulli framework for approximate search, we show how to make document retrieval oblivious: queries are hidden, access patterns are obscured, and results may be approximate (Bernoulli types). We explore the spectrum from simple keyword PIR to complex Boolean queries, showing how OR-based constructions enable membership testing while XOR-based constructions enable efficient batching. We demonstrate that accepting approximate results (documents with false positive matches) dramatically improves communication complexity. The framework unifies keyword search, Boolean queries, and ranked retrieval under the notation $\Obv{\text{Query}} \to \Bernoulli{\text{Documents}}{2}$, where both queries and results are oblivious.
 \end{abstract}
+
+\keywords{private information retrieval, Boolean search, oblivious queries, Bernoulli types}
 
 \ObliviousNotationGuide
 

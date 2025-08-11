@@ -1,23 +1,8 @@
-\documentclass[11pt,final,hidelinks]{article}
+\documentclass[11pt,final]{article}
 % SUPPLEMENTAL MATERIAL - Boolean Constructions with Partial Oblivious Properties
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
-\usepackage{lmodern}
-\usepackage[margin=1in]{geometry}
-\usepackage[english]{babel}
-\usepackage{graphicx}
-\usepackage[activate={true,nocompatibility},final,tracking=true,kerning=true,spacing=true,factor=1100,stretch=10,shrink=10]{microtype}
-\usepackage{mathtools}
-\usepackage{amsmath}
-\usepackage{amsthm}
-\usepackage{amssymb}
-\usepackage{algorithm2e}
-\usepackage{booktabs}
-\usepackage{hyperref}
-\usepackage[square,numbers]{natbib}
-\bibliographystyle{plainnat}
-\usepackage{cleveref}
-\usepackage{tikz}
+\input{paper_preamble.tex}
+
+% Diagrams used here
 \usetikzlibrary{arrows.meta,positioning,shapes.geometric}
 
 % Include unified notation for oblivious computing
@@ -26,6 +11,7 @@
 % Additional notation for Boolean rings
 \newcommand{\XOR}{\oplus}
 \newcommand{\AND}{\land}
+\newcommand{\OR}{\lor}
 \newcommand{\HashRing}[1]{\mathcal{H}(#1)}
 \newcommand{\SymDiff}{\triangle}
 \newcommand{\Cat}{\parallel}
@@ -56,6 +42,8 @@
 \begin{abstract}
 This supplemental material explores two Boolean constructions that exhibit partial oblivious properties but do not achieve full obliviousness. We examine: (1) OR-based Boolean algebras that enable membership testing with false positives but no false negatives, producing Bernoulli boolean outputs, and (2) XOR-based Boolean rings that enable equality testing where the encoded values appear as random noise but equality tests return non-oblivious boolean results. While these constructions use techniques similar to our main oblivious framework (trapdoor encodings, uniform hash distributions), they fundamentally differ in that their outputs are standard Booleans that leak information, rather than uniformly distributed oblivious values. We include this material as it provides useful building blocks and demonstrates the boundary between partial and full obliviousness. These constructions produce Bernoulli types (probabilistic outputs) rather than truly oblivious types, highlighting why our main Bernoulli map approach is necessary for complete oblivious computing.
 \end{abstract}
+
+\keywords{Boolean algebra, XOR rings, partial obliviousness, Bernoulli outputs}
 
 \ObliviousNotationGuide
 

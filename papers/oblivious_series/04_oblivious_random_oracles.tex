@@ -1,22 +1,7 @@
-\documentclass[11pt,final,hidelinks]{article}
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
-\usepackage{lmodern}
-\usepackage[margin=1in]{geometry}
-\usepackage[english]{babel}
-\usepackage{graphicx}
-\usepackage[activate={true,nocompatibility},final,tracking=true,kerning=true,spacing=true,factor=1100,stretch=10,shrink=10]{microtype}
-\usepackage{mathtools}
-\usepackage{amsmath}
-\usepackage{amsthm}
-\usepackage{amssymb}
-\usepackage{algorithm2e}
-\usepackage{booktabs}
-\usepackage{hyperref}
-\usepackage[square,numbers]{natbib}
-\bibliographystyle{plainnat}
-\usepackage{cleveref}
-\usepackage{tikz}
+\documentclass[11pt,final]{article}
+\input{paper_preamble.tex}
+
+% Diagrams used here
 \usetikzlibrary{arrows.meta,positioning,shapes.geometric}
 
 % Include unified notation for oblivious computing
@@ -55,6 +40,8 @@
 \begin{abstract}
 We examine a fundamental tension in oblivious computing: the conflict between maintaining functional consistency (like a random oracle where the same input always produces the same output) and achieving perfect obliviousness (where all observable values are uniformly distributed). We show that true oblivious computing requires careful management of correlations at multiple levels: within individual operations, between composed operations, and across entire programs. We introduce the concept of ``correlation leakage'' where even perfectly uniform individual operations can leak information through their functional dependencies. This paper provides a formal framework for understanding when and how the ideal of whole-program obliviousness must be relaxed in practice, leading to compositional approaches that trade some security for feasibility. We demonstrate that while individual Bernoulli map constructions can achieve local uniformity, the random oracle property itself introduces unavoidable correlations that prevent global uniformity, necessitating careful analysis of what information these correlations reveal.
 \end{abstract}
+
+\keywords{random oracle, obliviousness, correlation leakage, uniform encoding}
 
 \ObliviousNotationGuide
 

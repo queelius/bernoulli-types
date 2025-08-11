@@ -1,22 +1,7 @@
-\documentclass[11pt,final,hidelinks]{article}
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
-\usepackage{lmodern}
-\usepackage[margin=1in]{geometry}
-\usepackage[english]{babel}
-\usepackage{graphicx}
-\usepackage[activate={true,nocompatibility},final,tracking=true,kerning=true,spacing=true,factor=1100,stretch=10,shrink=10]{microtype}
-\usepackage{mathtools}
-\usepackage{amsmath}
-\usepackage{amsthm}
-\usepackage{amssymb}
-\usepackage{algorithm2e}
-\usepackage{booktabs}
-\usepackage{hyperref}
-\usepackage[square,numbers]{natbib}
-\bibliographystyle{plainnat}
-\usepackage{cleveref}
-\usepackage{tikz}
+\documentclass[11pt,final]{article}
+\input{paper_preamble.tex}
+
+% Extra TikZ libs used here
 \usetikzlibrary{arrows.meta,positioning,shapes.geometric,trees}
 
 % Include unified notation for oblivious computing
@@ -61,6 +46,8 @@
 \begin{abstract}
 We present a systematic study of oblivious data structures—fundamental data structures modified to hide access patterns while maintaining their essential functionality. Traditional data structures leak information through their access patterns: which elements are accessed, in what order, and how frequently. We develop a compositional framework showing how to transform standard data structures into oblivious variants with provable privacy guarantees. Our key insight is that obliviousness can be achieved through careful composition of simpler oblivious primitives. We distinguish between different granularities of obliviousness: fully oblivious structures that hide all operations, partially oblivious structures that hide only sensitive operations, and differentially oblivious structures that add calibrated noise to access patterns. We provide tight bounds on the overhead required for obliviousness in arrays ($O(\log N)$), trees ($O(\log^2 N)$), heaps ($O(\log^2 N)$), and graphs ($O(\sqrt{N})$), and show these bounds are optimal for certain security definitions. The framework extends naturally to support oblivious types with complex internal structure, where we must specify precisely which components are oblivious.
 \end{abstract}
+
+\keywords{oblivious data structures, ORAM, access patterns, privacy overhead}
 
 \ObliviousNotationGuide
 

@@ -1,23 +1,5 @@
-\documentclass[11pt,final,hidelinks]{article}
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
-\usepackage{lmodern}
-\usepackage[margin=1in]{geometry}
-\usepackage[english]{babel}
-\usepackage{graphicx}
-\usepackage[activate={true,nocompatibility},final,tracking=true,kerning=true,spacing=true,factor=1100,stretch=10,shrink=10]{microtype}
-\usepackage{mathtools}
-\usepackage{amsmath}
-\usepackage{amsthm}
-\usepackage{amssymb}
-\usepackage{algorithm2e}
-\usepackage{booktabs}
-\usepackage{hyperref}
-\usepackage[square,numbers]{natbib}
-\bibliographystyle{plainnat}
-\usepackage{cleveref}
-\usepackage{tikz}
-\usetikzlibrary{arrows.meta,positioning,shapes.geometric}
+\documentclass[11pt,final]{article}
+\input{paper_preamble.tex}
 
 % Include unified notation for oblivious computing
 \input{unified_notation_oblivious.tex}
@@ -50,6 +32,8 @@
 \begin{abstract}
 We present a unified framework for secure indexes that combines oblivious computing with Bernoulli types, yielding data structures that are both space-efficient and privacy-preserving. Traditional secure indexes focus on hiding access patterns while maintaining exact results. Bloom filters provide space-efficient approximate membership but leak access patterns. We introduce \emph{oblivious Bernoulli types}—data structures where queries return oblivious probabilistic results. A secure index with oblivious Bernoulli membership returns $\Obv{\BernBool}$: an encrypted or otherwise hidden approximate Boolean. This composition provides multiple layers of protection: the oblivious wrapper hides access patterns while the Bernoulli type provides plausible deniability through false positives. We analyze the information-theoretic properties of these constructions, showing how approximation and obliviousness interact to bound leakage. We demonstrate that Bernoulli map constructions, when made oblivious, achieve efficient secure indexes with tunable privacy-accuracy trade-offs through our hash-based encoding framework. The framework extends to oblivious maps, sets, and relations, each returning oblivious Bernoulli results for their respective operations.
 \end{abstract}
+
+\keywords{secure indexes, Bloom filters, obliviousness, Bernoulli types, information leakage}
 
 \ObliviousNotationGuide
 
