@@ -5,6 +5,7 @@
 \usepackage{algorithm,algorithmic}
 \usepackage{tikz}
 \usepackage{hyperref}
+\usepackage{booktabs}
 
 % Include unified notation
 \input{canonical_notation}
@@ -30,9 +31,7 @@ Southern Illinois University Edwardsville\\
 We present a novel privacy framework based on rank-deficient observation functions that create computational indistinguishability between distinct inputs. Unlike differential privacy, which adds calibrated noise, our approach leverages lossy compression and many-to-one mappings to achieve privacy. We prove that rank deficiency in the observation matrix creates equivalence classes of indistinguishable inputs, with privacy guarantees that strengthen as the rank decreases. The framework unifies seemingly disparate privacy mechanisms—from Bloom filters to locality-sensitive hashing—under a common mathematical foundation. We establish tight bounds on the privacy-utility trade-off, showing that optimal constructions achieve privacy parameter $\epsilon = \ln(|\kernel(C^T)|)$ where $C$ is the confusion matrix. We demonstrate applications to private set intersection, membership testing, and statistical queries, achieving comparable utility to differential privacy with fundamentally different mechanisms. Our constructions are particularly effective for scenarios requiring plausible deniability and membership privacy.
 \end{abstract}
 
-\begin{IEEEkeywords}
-Privacy, Indistinguishability, Rank deficiency, Probabilistic data structures, Information theory
-\end{IEEEkeywords}
+\textbf{Keywords:} Privacy, Indistinguishability, Rank deficiency, Probabilistic data structures, Information theory
 
 \section{Introduction}
 
