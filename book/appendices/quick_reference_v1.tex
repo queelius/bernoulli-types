@@ -1,0 +1,314 @@
+\chapter{Quick Reference}
+\label{app:quick-reference}
+
+\section{Key Formulas}
+
+\subsection{Bloom Filter Parameters}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Parameter} & \textbf{Formula} \\
+\hline
+Optimal bit array size & $m = -\frac{n \ln p}{(\ln 2)^2}$ \\
+Optimal number of hashes & $k = \frac{m}{n} \ln 2$ \\
+False positive rate & $p \approx \left(1 - e^{-kn/m}\right)^k$ \\
+Bits per element & $b = \frac{m}{n} = -\frac{\ln p}{(\ln 2)^2}$ \\
+\hline
+\end{tabular}
+\end{center}
+
+Where: $n$ = number of elements, $p$ = desired false positive rate, $m$ = bit array size, $k$ = number of hash functions
+
+\subsection{Error Composition}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Operation} & \textbf{Error Rate} \\
+\hline
+Union $A \cup B$ & $\varepsilon_A + \varepsilon_B - \varepsilon_A \varepsilon_B$ \\
+Intersection $A \cap B$ & $\varepsilon_A \cdot \varepsilon_B$ \\
+Complement $\neg A$ & $\varepsilon_A$ \\
+Symmetric difference $A \triangle B$ & $\varepsilon_A + \varepsilon_B - 2\varepsilon_A \varepsilon_B$ \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Information Theory}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Measure} & \textbf{Formula} \\
+\hline
+Shannon entropy & $H(X) = -\sum_x p(x) \log_2 p(x)$ \\
+Conditional entropy & $H(X|Y) = -\sum_{x,y} p(x,y) \log_2 p(x|y)$ \\
+Mutual information & $I(X;Y) = H(X) - H(X|Y)$ \\
+Maximum entropy & $H_{\max} = \log_2 |\mathcal{X}|$ (uniform distribution) \\
+\hline
+\end{tabular}
+\end{center}
+
+\section{Key Algorithms}
+
+\subsection{Basic Bloom Filter}
+
+\begin{algorithm}[H]
+\caption{Bloom Filter Operations}
+\SetAlgoLined
+\textbf{Initialize}$(m, k)$:\;
+\Indp
+    bits $\gets$ array of $m$ zeros\;
+    hash\_functions $\gets$ $k$ independent hash functions\;
+\Indm
+\textbf{Add}$(x)$:\;
+\Indp
+    \For{$i = 1$ \KwTo $k$}{
+        pos $\gets$ hash\_functions[$i$]$(x) \bmod m$\;
+        bits[pos] $\gets$ 1\;
+    }
+\Indm
+\textbf{Contains}$(x)$:\;
+\Indp
+    \For{$i = 1$ \KwTo $k$}{
+        pos $\gets$ hash\_functions[$i$]$(x) \bmod m$\;
+        \If{bits[pos] = 0}{
+            \Return False\;
+        }
+    }
+    \Return True\;
+\Indm
+\end{algorithm}
+
+\subsection{Bernoulli Encoding}
+
+\begin{algorithm}[H]
+\caption{Frequency-Aware Bernoulli Encoding}
+\SetAlgoLined
+\textbf{Initialize}$(frequencies)$:\;
+\Indp
+    term\_frequencies $\gets$ frequencies\;
+    secret\_salt $\gets$ random bytes\;
+\Indm
+\textbf{Encode}$(value)$:\;
+\Indp
+    freq $\gets$ term\_frequencies[value]\;
+    num\_encodings $\gets \min(100, \max(1, \lfloor 1/freq \rfloor))$\;
+    encodings $\gets$ empty set\;
+    \For{$i = 0$ \KwTo num\_encodings}{
+        hash $\gets$ HMAC(secret\_salt, value || i)\;
+        encodings.add(hash)\;
+    }
+    \Return random choice from encodings\;
+\Indm
+\end{algorithm}
+
+\subsection{Oblivious Search}
+
+\begin{algorithm}[H]
+\caption{Oblivious Document Search}
+\SetAlgoLined
+\textbf{Search}$(query)$:\;
+\Indp
+    // Add noise queries\;
+    noise\_queries $\gets$ RandomSample(vocabulary, noise\_rate)\;
+    all\_queries $\gets$ [query] + noise\_queries\;
+    Shuffle(all\_queries)\;
+    
+    // Execute all queries\;
+    results $\gets$ empty map\;
+    \For{q \KwIn all\_queries}{
+        encoding $\gets$ BernoulliEncode(q)\;
+        bloom\_filter $\gets$ index[encoding]\;
+        results[q] $\gets$ bloom\_filter\;
+    }
+    
+    // Return only real result\;
+    \Return results[query]\;
+\Indm
+\end{algorithm}
+
+\section{Python Code Templates}
+
+\subsection{Bloom Filter Implementation}
+
+\begin{lstlisting}[language=Python]
+import math
+import hashlib
+
+class BloomFilter:
+    def __init__(self, n, p=0.001):
+        # Calculate optimal parameters
+        self.m = int(-(n * math.log(p)) / (math.log(2)**2))
+        self.k = int((self.m / n) * math.log(2))
+        self.bits = [False] * self.m
+        
+    def _hash(self, item, seed):
+        h = hashlib.sha256(f"{item}:{seed}".encode())
+        return int.from_bytes(h.digest()[:8], 'big') % self.m
+    
+    def add(self, item):
+        for i in range(self.k):
+            self.bits[self._hash(item, i)] = True
+    
+    def contains(self, item):
+        return all(self.bits[self._hash(item, i)] 
+                  for i in range(self.k))
+\end{lstlisting}
+
+\subsection{Bernoulli Encoding}
+
+\begin{lstlisting}[language=Python]
+import hmac
+import random
+
+class BernoulliEncoder:
+    def __init__(self, frequencies):
+        self.frequencies = frequencies
+        self.salt = random.randbytes(32)
+    
+    def encode(self, value):
+        freq = self.frequencies.get(value, 0.001)
+        num_enc = min(100, max(1, int(1.0 / freq)))
+        
+        encodings = []
+        for i in range(num_enc):
+            h = hmac.new(self.salt, 
+                        f"{value}:{i}".encode(),
+                        'sha256')
+            encodings.append(h.hexdigest())
+        
+        return random.choice(encodings)
+\end{lstlisting}
+
+\subsection{Testing Uniformity}
+
+\begin{lstlisting}[language=Python]
+from scipy import stats
+
+def test_uniformity(encoder, values, trials=1000):
+    """Test if encodings are uniformly distributed"""
+    encoding_counts = {}
+    
+    for _ in range(trials):
+        for v in values:
+            enc = encoder.encode(v)
+            encoding_counts[enc] = encoding_counts.get(enc, 0) + 1
+    
+    # Chi-square test
+    observed = list(encoding_counts.values())
+    expected_freq = len(values) * trials / len(encoding_counts)
+    expected = [expected_freq] * len(observed)
+    
+    chi2, p_value = stats.chisquare(observed, expected)
+    return p_value > 0.05  # True if uniform
+\end{lstlisting}
+
+\section{Common Patterns}
+
+\subsection{Frequency Hiding Pattern}
+\begin{enumerate}
+\item Estimate term frequencies from corpus
+\item Assign encodings inversely proportional to frequency
+\item Select random encoding for each query
+\item Result: uniform distribution regardless of actual frequency
+\end{enumerate}
+
+\subsection{Correlation Breaking Pattern}
+\begin{enumerate}
+\item Identify commonly co-occurring terms
+\item Create tuple encodings for pairs
+\item Use tuple encoding instead of intersection
+\item Result: correlations hidden from observer
+\end{enumerate}
+
+\subsection{Noise Injection Pattern}
+\begin{enumerate}
+\item Generate plausible fake queries
+\item Mix real and fake queries
+\item Execute all queries
+\item Return only real results
+\item Result: timing patterns obscured
+\end{enumerate}
+
+\section{Security Checklist}
+
+\begin{itemize}
+\item[$\square$] Use cryptographically secure randomness
+\item[$\square$] Never reuse encodings across queries
+\item[$\square$] Implement constant-time operations where possible
+\item[$\square$] Pad or batch results to hide size
+\item[$\square$] Use secure communication channels (TLS)
+\item[$\square$] Rotate keys periodically
+\item[$\square$] Log security events for audit
+\item[$\square$] Test uniformity of encodings
+\item[$\square$] Verify independence of observations
+\item[$\square$] Measure actual vs theoretical error rates
+\end{itemize}
+
+\section{Performance Guidelines}
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Operation} & \textbf{Expected Time} & \textbf{Optimization Tips} \\
+\hline
+Bloom filter add & $O(k)$ & Use SIMD for parallel hashing \\
+Bloom filter query & $O(k)$ & Cache hash computations \\
+Bernoulli encode & $O(1/p)$ & Precompute encodings offline \\
+Oblivious search & $O(k + \text{noise})$ & Batch queries together \\
+\hline
+\end{tabular}
+\end{center}
+
+\section{Error Budgets}
+
+When designing a system, allocate error budget:
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Component} & \textbf{Typical Error} & \textbf{Impact} \\
+\hline
+Single Bloom filter & 0.001 (0.1\%) & Direct false positives \\
+Union of 2 filters & $\approx$ 0.002 & Additive errors \\
+Intersection of 2 & $\approx$ 0.000001 & Multiplicative errors \\
+10 operations & $\leq$ 0.01 & Bounded by sum \\
+\hline
+\end{tabular}
+\end{center}
+
+\section{Troubleshooting}
+
+\subsection{High False Positive Rate}
+\begin{itemize}
+\item Check if Bloom filter is overfilled
+\item Verify hash functions are independent
+\item Increase bit array size or reduce items
+\end{itemize}
+
+\subsection{Patterns Still Visible}
+\begin{itemize}
+\item Ensure fresh randomness for each encoding
+\item Check for timing side channels
+\item Verify noise injection is working
+\item Test uniformity statistically
+\end{itemize}
+
+\subsection{Poor Performance}
+\begin{itemize}
+\item Profile to find bottlenecks
+\item Cache frequently used encodings
+\item Use faster non-cryptographic hashes where safe
+\item Batch operations to amortize costs
+\end{itemize}
+
+\section{Further Resources}
+
+\begin{itemize}
+\item Book website: \url{https://bernoulli-types.org}
+\item Code repository: \url{https://github.com/bernoulli-types/book-volume1}
+\item Discussion forum: \url{https://forum.bernoulli-types.org}
+\item Author contact: \url{feedback@bernoulli-types.org}
+\end{itemize}

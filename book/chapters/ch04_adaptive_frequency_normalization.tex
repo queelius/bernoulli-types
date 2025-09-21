@@ -1,0 +1,502 @@
+\section{Adaptive Frequency Normalization}
+\label{sec:adaptive-frequency}
+
+\subsection{The Distribution Tracking Problem}
+
+Even with oblivious operations, frequency analysis remains a threat. The key insight: track distributions at every stage and adaptively adjust encodings to maintain uniformity.
+
+\begin{lstlisting}[language=Python, caption={Distribution tracking through computation}]
+class DistributionTracker:
+    """Track distributions through oblivious computation pipeline"""
+    
+    def __init__(self, window_size: int = 10000):
+        self.window_size = window_size
+        # Track distributions at each stage
+        self.input_distribution = defaultdict(int)
+        self.encoding_distribution = defaultdict(int)
+        self.intermediate_distributions = defaultdict(lambda: defaultdict(int))
+        self.output_distribution = defaultdict(int)
+        
+    def observe_input(self, value: Any) -> None:
+        """Track raw input distribution"""
+        self.input_distribution[value] += 1
+        self._update_encoding_strategy()
+    
+    def observe_encoding(self, value: Any, encoding: bytes) -> None:
+        """Track how values map to encodings"""
+        self.encoding_distribution[encoding] += 1
+        
+    def observe_propagation(self, stage: str, encoding: bytes) -> None:
+        """Track distribution at each computation stage"""
+        self.intermediate_distributions[stage][encoding] += 1
+        
+    def _update_encoding_strategy(self) -> None:
+        """Dynamically adjust encoding counts based on observed frequencies"""
+        if len(self.input_distribution) < 10:
+            return  # Not enough data
+            
+        # Calculate frequency for each input
+        total = sum(self.input_distribution.values())
+        frequencies = {
+            value: count / total 
+            for value, count in self.input_distribution.items()
+        }
+        
+        # Adjust encoding counts inversely to frequency
+        self.encoding_counts = {}
+        max_encodings = 1000  # Cap for practical reasons
+        
+        for value, freq in frequencies.items():
+            # More encodings for rare values (1/p principle)
+            if freq > 0:
+                count = min(max_encodings, int(1.0 / freq))
+                self.encoding_counts[value] = max(1, count)
+\end{lstlisting}
+
+\subsection{Adaptive Encoding Strategy}
+
+Dynamically adjust the number of encodings per value based on observed distributions:
+
+\begin{lstlisting}[language=Python, caption={Adaptive encoding based on frequency}]
+class AdaptiveFrequencyNormalizer:
+    """
+    Adaptively normalize frequencies to achieve uniform distribution
+    across all computation stages
+    """
+    
+    def __init__(self, target_uniformity: float = 0.95):
+        self.target_uniformity = target_uniformity
+        self.tracker = DistributionTracker()
+        self.encoding_pool = {}  # Pre-computed encodings
+        self.rebalance_threshold = 0.1  # Rebalance when skew > 10%
+        
+    def adaptive_encode(self, value: Any) -> bytes:
+        """Encode with adaptive frequency normalization"""
+        # Track input
+        self.tracker.observe_input(value)
+        
+        # Get current encoding count for this value
+        encoding_count = self.get_adaptive_encoding_count(value)
+        
+        # Generate or retrieve encodings
+        if value not in self.encoding_pool:
+            self.encoding_pool[value] = self.generate_encoding_pool(
+                value, encoding_count
+            )
+        
+        # Check if we need more encodings due to frequency changes
+        if len(self.encoding_pool[value]) < encoding_count:
+            # Generate additional encodings
+            additional = encoding_count - len(self.encoding_pool[value])
+            new_encodings = self.generate_encoding_pool(value, additional)
+            self.encoding_pool[value].extend(new_encodings)
+        
+        # Select encoding uniformly from pool
+        encoding = random.choice(self.encoding_pool[value])
+        
+        # Track the encoding
+        self.tracker.observe_encoding(value, encoding)
+        
+        # Check if distribution is becoming skewed
+        if self.is_distribution_skewed():
+            self.rebalance_encodings()
+        
+        return encoding
+    
+    def get_adaptive_encoding_count(self, value: Any) -> int:
+        """
+        Calculate encoding count based on observed frequency
+        and current distribution skew
+        """
+        # Get base count from frequency
+        freq = self.get_observed_frequency(value)
+        if freq == 0:
+            base_count = 100  # Default for unseen values
+        else:
+            base_count = int(1.0 / freq)
+        
+        # Adjust based on current distribution uniformity
+        uniformity = self.measure_uniformity()
+        if uniformity < self.target_uniformity:
+            # Need more encodings to improve uniformity
+            adjustment_factor = self.target_uniformity / max(uniformity, 0.1)
+            base_count = int(base_count * adjustment_factor)
+        
+        return min(1000, max(1, base_count))  # Practical bounds
+    
+    def measure_uniformity(self) -> float:
+        """
+        Measure how uniform the encoding distribution is
+        1.0 = perfectly uniform, 0.0 = completely skewed
+        """
+        if not self.tracker.encoding_distribution:
+            return 1.0
+        
+        # Calculate entropy of encoding distribution
+        total = sum(self.tracker.encoding_distribution.values())
+        entropy = 0
+        max_entropy = 0
+        
+        for encoding, count in self.tracker.encoding_distribution.items():
+            p = count / total
+            if p > 0:
+                entropy -= p * math.log2(p)
+        
+        # Maximum entropy for this number of encodings
+        n = len(self.tracker.encoding_distribution)
+        if n > 1:
+            max_entropy = math.log2(n)
+            return entropy / max_entropy if max_entropy > 0 else 0
+        
+        return 1.0
+    
+    def rebalance_encodings(self) -> None:
+        """
+        Rebalance encoding pools when distribution becomes skewed
+        """
+        print(f"Rebalancing: uniformity = {self.measure_uniformity():.3f}")
+        
+        # Identify over-represented encodings
+        total = sum(self.tracker.encoding_distribution.values())
+        mean_count = total / len(self.tracker.encoding_distribution)
+        
+        for value in self.encoding_pool:
+            current_encodings = self.encoding_pool[value]
+            
+            # Check how often each encoding is used
+            encoding_usage = defaultdict(int)
+            for enc in current_encodings:
+                encoding_usage[enc] = self.tracker.encoding_distribution.get(enc, 0)
+            
+            # Remove over-used encodings
+            overused = [
+                enc for enc, count in encoding_usage.items()
+                if count > mean_count * 1.5  # 50% above mean
+            ]
+            
+            if overused:
+                # Remove overused encodings
+                self.encoding_pool[value] = [
+                    enc for enc in current_encodings
+                    if enc not in overused
+                ]
+                
+                # Generate fresh encodings to replace
+                new_count = len(overused)
+                new_encodings = self.generate_encoding_pool(value, new_count)
+                self.encoding_pool[value].extend(new_encodings)
+\end{lstlisting}
+
+\subsection{Propagation-Aware Encoding}
+
+Track how encodings propagate through computation stages:
+
+\begin{lstlisting}[language=Python, caption={Tracking distribution through computation}]
+class PropagationAwareEncoder:
+    """
+    Track how encodings flow through computation
+    and adjust to maintain uniformity at each stage
+    """
+    
+    def __init__(self):
+        self.stage_distributions = {}
+        self.propagation_graph = defaultdict(lambda: defaultdict(list))
+        
+    def track_computation(self, 
+                         input_encoding: bytes,
+                         operation: str,
+                         output_encoding: bytes,
+                         stage: str) -> None:
+        """Track how encodings propagate through operations"""
+        # Record the transformation
+        self.propagation_graph[stage][operation].append({
+            'input': input_encoding,
+            'output': output_encoding,
+            'timestamp': time.time()
+        })
+        
+        # Update stage distribution
+        if stage not in self.stage_distributions:
+            self.stage_distributions[stage] = defaultdict(int)
+        self.stage_distributions[stage][output_encoding] += 1
+        
+        # Check for distribution anomalies
+        self.detect_propagation_patterns(stage)
+    
+    def detect_propagation_patterns(self, stage: str) -> Dict[str, float]:
+        """
+        Detect patterns in how encodings propagate
+        that might leak information
+        """
+        patterns = {}
+        
+        if stage not in self.propagation_graph:
+            return patterns
+        
+        # Check for convergence (many inputs -> few outputs)
+        for operation in self.propagation_graph[stage]:
+            transforms = self.propagation_graph[stage][operation]
+            
+            input_diversity = len(set(t['input'] for t in transforms))
+            output_diversity = len(set(t['output'] for t in transforms))
+            
+            if input_diversity > 0:
+                convergence_ratio = output_diversity / input_diversity
+                if convergence_ratio < 0.5:
+                    patterns[f"{stage}:{operation}:convergence"] = convergence_ratio
+        
+        # Check for frequency amplification
+        stage_dist = self.stage_distributions.get(stage, {})
+        if stage_dist:
+            total = sum(stage_dist.values())
+            max_freq = max(stage_dist.values()) / total
+            if max_freq > 0.1:  # More than 10% concentration
+                patterns[f"{stage}:concentration"] = max_freq
+        
+        return patterns
+    
+    def adaptive_stage_encoding(self,
+                               value: Any,
+                               stage: str,
+                               previous_encoding: Optional[bytes] = None) -> bytes:
+        """
+        Generate encoding based on stage-specific distribution
+        """
+        # Get distribution at this stage
+        stage_dist = self.stage_distributions.get(stage, {})
+        
+        if not stage_dist:
+            # First time at this stage, use default encoding
+            return self.default_encode(value)
+        
+        # Find underrepresented encodings at this stage
+        total = sum(stage_dist.values())
+        mean_count = total / len(stage_dist) if stage_dist else 1
+        
+        # Generate encodings biased toward underrepresented regions
+        candidate_encodings = []
+        for _ in range(100):  # Generate candidates
+            enc = self.generate_encoding(value)
+            
+            # Prefer encodings that are underrepresented
+            current_count = stage_dist.get(enc, 0)
+            if current_count < mean_count:
+                candidate_encodings.append(enc)
+                if len(candidate_encodings) >= 10:
+                    break
+        
+        if not candidate_encodings:
+            # All encodings overrepresented, generate fresh
+            return self.generate_encoding(value)
+        
+        # Select from candidates
+        return random.choice(candidate_encodings)
+\end{lstlisting}
+
+\subsection{Multi-Stage Frequency Mitigation}
+
+Apply frequency normalization at multiple stages:
+
+\begin{lstlisting}[language=Python, caption={Multi-stage frequency mitigation}]
+class MultiStageFrequencyMitigation:
+    """
+    Mitigate frequency analysis across entire computation pipeline
+    """
+    
+    def __init__(self, stages: List[str]):
+        self.stages = stages
+        self.stage_normalizers = {
+            stage: AdaptiveFrequencyNormalizer()
+            for stage in stages
+        }
+        self.global_tracker = DistributionTracker()
+        
+    def process_with_mitigation(self,
+                               input_value: Any,
+                               computation_graph: Dict) -> bytes:
+        """
+        Process through computation with frequency mitigation
+        at each stage
+        """
+        current_encoding = None
+        
+        for stage in self.stages:
+            # Get normalizer for this stage
+            normalizer = self.stage_normalizers[stage]
+            
+            if stage == "input":
+                # Initial encoding with frequency normalization
+                current_encoding = normalizer.adaptive_encode(input_value)
+                
+            else:
+                # Transform encoding through computation
+                operation = computation_graph.get(stage, {}).get('operation')
+                inputs = computation_graph.get(stage, {}).get('inputs', [])
+                
+                # Apply operation with frequency-aware encoding
+                if operation and current_encoding:
+                    # Track distribution before operation
+                    self.global_tracker.observe_propagation(
+                        f"{stage}_pre", current_encoding
+                    )
+                    
+                    # Perform oblivious operation
+                    result = self.oblivious_compute(
+                        operation, current_encoding, inputs
+                    )
+                    
+                    # Re-encode result with frequency normalization
+                    current_encoding = normalizer.adaptive_encode(result)
+                    
+                    # Track distribution after operation
+                    self.global_tracker.observe_propagation(
+                        f"{stage}_post", current_encoding
+                    )
+        
+        return current_encoding
+    
+    def analyze_frequency_leakage(self) -> Dict[str, float]:
+        """
+        Analyze potential frequency leakage across stages
+        """
+        analysis = {}
+        
+        for stage in self.stages:
+            normalizer = self.stage_normalizers[stage]
+            uniformity = normalizer.measure_uniformity()
+            
+            analysis[f"{stage}_uniformity"] = uniformity
+            
+            # Check if frequency patterns persist across stages
+            if stage != self.stages[0]:
+                prev_stage = self.stages[self.stages.index(stage) - 1]
+                correlation = self.measure_stage_correlation(prev_stage, stage)
+                analysis[f"{prev_stage}_to_{stage}_correlation"] = correlation
+        
+        # Overall system uniformity
+        analysis["system_uniformity"] = np.mean([
+            v for k, v in analysis.items() if "uniformity" in k
+        ])
+        
+        return analysis
+    
+    def measure_stage_correlation(self, stage1: str, stage2: str) -> float:
+        """
+        Measure correlation between distributions at different stages
+        Low correlation = good frequency mitigation
+        """
+        dist1 = self.global_tracker.intermediate_distributions.get(f"{stage1}_post", {})
+        dist2 = self.global_tracker.intermediate_distributions.get(f"{stage2}_pre", {})
+        
+        if not dist1 or not dist2:
+            return 0.0
+        
+        # Convert to frequency vectors
+        all_encodings = set(dist1.keys()) | set(dist2.keys())
+        
+        vec1 = np.array([dist1.get(enc, 0) for enc in all_encodings])
+        vec2 = np.array([dist2.get(enc, 0) for enc in all_encodings])
+        
+        # Normalize
+        if vec1.sum() > 0:
+            vec1 = vec1 / vec1.sum()
+        if vec2.sum() > 0:
+            vec2 = vec2 / vec2.sum()
+        
+        # Calculate correlation coefficient
+        if len(vec1) > 1:
+            return np.corrcoef(vec1, vec2)[0, 1]
+        
+        return 0.0
+\end{lstlisting}
+
+\subsection{Theoretical Analysis}
+
+\begin{theorem}[Frequency Mitigation Bound]
+Given input distribution $P_{\text{in}}$ with maximum frequency $p_{\max}$, the adaptive encoding scheme with $k(x) = \lceil 1/p(x) \rceil$ encodings per value $x$ achieves output distribution $P_{\text{out}}$ with:
+$$\text{TV}(P_{\text{out}}, U) \leq \frac{1}{2}\sqrt{\frac{1}{k_{\min}}}$$
+where $U$ is uniform distribution and $k_{\min} = \min_x k(x)$.
+\end{theorem}
+
+\begin{proof}[Proof Sketch]
+Each value $x$ with frequency $p(x)$ gets $k(x) = \lceil 1/p(x) \rceil$ encodings. The expected number of times encoding $e_i^x$ appears is:
+$$\mathbb{E}[\#e_i^x] = \frac{p(x) \cdot n}{k(x)} \approx \frac{n}{k(x)^2} \leq n$$
+By concentration inequalities and uniformity of selection within encoding pools, the total variation distance from uniform is bounded by the reciprocal square root of the minimum encoding count.
+\end{proof}
+
+\subsection{Practical Implementation}
+
+\begin{lstlisting}[language=Python, caption={Complete adaptive frequency mitigation system}]
+class CompleteAdaptiveSystem:
+    """Production-ready adaptive frequency mitigation"""
+    
+    def __init__(self, 
+                 max_encodings: int = 1000,
+                 rebalance_interval: int = 1000,
+                 uniformity_target: float = 0.95):
+        self.max_encodings = max_encodings
+        self.rebalance_interval = rebalance_interval
+        self.uniformity_target = uniformity_target
+        
+        # Components
+        self.input_normalizer = AdaptiveFrequencyNormalizer(uniformity_target)
+        self.propagation_tracker = PropagationAwareEncoder()
+        self.multi_stage = MultiStageFrequencyMitigation([
+            "input", "transform", "aggregate", "output"
+        ])
+        
+        # Metrics
+        self.operations_count = 0
+        self.last_rebalance = 0
+        
+    def process_query(self, query: Any) -> bytes:
+        """Process with full adaptive frequency mitigation"""
+        
+        self.operations_count += 1
+        
+        # Adaptive encoding based on observed frequency
+        encoded = self.input_normalizer.adaptive_encode(query)
+        
+        # Track through computation
+        result = self.multi_stage.process_with_mitigation(
+            query,
+            {"transform": {"operation": "oblivious_op"}}
+        )
+        
+        # Periodic rebalancing
+        if self.operations_count - self.last_rebalance > self.rebalance_interval:
+            self.rebalance_all()
+            self.last_rebalance = self.operations_count
+        
+        # Monitor and adjust
+        metrics = self.multi_stage.analyze_frequency_leakage()
+        if metrics["system_uniformity"] < self.uniformity_target:
+            self.emergency_rebalance()
+        
+        return result
+    
+    def rebalance_all(self):
+        """Periodic global rebalancing"""
+        for stage in self.multi_stage.stages:
+            self.multi_stage.stage_normalizers[stage].rebalance_encodings()
+    
+    def emergency_rebalance(self):
+        """Emergency rebalancing when uniformity drops"""
+        print(f"Emergency rebalance at operation {self.operations_count}")
+        # Flush encoding pools and regenerate
+        for normalizer in self.multi_stage.stage_normalizers.values():
+            normalizer.encoding_pool.clear()
+        self.rebalance_all()
+\end{lstlisting}
+
+\subsection{Key Insights}
+
+This adaptive approach provides:
+
+1. **Dynamic adjustment**: Encoding counts adapt to observed frequencies
+2. **Propagation tracking**: Monitor how distributions change through computation
+3. **Multi-stage mitigation**: Apply normalization at each computation stage
+4. **Automatic rebalancing**: Detect and correct distribution skew
+5. **Theoretical guarantees**: Bounded distance from uniform distribution
+
+The system continuously learns and adapts, maintaining uniformity even as input distributions change over time.

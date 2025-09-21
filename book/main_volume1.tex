@@ -1,0 +1,143 @@
+\documentclass[11pt,oneside]{book}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amsthm,amssymb}
+\usepackage{algorithm2e}
+\usepackage{tikz}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{listings}
+\usepackage{graphicx}
+\usepackage{makeidx}
+\usepackage[breaklinks=true]{hyperref}  % Fix for long URLs
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,patterns,decorations.pathreplacing}
+
+% Theorem environments
+\newtheorem{theorem}{Theorem}[chapter]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{construction}[theorem]{Construction}
+
+% Custom environments
+\newenvironment{inpractice}{\begin{quote}\textbf{In Practice:}}{\end{quote}}
+\newenvironment{researchfrontier}{\begin{quote}\textbf{Research Frontier:}}{\end{quote}}
+
+% Code listing style with better wrapping
+\lstset{
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{gray},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    frame=single,
+    breaklines=true,
+    breakatwhitespace=true,
+    captionpos=b,
+    columns=flexible
+}
+
+% Include unified notation
+\input{notation}
+
+\makeindex
+
+% Fix page numbering
+\renewcommand{\thepage}{\roman{page}}
+
+\title{Probabilistic Privacy:\\
+\Large The Bernoulli-Oblivious Computing Framework\\
+\vspace{1cm}
+\huge \textbf{Volume 1: Foundations}}
+\author{Alexander Towell}
+\date{2024}
+
+\begin{document}
+
+\frontmatter
+\maketitle
+
+% Copyright page
+\thispagestyle{empty}
+\vspace*{\fill}
+\begin{center}
+\textbf{Probabilistic Privacy: The Bernoulli-Oblivious Computing Framework}\\
+Volume 1: Foundations\\
+\vspace{0.5cm}
+Copyright \copyright\ 2024 Alexander Towell\\
+All rights reserved.\\
+\vspace{0.5cm}
+First Edition\\
+\vspace{1cm}
+ISBN: 978-0-XXXX-XXXX-X (Paperback)\\
+ISBN: 978-0-XXXX-XXXX-X (eBook)\\
+\vspace{0.5cm}
+\textit{This volume introduces the foundational concepts of privacy through approximation.\\
+Future volumes will cover mathematical theory, systems implementation, and applications.}\\
+\vspace{1cm}
+Library of Congress Control Number: 2024XXXXXX\\
+\vspace{0.5cm}
+Published by: [Publisher Name]\\
+Website: \url{https://bernoulli-types.org}\\
+Contact: \url{feedback@bernoulli-types.org}
+\end{center}
+\vspace*{\fill}
+\clearpage
+
+% Dedication
+\thispagestyle{empty}
+\vspace*{\fill}
+\begin{center}
+\textit{To all who believe privacy and utility need not be enemies.}
+\end{center}
+\vspace*{\fill}
+\clearpage
+
+\tableofcontents
+
+\input{preface_volume1}
+
+\mainmatter
+\renewcommand{\thepage}{\arabic{page}}
+\setcounter{page}{1}
+
+\part{Foundations: The Power of Imperfection}
+
+\input{chapters/ch01_approximation_advantage}
+\input{chapters/ch02_hashing_to_hiding}
+\input{chapters/ch03_privacy_problem}
+\input{chapters/ch04_first_oblivious_system}
+\input{chapters/ch05_mathematical_bridge}
+\input{chapters/ch06_comprehensive_review}
+
+\part{Looking Ahead}
+
+\input{chapters/roadmap_future_volumes}
+
+\appendix
+\input{appendices/prerequisites}
+\input{appendices/notation_guide}
+\input{appendices/quick_reference_v1}
+
+\backmatter
+
+% Simple bibliography without BibTeX for now
+\chapter*{Bibliography}
+\addcontentsline{toc}{chapter}{Bibliography}
+
+\begin{enumerate}
+\item Bloom, B. H. (1970). ``Space/time trade-offs in hash coding with allowable errors.'' \textit{Communications of the ACM}, 13(7), 422-426.
+
+\item Broder, A., \& Mitzenmacher, M. (2004). ``Network applications of Bloom filters: A survey.'' \textit{Internet Mathematics}, 1(4), 485-509.
+
+\item Mitzenmacher, M., \& Upfal, E. (2017). \textit{Probability and computing: Randomization and probabilistic techniques in algorithms and data analysis}. Cambridge University Press.
+
+\item Additional references available in the full bibliography at \url{https://bernoulli-types.org/references}
+\end{enumerate}
+
+\printindex
+
+\end{document}

@@ -1,0 +1,135 @@
+\chapter*{Preface}
+\addcontentsline{toc}{chapter}{Preface}
+
+\section*{The Journey to This Book}
+
+In 2016, I was implementing a Bloom filter for a distributed database when I had a realization that would reshape my understanding of computation: \emph{what if accepting errors wasn't a compromise, but a feature?}
+
+This simple question led to a seven-year journey through approximation theory, information theory, and cryptography, culminating in the framework presented in this book. The Bernoulli-Oblivious Computing Framework represents a fundamental shift in how we think about privacy-preserving computation—not as perfect encryption of everything, but as strategic approximation that naturally provides privacy.
+
+\section*{Why This Book Exists}
+
+Current approaches to private computation face a fundamental tension:
+\begin{itemize}
+    \item \textbf{Perfect security} through homomorphic encryption is computationally expensive
+    \item \textbf{Practical systems} leak information through access patterns and correlations
+    \item \textbf{Differential privacy} adds noise but doesn't hide the computation itself
+\end{itemize}
+
+This book presents a different path: embracing approximation as the foundation for privacy. By accepting controlled errors (the Bernoulli property) and ensuring uniform distributions (the oblivious property), we achieve practical privacy-preserving systems that are both efficient and secure.
+
+\section*{Who Should Read This Book}
+
+This book is written for multiple audiences:
+
+\textbf{Graduate Students} will find a complete treatment of a new area, with exercises building from basic concepts to research-level problems.
+
+\textbf{Researchers} will discover formal frameworks, open problems, and connections to established fields.
+
+\textbf{Privacy Engineers} will learn practical techniques for building systems that protect user data while maintaining functionality.
+
+\textbf{System Developers} will gain tools for implementing efficient data structures that naturally provide privacy guarantees.
+
+\section*{How to Use This Book}
+
+The book is organized into four parts:
+
+\textbf{Part I: Foundations} builds intuition through accessible explanations and visual examples. No advanced mathematics required.
+
+\textbf{Part II: Mathematical Framework} develops the theory rigorously. Requires comfort with probability, linear algebra, and basic cryptography.
+
+\textbf{Part III: Systems and Implementation} focuses on building real systems. Assumes programming experience in C++ or similar languages.
+
+\textbf{Part IV: Applications and Advanced Topics} explores cutting-edge applications and future directions.
+
+\subsection*{Multiple Reading Paths}
+
+Depending on your goals, consider these paths:
+
+\begin{itemize}
+    \item \textbf{Quick Practical Guide}: Preface → Chapter 1 → Chapter 4 → Part III → Appendix B
+    \item \textbf{Theoretical Deep Dive}: Preface → Chapters 1-3 → Part II → Chapters 15-16
+    \item \textbf{Implementation Focus}: Preface → Chapter 1 → Chapter 4 → Chapter 6 → Part III
+    \item \textbf{Complete Journey}: Read sequentially (recommended for courses)
+\end{itemize}
+
+\section*{Running Example: Private Document Search}
+
+Throughout the book, we develop a complete private document search system. Starting with a simple membership test in Chapter 1, we progressively add features:
+\begin{itemize}
+    \item Boolean queries (Chapter 10)
+    \item Correlation hiding (Chapter 10)
+    \item Ranked retrieval (Chapter 11)
+    \item Production deployment (Chapter 14)
+\end{itemize}
+
+By the end, you'll have both theoretical understanding and practical code for a system that could be deployed in production.
+
+\section*{What Makes This Approach Different}
+
+Traditional cryptography says: \emph{encrypt everything perfectly}.
+
+Differential privacy says: \emph{add carefully calibrated noise}.
+
+Our approach says: \emph{accept approximation, ensure uniformity, achieve privacy}.
+
+This isn't just another privacy technique—it's a fundamentally different way of thinking about computation. When we accept that perfect accuracy isn't necessary, we gain efficiency. When we ensure outputs look uniformly random, we gain privacy. When we combine these insights systematically, we gain a powerful new framework.
+
+\section*{A Personal Note}
+
+The ideas in this book emerged from a simple observation: Bloom filters are remarkably useful despite (or because of) their false positives. This led to a deeper question: could approximation be the key to practical privacy?
+
+Seven years and dozens of papers later, I believe the answer is yes. The Bernoulli-Oblivious Framework shows that by embracing imperfection, we can build systems that are simultaneously more efficient and more private than their exact counterparts.
+
+This seeming paradox—that accepting errors improves privacy—is at the heart of our approach. I hope this book conveys not just the technical details, but also the elegance and power of this idea.
+
+\section*{Acknowledgments}
+
+This work wouldn't exist without contributions from many people:
+
+Dr. Hiroshi Fujinoki, who encouraged exploring "crazy ideas" and provided crucial feedback on the Moving Average Bootstrap method.
+
+The anonymous reviewers who challenged assumptions and strengthened proofs.
+
+The open-source community, whose implementations revealed practical considerations beyond the theory.
+
+My students, whose questions shaped the pedagogical approach of this book.
+
+\section*{Code and Resources}
+
+All code examples, implementations, and additional resources are available at:
+
+\begin{center}
+\url{https://github.com/bernoulli-oblivious/book}
+\end{center}
+
+The repository includes:
+\begin{itemize}
+    \item Complete C++ implementation of the framework
+    \item Jupyter notebooks for each chapter
+    \item Performance benchmarks
+    \item Docker containers for easy deployment
+    \item Instructor resources (with solution manual)
+\end{itemize}
+
+\section*{Feedback and Errata}
+
+This is a rapidly evolving field. Please send feedback, corrections, and suggestions to:
+
+\begin{center}
+\texttt{feedback@bernoulli-oblivious.org}
+\end{center}
+
+Errata and updates will be posted at the book's website.
+
+\section*{Let's Begin}
+
+The journey from approximation to privacy is not obvious. It requires rethinking fundamental assumptions about computation, accuracy, and security. But the payoff—practical systems that protect privacy while maintaining efficiency—makes this journey worthwhile.
+
+Welcome to the world of Bernoulli-Oblivious Computing.
+
+\vspace{1cm}
+\begin{flushright}
+Alexander Towell\\
+December 2024
+\end{flushright}

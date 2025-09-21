@@ -1,0 +1,92 @@
+\documentclass[11pt,oneside]{book}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amsthm,amssymb}
+\usepackage{algorithm2e}
+\usepackage{tikz}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{listings}
+\usepackage{graphicx}
+\usepackage{makeidx}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,patterns,decorations.pathreplacing}
+
+% Theorem environments
+\newtheorem{theorem}{Theorem}[chapter]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{construction}[theorem]{Construction}
+
+% Custom environments
+\newenvironment{inpractice}{\begin{quote}\textbf{In Practice:}}{\end{quote}}
+\newenvironment{researchfrontier}{\begin{quote}\textbf{Research Frontier:}}{\end{quote}}
+
+% Code listing style
+\lstset{
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{gray},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    frame=single,
+    breaklines=true
+}
+
+% Include unified notation
+\input{notation}
+
+\makeindex
+
+\title{Probabilistic Privacy:\\The Bernoulli-Oblivious Computing Framework}
+\author{Alexander Towell}
+\date{2024}
+
+\begin{document}
+
+\frontmatter
+\maketitle
+\tableofcontents
+
+\input{preface}
+
+\mainmatter
+
+\part{Foundations: The Power of Imperfection}
+\input{chapters/ch01_approximation_advantage}
+\input{chapters/ch02_hashing_to_hiding}
+\input{chapters/ch03_privacy_problem}
+\input{chapters/ch04_first_oblivious_system}
+
+\part{Mathematical Framework}
+\input{chapters/ch05_bernoulli_type_theory}
+\input{chapters/ch06_hash_constructions}
+\input{chapters/ch07_composition_errors}
+\input{chapters/ch08_oblivious_bridge}
+
+\part{Systems and Implementation}
+\input{chapters/ch09_data_structure_zoo}
+\input{chapters/ch10_query_processing}
+\input{chapters/ch11_private_information_retrieval}
+\input{chapters/ch12_system_integration}
+\input{chapters/ch13_performance_engineering}
+
+\part{Applications and Advanced Topics}
+\input{chapters/ch14_case_studies}
+\input{chapters/ch15_advanced_techniques}
+\input{chapters/ch16_road_ahead}
+
+\appendix
+\input{appendices/math_background}
+\input{appendices/code_repository}
+\input{appendices/quick_reference}
+
+\backmatter
+%\bibliographystyle{plain}
+%\bibliography{references}
+%\printindex
+
+\end{document}

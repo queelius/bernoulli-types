@@ -31,11 +31,18 @@
 \newtheorem{remark}[theorem]{Remark}
 \newtheorem{axiom}{Axiom}
 
-% Custom commands
+% Custom commands for algebraic data types and X± notation
 \newcommand{\bernoulli}[2]{\mathcal{B}\langle #1, #2 \rangle}
 \newcommand{\powerset}[1]{\mathcal{P}(#1)}
+\newcommand{\xpm}{X^{\pm}} % X± notation for approximate types
+\newcommand{\voidtype}{\mathsf{Void}}
+\newcommand{\unittype}{\mathsf{Unit}}
+\newcommand{\sumtype}[2]{#1 + #2}
+\newcommand{\prodtype}[2]{#1 \times #2}
+\newcommand{\exptype}[2]{#1 \to #2}
+\newcommand{\approxmap}[3]{#1 \xrightarrow{#2}_{#3} #2} % X →^ε_ω Y notation
 
-\title{Foundations of Bernoulli Types: A Unified Framework for Probabilistic Data Structures}
+\title{Foundations of Bernoulli Types: A Probabilistic Framework for Data Structures and Types}
 \author{
     Alexander Towell\\
     \texttt{atowell@siue.edu}
@@ -47,7 +54,7 @@
 \NotationSection
 
 \begin{abstract}
-We present a unified mathematical framework for understanding probabilistic data structures through the fundamental distinction between \emph{latent} (true but unobservable) values and their \emph{observed} (noisy but measurable) approximations. This framework, based on Bernoulli types, provides a principled approach to reasoning about uncertainty in computation. We show that the relationship between latent and observed values can be characterized by confusion matrices, channel models, and Bayesian inference. Our key insight is that approximation is not merely an implementation detail but a first-class concept that can be lifted to the type level. We demonstrate that Bloom filters, sketches, randomized algorithms, and other probabilistic data structures are special cases of this general framework, unified by the latent-observed duality.
+We introduce the \emph{Bernoulli Model}, a probabilistic framework that systematically handles uncertainty in data structures and types. The Boolean type $\mathrm{bool}$ is replaced with $B_{\mathrm{bool}}$, representing a noisy Boolean, and this extends to any type $T$ with $B_T$. Each Bernoulli type has an \emph{order} $k$ denoted $B_T^{(k)}$, representing degrees of freedom in error modeling. The framework operates at two levels: crystallized instances ($B_{\mathrm{bool}}$, $B_{X \mapsto Y}$, $B_{X \mapsto \mathrm{bool}}$) that capture essential patterns, and general algebraic foundations showing how approximation composes through type constructors. Central to the framework are confusion matrices characterizing latent-observed relationships, enabling space-accuracy trade-offs with $\mathcal{O}(1)$ time complexity. We demonstrate that Bloom filters, Count-Min sketches, and randomized algorithms are instances of this systematic approach, providing both theoretical foundations for error propagation and practical implementation guidance for oblivious data structures.
 \end{abstract}
 
 \section{Introduction}
@@ -67,7 +74,9 @@ This paper formalizes the relationship between latent values and their observati
 
 Consider the ubiquitous Bloom filter, which provides approximate set membership queries with one-sided error. While traditionally viewed as a specialized data structure, we show that it is merely one instance of a much broader class of Bernoulli types. By lifting approximation to the type level, we can reason about error propagation through complex systems in a principled manner.
 
-\paragraph{Scope and organization.}  This article is the first in a series exploring Bernoulli types and the latent/observed paradigm.  Here we introduce the foundations: the basic definitions, the channel interpretation, and the core theorems.  Subsequent papers build on these ideas.  In \textbf{Part~2} we develop the algebra of Bernoulli sets and derive how set operations propagate observation error.  \textbf{Part~3} introduces Bernoulli maps as a universal framework for approximate functions.  \textbf{Part~4} examines how the notion of a ``regular'' type must be revised when equality is itself observed through a noisy channel.  \textbf{Part~5} applies Bernoulli sets to information retrieval and Boolean search.  \textbf{Part~6} describes space–optimal implementations using entropy coding, and \textbf{Part~7} provides a statistical analysis of the distributions and confidence intervals that arise when observing finite sets.  Readers interested in deeper context on the underlying approximate set model may consult the technical report ``Bernoulli sets: a model for modeling sets with random errors and corresponding random binary classification measures,'' provided as supplementary material.
+\paragraph{Scope and organization.}  This article is the first in a series exploring Bernoulli types and the latent/observed paradigm.  Here we introduce the foundations: the basic definitions, the channel interpretation, and the core theorems.  Subsequent papers build on these ideas.  In \textbf{Part~2} we develop the algebra of Bernoulli sets and derive how set operations propagate observation error.  \textbf{Part~3} introduces Bernoulli maps as a universal framework for approximate functions.  \textbf{Part~4} examines how the notion of a ``regular'' type must be revised when equality is itself observed through a noisy channel.  \textbf{Part~5} applies Bernoulli sets to information retrieval and Boolean search.  \textbf{Part~6} describes space–optimal implementations using entropy coding, and \textbf{Part~7} provides a statistical analysis of the distributions and confidence intervals that arise when observing finite sets.
+
+\paragraph{Connection to oblivious computing.} The rank-based analysis developed here provides fundamental insights into \emph{oblivious computing} and privacy-preserving computation. When privacy constraints are imposed on observable information, they manifest as rank-deficiency in confusion matrices, creating asymptotic indistinguishability bounds that persist regardless of computational resources. This connection forms the theoretical foundation for our companion \textbf{Oblivious Series}, which explores how Bernoulli approximations enable privacy-preserving data structures, secure multi-party computation protocols, and differential privacy mechanisms while maintaining the utility-privacy trade-offs predicted by the rank-based framework developed here.
 
 \subsection{Motivating Examples}
 
@@ -93,7 +102,241 @@ The Miller-Rabin primality test observes the latent property "is $n$ prime?" thr
 \end{itemize}
 \end{example}
 
-\section{Mathematical Foundations}
+\section{The Bernoulli Model: From Concrete to General}
+
+The Bernoulli Model provides a systematic framework for approximation that operates at two levels: specific crystallized instances and general algebraic foundations. We begin with the concrete and build toward the general.
+
+\subsection{Crystallized Instances}
+
+The framework is best understood through key crystallized cases that capture the essential patterns:
+
+\begin{definition}[Bernoulli Boolean]
+The Boolean type $\mathrm{bool} = \{\mathrm{true}, \mathrm{false}\}$ is replaced with $\BBool$, representing a noisy Boolean. A value $\BValue{\mathrm{bool}}{x}$ represents a Bernoulli observation of latent Boolean $x$, where:
+$$\Pr\{\BValue{\mathrm{bool}}{x} \neq x\} = \text{Error}(x)$$
+\end{definition}
+
+\begin{definition}[Bernoulli Order]
+Each Bernoulli type has an \emph{order} $k$ denoted $\BTypeOrder{T}{k}$, representing degrees of freedom in the error model:
+\begin{itemize}
+    \item \textbf{Order-0}: Deterministic, $\BTypeOrder{T}{0} \equiv T$
+    \item \textbf{Order-1}: Symmetric errors (binary symmetric channel)
+    \item \textbf{Order-2+}: Asymmetric error patterns
+\end{itemize}
+\end{definition}
+
+\begin{definition}[Bernoulli Maps]
+Functions $f: X \to Y$ have latent values we approximate with $\BMap{X}{Y}$. The observed function $\BValue{X \to Y}{f}$ produces outputs of type $\BType{Y}$, capturing uncertainty in both function identity and output values.
+\end{definition}
+
+\begin{definition}[Bernoulli Sets]
+Set-indicator functions $1_S: X \to \mathrm{bool}$ are approximated as $\BSet{X}$. This captures data structures like Bloom filters as Bernoulli approximations of membership testing.
+\end{definition}
+
+\subsection{Algebraic Foundations}
+
+These crystallized instances arise from systematic application of Bernoulli approximation to algebraic data types:
+
+\begin{definition}[Algebraic Data Types]
+Types are built compositionally from:
+\begin{itemize}
+    \item \textbf{Void type} ($\voidtype$): Empty type, $\BType{\voidtype} = \voidtype$
+    \item \textbf{Unit type} ($\unittype$): Singleton type, $\BType{\unittype} = \unittype$ 
+    \item \textbf{Sum type} ($X + Y$): Disjoint union
+    \item \textbf{Product type} ($X \times Y$): Cartesian product  
+    \item \textbf{Exponential type} ($X \to Y$): Function type
+\end{itemize}
+\end{definition}
+
+\begin{definition}[Compositional vs Direct Approximation]
+For compound types, there are two approximation approaches:
+\begin{itemize}
+    \item \textbf{Compositional}: $(\BType{X}, \BType{Y})$ - approximate components first
+    \item \textbf{Direct}: $\BType{X \times Y}$ - approximate the compound type directly
+\end{itemize}
+Both are valid Bernoulli types with different error characteristics.
+\end{definition}
+
+This systematic relationship between crystallized instances and algebraic foundations provides both practical guidance and theoretical completeness.
+
+\subsection{Confusion Matrices: The Core Formalism}
+
+Every Bernoulli type is characterized by a confusion matrix that describes the probability relationship between latent and observed values.
+
+\begin{definition}[Confusion Matrix]
+For a Bernoulli type $\BType{T}$ where $T = \{t_1, t_2, \ldots, t_n\}$, the confusion matrix $Q$ has entries:
+$$q_{ij} = \Pr\{\text{observe } t_j \mid \text{latent } t_i\}$$
+where each row sums to 1: $\sum_{j=1}^n q_{ij} = 1$.
+\end{definition}
+
+\begin{example}[Bernoulli Boolean Confusion Matrix]
+For $\BBoolOrder{2}$ (second-order), we have:
+
+\begin{center}
+\begin{tabular}{c|cc}
+latent $\backslash$ observed & $\mathrm{true}$ & $\mathrm{false}$ \\
+\hline
+$\mathrm{true}$ & $1-\eta$ & $\eta$ \\
+$\mathrm{false}$ & $\varepsilon$ & $1-\varepsilon$ \\
+\end{tabular}
+\end{center}
+
+Where $\eta$ is the false negative rate and $\varepsilon$ is the false positive rate. This has 2 degrees of freedom, hence order-2.
+\end{example}
+
+\begin{example}[Bernoulli Function Confusion Matrix]
+For functions $f: \mathrm{bool} \to \mathrm{bool}$, there are 4 possible functions $\{\mathrm{id}, \mathrm{not}, \mathrm{true}, \mathrm{false}\}$. The confusion matrix for $\BMap{\mathrm{bool}}{\mathrm{bool}}$ is:
+
+\begin{center}
+\begin{tabular}{c|cccc}
+latent $\backslash$ observed & $\mathrm{id}$ & $\mathrm{not}$ & $\mathrm{true}$ & $\mathrm{false}$ \\
+\hline
+$\mathrm{id}$ & $q_{11}$ & $q_{12}$ & $q_{13}$ & $q_{14}$ \\
+$\mathrm{not}$ & $q_{21}$ & $q_{22}$ & $q_{23}$ & $q_{24}$ \\
+$\mathrm{true}$ & $q_{31}$ & $q_{32}$ & $q_{33}$ & $q_{34}$ \\
+$\mathrm{false}$ & $q_{41}$ & $q_{42}$ & $q_{43}$ & $q_{44}$ \\
+\end{tabular}
+\end{center}
+
+Maximum order is $4(4-1) = 12$ degrees of freedom.
+\end{example}
+
+\begin{definition}[Order of Bernoulli Type]
+The order of $\BTypeOrder{T}{k}$ is the number of free parameters in its confusion matrix. For type $T$ with $n$ values, the maximum order is $n(n-1)$ since each row must sum to 1.
+\end{definition}
+
+\begin{definition}[Rank of Bernoulli Type]
+The \emph{rank} of a Bernoulli type is the matrix rank of its confusion matrix. This captures the fundamental degrees of freedom in the probability space and determines the theoretical limits of Bayesian inference.
+\end{definition}
+
+\begin{remark}[Order vs Rank]
+Order and rank capture different aspects of Bernoulli approximations:
+\begin{itemize}
+    \item \textbf{Order (parameter count)}: Affects estimation difficulty from data
+    \item \textbf{Rank}: Determines fundamental inferability of latent from observed values
+\end{itemize}
+A confusion matrix can have low rank despite high order, making Bayesian inference $\Prob\{\text{latent} \mid \text{observed}\} \propto \Prob\{\text{observed} \mid \text{latent}\} \Prob\{\text{latent}\}$ impossible even with perfect parameter estimates.
+\end{remark}
+
+\begin{example}[Rank Analysis for Bernoulli Boolean]
+For $\BBoolOrder{1}$ with error rate $\varepsilon$:
+\begin{itemize}
+    \item Order = 1, Rank = 2 for $\varepsilon \neq 0.5$ (invertible, inference possible)
+    \item Order = 1, Rank = 1 for $\varepsilon = 0.5$ (singular, inference impossible)
+\end{itemize}
+The rank-1 case corresponds to maximum entropy where observations provide no information about latent values.
+\end{example}
+
+\begin{remark}[Asymptotic Indistinguishability and Oblivious Computing]
+Rank provides fundamental asymptotic limits that persist even with perfect parameter knowledge. When a confusion matrix has rank $r < n$ (where $n$ is the number of possible latent values), then $n-r$ degrees of freedom become \emph{asymptotically indistinguishable} regardless of:
+\begin{itemize}
+    \item Sample size (even with infinite observations)
+    \item Parameter estimation accuracy (even with perfect confusion matrix knowledge)
+    \item Computational resources (even with unlimited processing power)
+\end{itemize}
+
+This connects directly to \emph{oblivious computing} where privacy constraints manifest as structural rank-deficiency in observable information. The rank determines \emph{information-theoretic privacy bounds} that no algorithm can overcome—certain latent information remains fundamentally hidden by the mathematical structure of the approximation process itself.
+\end{remark}
+
+\subsection{Information-Theoretic Perspective}
+
+Entropy provides a third fundamental measure of Bernoulli approximations, complementing order and rank.
+
+\begin{definition}[Matrix Entropy]
+The \emph{matrix entropy} of a confusion matrix $Q$ is:
+$$H(Q) = -\sum_{i,j} q_{ij} \log q_{ij}$$
+This measures the uncertainty in the approximation process itself.
+\end{definition}
+
+\begin{definition}[Conditional Entropy]
+The \emph{conditional entropy} $H(\text{latent} \mid \text{observed})$ measures remaining uncertainty about latent values given observations, computed via Bayesian inference.
+\end{definition}
+
+\begin{theorem}[Information Hierarchy]
+Knowledge constraints reduce entropy in a hierarchical manner:
+\begin{enumerate}
+    \item \textbf{Unconstrained}: Maximum entropy over all possible confusion matrices
+    \item \textbf{Structural constraints}: Entropy reduced by algorithm-specific structure (e.g., ``Bloom filter'')  
+    \item \textbf{Parameter knowledge}: Further reduction by known parameter values
+    \item \textbf{Observations}: Conditional entropy given observed values
+\end{enumerate}
+Each level provides additional information that reduces uncertainty.
+\end{theorem}
+
+\begin{example}[Confusion Matrix Scales]
+Confusion matrices operate at two scales:
+
+\textbf{Small Types}: For $\BBool$, the $2 \times 2$ confusion matrix can be written explicitly and analyzed completely.
+
+\textbf{Large Types}: For $\BSet{U}$ (Bernoulli sets), the confusion matrix has $2^{|U|} \times 2^{|U|}$ entries, typically too large to write explicitly. However, \emph{structural patterns} still determine fundamental limits.
+\end{example}
+
+\begin{example}[Bloom Filter Structural Analysis]
+A Bloom filter has a $2^{|U|} \times 2^{|U|}$ confusion matrix with:
+\begin{itemize}
+    \item \textbf{Sparsity structure}: $\Prob\{\text{observe } T \mid \text{latent } S\} = 0$ when $T \not\subseteq S$
+    \item \textbf{High rank}: Effective rank $\approx 2^{|S|}$ due to subset preservation creating identity-like blocks
+    \item \textbf{Enhanced inference}: Structure enables better inference than random matrices
+\end{itemize}
+
+\textbf{Individual membership query}: Each query produces a Bernoulli bool with $2 \times 2$ matrix:
+$$Q = \begin{pmatrix} 1 & 0 \\ \varepsilon & 1-\varepsilon \end{pmatrix}$$
+\end{example}
+
+\section{Error Model Hierarchies}
+
+Before formalizing Bernoulli types, we must distinguish between different orders of error models that can arise in approximate computation.
+
+\subsection{Order-2 vs Order-|U| Error Models}
+
+\begin{definition}[General Error Function]
+For any type $T$, the \emph{error function} for element $x \in T$ is:
+$$\text{Error}(x) = \Prob\{\obs{x} \neq x\}$$
+This captures the fundamental notion that the observed value differs from the latent value.
+\end{definition}
+
+\begin{definition}[Order-2 Error Model]
+In an \emph{order-2 error model}, there are exactly two uniform error parameters. Different systems use varying terminology:
+\begin{itemize}
+    \item \textbf{Set membership}: spurious rate $\spuriousrate$ (detect when absent), miss rate $\missrate$ (miss when present)
+    \item \textbf{Boolean classification}: false positive rate $\fprate$, false negative rate $\fnrate$ 
+    \item \textbf{Information theory}: type I error, type II error
+    \item \textbf{Signal processing}: false alarm rate, miss detection rate
+\end{itemize}
+The key property is uniformity: $\text{Error}(x) = \epsilon$ for all $x$.
+\end{definition}
+
+\begin{definition}[Order-|U| Error Model]
+In an \emph{order-|U| error model}, each element has its own error characteristics:
+$$\text{Error}(x) = \epsilon_x \quad \text{for each } x \in U$$
+This allows $|U|$ distinct error parameters. While maximally general, it is typically intractable for analysis and implementation.
+\end{definition>
+
+\begin{remark}[Algorithmic Preference for Order-2]
+While the order-|U| model provides greater theoretical generality, the order-2 model dominates in practice because:
+\begin{itemize}
+    \item Most algorithms that compute representations of approximate sets (Bloom filters, sketches, etc.) naturally produce uniform error rates
+    \item Order-2 models are tractable for analysis and composition
+    \item Storage and computational complexity remain manageable
+    \item The uniform error assumption often approximates real-world behavior sufficiently well
+\end{itemize}
+\end{remark}
+
+\begin{example}[Hash-Based Structures]
+Consider a Bloom filter with $k$ hash functions and $m$ bits. The false positive probability $\varepsilon = (1 - e^{-kn/m})^k$ is uniform across all queries, naturally yielding an order-2 model. While individual elements might have slightly different collision patterns, the design ensures approximately uniform behavior.
+\end{example}
+
+\begin{example}[Element-Specific Errors]
+An order-|U| model might arise when:
+\begin{itemize}
+    \item Elements have different hash qualities leading to varying collision rates
+    \item Approximate data structures adapt their precision based on element frequency
+    \item Physical constraints (memory locality, cache behavior) create element-dependent errors
+\end{itemize}
+\end{example}
+
+Throughout this series, we primarily focus on order-2 models while noting where the framework naturally extends to higher-order cases.
+
+\section{Mathematical Foundations of Bernoulli Types}
 
 \subsection{Basic Definitions}
 
@@ -107,8 +350,24 @@ We write $\tilde{x} \sim \bernoulli{T}{n}(x)$ to denote that $\tilde{x}$ is an o
 \end{definition}
 
 \begin{definition}[Bernoulli Type Constructor]
-Given a type $T$, the Bernoulli type constructor $\bernoulli{T}{n}$ produces a type whose values are observations of latent values in $T$, where observations are related to their latent values through an $n$-th order error model.
+Given an algebraic data type $T$, the Bernoulli type constructor $\bernoulli{T}{n}$ produces a type whose values are observations of latent values in $T$. This constructor satisfies:
+\begin{itemize}
+    \item $\bernoulli{T}{n}$ is equivalent to $T^{\pm}$ in the X$^{\pm}$ notation
+    \item Observations are related to their latent values through an $n$-th order error model
+    \item The constructor respects the algebraic structure: $\bernoulli{(\sumtype{X}{Y})}{n} \cong \sumtype{\bernoulli{X}{n}}{\bernoulli{Y}{n}}$
+\end{itemize}
 \end{definition}
+
+\begin{remark}[Connection to Algebraic Data Types]
+The Bernoulli type constructor can be applied systematically to any algebraic data type:
+\begin{itemize}
+    \item $\bernoulli{\voidtype}{n} = \voidtype$ (no approximation possible for empty type)
+    \item $\bernoulli{\unittype}{n} = \unittype$ (no approximation needed for singleton)  
+    \item $\bernoulli{(\sumtype{X}{Y})}{n}$ allows approximate discrimination between variants
+    \item $\bernoulli{(\prodtype{X}{Y})}{n}$ allows approximate access to components
+    \item $\bernoulli{(\exptype{X}{Y})}{n}$ represents approximate functions (random approximate maps)
+\end{itemize}
+\end{remark}
 
 The order $n$ specifies the complexity of the error model:
 \begin{itemize}
@@ -172,6 +431,29 @@ Let $\tilde{x}\sim\bernoulli{T}{n}(x)$ be an observation and let $\pi$ be a prio
     \Prob{x=t_i\mid \tilde{x}=t_j} = \frac{Q_{ij}\,\pi(t_i)}{\sum_{r=1}^m Q_{rj}\,\pi(t_r)}.
 \end{equation}
 If we obtain i.i.d. observations $\tilde{x}_1,\dots,\tilde{x}_k$ under a memoryless channel, the joint likelihood factorizes and the posterior concentrates around the latent value. In the Boolean case with symmetric error $\epsilon<\tfrac12$, the majority vote of $k$ observations is a consistent estimator and the error probability decays exponentially in $k$ (Chernoff/Hoeffding bounds).
+
+\subsection{Approximate Value Monad}
+
+The X$^{\pm}$ framework naturally leads to a monadic structure for composing approximate computations.
+
+\begin{definition}[Approximate Value Monad]
+The approximate value monad $\mathsf{Approx}(X)$ encapsulates values of type $X^{\pm}$ together with their error characteristics:
+\begin{itemize}
+    \item $\mathsf{return}: X \to \mathsf{Approx}(X)$ embeds exact values with zero error
+    \item $\mathsf{bind}: \mathsf{Approx}(X) \times (X \to \mathsf{Approx}(Y)) \to \mathsf{Approx}(Y)$ composes approximate computations
+\end{itemize}
+\end{definition}
+
+Given a function $f: X \to Y$ and an approximate value $\tilde{x} \in \mathsf{Approx}(X)$, the lifted function $\tilde{f}: \mathsf{Approx}(X) \to \mathsf{Approx}(Y)$ propagates uncertainty according to:
+\begin{equation}
+\tilde{f}(\tilde{x}) = \mathsf{bind}(\tilde{x}, \lambda x. \mathsf{return}(f(x)))
+\end{equation}
+
+This monadic structure enables systematic error propagation through complex computations while maintaining the algebraic properties of the underlying types.
+
+\begin{remark}[Type Erasure]
+The concrete error parameters of approximate types can be erased for modularity. A value $f^{\omega}_{\varepsilon}$ with specific error rates can be erased to $f^{\pm}$ (generic approximate function) or further to $f$ (hiding approximation entirely).
+\end{remark}
 
 \begin{proof}
 We establish a bijection between Bernoulli types and discrete memoryless channels (DMCs).

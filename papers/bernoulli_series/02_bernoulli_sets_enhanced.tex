@@ -1,0 +1,421 @@
+\documentclass[11pt,final,hidelinks]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage[activate={true,nocompatibility},final,tracking=true,kerning=true,spacing=true,factor=1100,stretch=10,shrink=10]{microtype}
+\usepackage{mathtools}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{pgfplots}
+\usepackage{hyperref}
+\usepackage[square,numbers]{natbib}
+\bibliographystyle{plainnat}
+\usepackage{cleveref}
+
+% Theorem environments
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{axiom}{Axiom}
+
+% Unified notation
+\newcommand{\obs}[1]{\widetilde{#1}}
+\newcommand{\fprate}{\alpha}
+\newcommand{\fnrate}{\beta}
+\newcommand{\tprate}{\tau}
+\newcommand{\tnrate}{\nu}
+\newcommand{\Prob}[1]{\mathbb{P}\left[#1\right]}
+\newcommand{\ProbCond}[2]{\mathbb{P}\left[#1 \mid #2\right]}
+\newcommand{\Expect}[1]{\mathbb{E}\left[#1\right]}
+\newcommand{\Var}[1]{\text{Var}\left[#1\right]}
+\newcommand{\Card}[1]{\lvert#1\rvert}
+\newcommand{\Indicator}[1]{\mathbf{1}_{#1}}
+\newcommand{\SetComplement}[1]{\overline{#1}}
+\newcommand{\SetUnion}{\cup}
+\newcommand{\SetIntersection}{\cap}
+\newcommand{\PowerSet}[1]{\mathcal{P}(#1)}
+\newcommand{\bindist}{\text{Binomial}}
+\newcommand{\normaldist}{\mathcal{N}}
+
+% Binary classification notation
+\newcommand{\TP}{\text{TP}}
+\newcommand{\FP}{\text{FP}}
+\newcommand{\TN}{\text{TN}}
+\newcommand{\FN}{\text{FN}}
+\newcommand{\TPR}{\text{TPR}}
+\newcommand{\FPR}{\text{FPR}}
+\newcommand{\TNR}{\text{TNR}}
+\newcommand{\FNR}{\text{FNR}}
+\newcommand{\PPV}{\text{PPV}}
+\newcommand{\NPV}{\text{NPV}}
+\newcommand{\ACC}{\text{ACC}}
+
+\title{Bernoulli Sets: A Comprehensive Theory of Probabilistic Set Approximation with Binary Classification Measures}
+\author{
+    Alexander Towell\\
+    \texttt{atowell@siue.edu}
+}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We present a comprehensive mathematical theory of Bernoulli sets—probabilistic data structures that provide noisy observations of latent set membership. While Bloom filters introduced the concept of trading space for one-sided error, we develop the complete framework encompassing both false positives and false negatives. Our key contributions include: (1) the probability distributions of all binary classification measures including positive predictive value, negative predictive value, and accuracy; (2) asymptotic behavior and concentration inequalities for error rates; (3) algebraic laws governing error propagation through set operations; (4) the independence axioms that characterize the model; and (5) optimal space-accuracy trade-offs from information theory. We show that observed error rates are themselves random variables following binomial distributions that converge to normal distributions asymptotically. This enables confidence intervals and hypothesis testing on approximate set operations. The framework unifies Bloom filters, counting filters, cuckoo filters, and other probabilistic set data structures as special cases of observing latent sets through different channels, while providing the mathematical tools to reason about their composition and performance.
+\end{abstract}
+
+\section{Introduction}
+
+Set membership is fundamental to computer science, yet perfect set representation often requires prohibitive space. This tension led to Bloom filters \cite{bloom1970}, which trade space for controlled false positives. We generalize this to \textit{Bernoulli sets}—observations of latent sets through noisy channels that may introduce both false positives and false negatives.
+
+The key insight is recognizing that what we call a "set" in computation is actually an \textit{observation} of a latent mathematical set. This observation occurs through a probabilistic channel characterized by error rates. By making this latent/observed distinction explicit, we can:
+\begin{itemize}
+\item Derive the complete probability theory of approximate sets
+\item Prove optimal space-accuracy trade-offs
+\item Compose approximate sets with predictable error propagation
+\item Compute confidence intervals for all binary classification measures
+\end{itemize}
+
+\section{The Bernoulli Set Model}
+
+\subsection{Fundamental Definitions}
+
+\begin{definition}[Bernoulli Set]
+Given a latent set $S \subseteq U$, a Bernoulli set $\obs{S}[\fprate][\fnrate]$ is a probabilistic observation where:
+\begin{align}
+\ProbCond{x \in \obs{S}}{x \notin S} &= \fprate \quad \text{(false positive rate)} \\
+\ProbCond{x \notin \obs{S}}{x \in S} &= \fnrate \quad \text{(false negative rate)}
+\end{align}
+\end{definition}
+
+\begin{axiom}[Independence]
+For distinct $x, y \in U$, membership errors are independent:
+\begin{equation}
+\ProbCond{\Indicator{\obs{S}}(x) \neq \Indicator{S}(x)}{\Indicator{\obs{S}}(y) \neq \Indicator{S}(y)} = 
+\Prob{\Indicator{\obs{S}}(x) \neq \Indicator{S}(x)}
+\end{equation}
+\end{axiom}
+
+\subsection{Orders of Approximation}
+
+\begin{definition}[Order-k Bernoulli Set]
+An order-k Bernoulli set partitions the universe into k blocks with independent error rates:
+\begin{itemize}
+\item Order 0: Perfect observation (no errors)
+\item Order 1: Uniform error rate $\epsilon$ across all elements
+\item Order 2: Separate rates for positives ($\fnrate$) and negatives ($\fprate$)
+\item Order k: k independent error parameters
+\end{itemize}
+\end{definition}
+
+\section{Distribution Theory of Error Rates}
+
+A crucial insight is that the \textit{observed} error rates are random variables, not constants.
+
+\subsection{Distribution of False Positive Rate}
+
+\begin{theorem}[FPR Distribution]
+Given $n$ negative elements, the observed false positive count and rate are:
+\begin{align}
+\FP_n &\sim \bindist(n, \fprate) \\
+\FPR_n &= \FP_n/n \\
+\Expect[\FPR_n] &= \fprate \\
+\Var[\FPR_n] &= \fprate(1-\fprate)/n
+\end{align}
+\end{theorem}
+
+\begin{proof}
+Each negative element independently tests positive with probability $\fprate$. The sum of $n$ independent Bernoulli trials follows a binomial distribution. Division by $n$ scales the distribution.
+\end{proof}
+
+\begin{corollary}[Asymptotic Normality]
+As $n \to \infty$:
+\begin{equation}
+\FPR_n \xrightarrow{d} \normaldist\left(\fprate, \frac{\fprate(1-\fprate)}{n}\right)
+\end{equation}
+\end{corollary}
+
+\begin{corollary}[Concentration]
+For infinite negatives, $\FPR_\infty = \fprate$ with probability 1.
+\end{corollary}
+
+\subsection{Distribution of False Negative Rate}
+
+\begin{theorem}[FNR Distribution]
+Given $p$ positive elements:
+\begin{align}
+\FN_p &\sim \bindist(p, \fnrate) \\
+\FNR_p &= \FN_p/p \\
+\Expect[\FNR_p] &= \fnrate \\
+\Var[\FNR_p] &= \fnrate(1-\fnrate)/p
+\end{align}
+\end{theorem}
+
+\section{Binary Classification Measures}
+
+\subsection{Positive Predictive Value}
+
+The positive predictive value (precision) is the probability that an observed positive is truly positive.
+
+\begin{theorem}[PPV Distribution]
+Given $p$ positives and $n$ negatives, the PPV is:
+\begin{equation}
+\PPV = \frac{\TP_p}{\TP_p + \FP_n}
+\end{equation}
+with expectation approximately:
+\begin{equation}
+\Expect[\PPV] \approx \frac{\bar{t}_p}{\bar{t}_p + \bar{f}_p} + \frac{\bar{t}_p \sigma^2_{f_p} - \bar{f}_p \sigma^2_{t_p}}{(\bar{t}_p + \bar{f}_p)^3}
+\end{equation}
+where $\bar{t}_p = p\tprate$, $\bar{f}_p = n\fprate$, $\sigma^2_{t_p} = p\tprate(1-\tprate)$, $\sigma^2_{f_p} = n\fprate(1-\fprate)$.
+\end{theorem}
+
+\begin{proof}[Proof Sketch]
+Using the delta method for the ratio of random variables:
+\begin{align}
+\Expect\left[\frac{X}{X+Y}\right] &\approx \frac{\mu_X}{\mu_X + \mu_Y} + \frac{\mu_X \sigma^2_Y - \mu_Y \sigma^2_X}{(\mu_X + \mu_Y)^3}
+\end{align}
+where $X = \TP_p \sim \bindist(p, \tprate)$ and $Y = \FP_n \sim \bindist(n, \fprate)$ are independent.
+\end{proof}
+
+\begin{corollary}[PPV Limits]
+\begin{itemize}
+\item As $\fprate \to 0$: $\PPV \to 1$
+\item As $n \to \infty$ with $\fprate > 0$: $\PPV \to 0$
+\item For large sets: $\PPV \approx p\tprate/(p\tprate + n\fprate)$
+\end{itemize}
+\end{corollary}
+
+\subsection{Negative Predictive Value}
+
+\begin{theorem}[NPV Distribution]
+The NPV is:
+\begin{equation}
+\NPV = \frac{\TN_n}{\TN_n + \FN_p}
+\end{equation}
+with expectation:
+\begin{equation}
+\Expect[\NPV] \approx \frac{\bar{t}_n}{\bar{t}_n + \bar{f}_n} + \frac{\bar{t}_n \sigma^2_{f_n} - \bar{f}_n \sigma^2_{t_n}}{(\bar{t}_n + \bar{f}_n)^3}
+\end{equation}
+where $\bar{t}_n = n\tnrate$, $\bar{f}_n = p\fnrate$.
+\end{theorem}
+
+\subsection{Accuracy}
+
+\begin{theorem}[Accuracy Distribution]
+The accuracy is:
+\begin{equation}
+\ACC = \frac{\TP_p + \TN_n}{p + n} = \lambda \TPR_p + (1-\lambda) \TNR_n
+\end{equation}
+where $\lambda = p/(p+n)$, with:
+\begin{align}
+\Expect[\ACC] &= \lambda\tprate + (1-\lambda)\tnrate \\
+\Var[\ACC] &= \frac{\lambda\fnrate\tprate + (1-\lambda)\fprate\tnrate}{p+n}
+\end{align}
+\end{theorem}
+
+\subsection{Youden's J Statistic}
+
+\begin{theorem}[Youden's J]
+\begin{align}
+J &= \TPR_p - \FPR_n \\
+\Expect[J] &= \tprate - \fprate \\
+\Var[J] &= \frac{\tprate(1-\tprate)}{p} + \frac{\fprate(1-\fprate)}{n}
+\end{align}
+\end{theorem}
+
+\section{Confidence Intervals}
+
+\subsection{Finite Sample Confidence Intervals}
+
+For finite samples, we use the exact binomial distribution:
+
+\begin{theorem}[Exact Confidence Intervals]
+A $100(1-\alpha)\%$ confidence interval for the true $\fprate$ given observed $k$ false positives in $n$ trials is:
+\begin{equation}
+\left[B^{-1}\left(\frac{\alpha}{2}; k, n-k+1\right), B^{-1}\left(1-\frac{\alpha}{2}; k+1, n-k\right)\right]
+\end{equation}
+where $B^{-1}$ is the inverse Beta CDF.
+\end{theorem}
+
+\subsection{Asymptotic Confidence Intervals}
+
+For large samples, use normal approximation:
+
+\begin{theorem}[Asymptotic Confidence Intervals]
+As $n \to \infty$, a $100(1-\alpha)\%$ confidence interval for $\fprate$ is:
+\begin{equation}
+\hat{\fprate} \pm z_{\alpha/2}\sqrt{\frac{\hat{\fprate}(1-\hat{\fprate})}{n}}
+\end{equation}
+where $z_{\alpha/2}$ is the standard normal quantile.
+\end{theorem}
+
+\section{Algebraic Operations and Error Propagation}
+
+\subsection{Set Operations}
+
+\begin{theorem}[Error Propagation Through Operations]
+For independent Bernoulli sets $\obs{A}[\fprate_A][\fnrate_A]$ and $\obs{B}[\fprate_B][\fnrate_B]$:
+
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+Operation & False Positive Rate & False Negative Rate \\
+\midrule
+$\obs{A} \cap \obs{B}$ & $\fprate_A \cdot \fprate_B$ & $1-(1-\fnrate_A)(1-\fnrate_B)$ \\
+$\obs{A} \cup \obs{B}$ & $1-(1-\fprate_A)(1-\fprate_B)$ & $\fnrate_A \cdot \fnrate_B$ \\
+$\SetComplement{\obs{A}}$ & $\fnrate_A$ & $\fprate_A$ \\
+$\obs{A} \setminus \obs{B}$ & $\fprate_A(1-\fprate_B)$ & $1-(1-\fnrate_A)(1-\fnrate_B)$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{theorem}
+
+\begin{proof}[Proof for Intersection]
+For $x \notin A \cap B$, observe $x \in \obs{A} \cap \obs{B}$ only if falsely in both:
+\begin{equation}
+\ProbCond{x \in \obs{A} \cap \obs{B}}{x \notin A \cap B} = \fprate_A \cdot \fprate_B
+\end{equation}
+For $x \in A \cap B$, miss if missed by either:
+\begin{equation}
+\ProbCond{x \notin \obs{A} \cap \obs{B}}{x \in A \cap B} = 1-(1-\fnrate_A)(1-\fnrate_B)
+\end{equation}
+\end{proof}
+
+\subsection{Cardinality Estimation}
+
+\begin{theorem}[Unbiased Cardinality Estimator]
+Given observed $\Card{\obs{S}} = m$, an unbiased estimator for $\Card{S}$ is:
+\begin{equation}
+\widehat{\Card{S}} = \frac{m - n\fprate}{\tprate - \fprate}
+\end{equation}
+where $n = \Card{U \setminus S}$.
+\end{theorem}
+
+\section{Space-Optimal Constructions}
+
+\subsection{Information-Theoretic Lower Bound}
+
+\begin{theorem}[Space Lower Bound]
+Any data structure supporting membership queries with false positive rate $\epsilon$ requires at least:
+\begin{equation}
+B(\epsilon) = -\log_2 \epsilon \cdot \frac{n}{\ln 2} \approx 1.44n\log_2(1/\epsilon) \text{ bits}
+\end{equation}
+\end{theorem}
+
+\subsection{Bloom Filter Optimality}
+
+\begin{theorem}[Bloom Filter Parameters]
+For $n$ elements with $m$ bits and $k$ hash functions:
+\begin{align}
+\text{Optimal } k &= (m/n)\ln 2 \approx 0.693(m/n) \\
+\text{Resulting FPR} &= 2^{-k} = 0.6185^{m/n}
+\end{align}
+At optimality, exactly half the bits are set.
+\end{theorem}
+
+\section{Applications}
+
+\subsection{Distributed Systems}
+
+In distributed systems, different replicas observe the same latent set with potentially different error rates:
+
+\begin{example}[Eventually Consistent Replicas]
+Replicas $R_1, R_2, ..., R_k$ each maintain $\obs{S}_i[\fprate_i][\fnrate_i]$ where:
+\begin{itemize}
+\item $\fnrate_i$ reflects missing updates (decreases over time)
+\item $\fprate_i$ reflects false additions (e.g., from conflicts)
+\end{itemize}
+Consensus achieved when all $\fnrate_i = \fprate_i = 0$.
+\end{example}
+
+\subsection{Privacy-Preserving Computation}
+
+\begin{theorem}[Differential Privacy]
+A Bernoulli set with symmetric error rate $p$ provides $\epsilon$-differential privacy where:
+\begin{equation}
+\epsilon = \log\left(\frac{1-p}{p}\right)
+\end{equation}
+\end{theorem}
+
+\subsection{Machine Learning}
+
+\begin{example}[Feature Hashing]
+In high-dimensional learning, features are observed through hash functions:
+\begin{itemize}
+\item Latent: True feature set $F \subseteq \mathbb{R}^d$
+\item Observed: Hashed features $\obs{F} \subseteq \mathbb{R}^k$ where $k \ll d$
+\item Collisions create false positives: different features map to same bucket
+\end{itemize}
+\end{example}
+
+\section{Statistical Hypothesis Testing}
+
+\subsection{Testing Set Equality}
+
+\begin{theorem}[Hypothesis Test for Set Equality]
+To test $H_0: S_1 = S_2$ vs $H_1: S_1 \neq S_2$ using observations $\obs{S}_1, \obs{S}_2$:
+\begin{equation}
+T = \sum_{x \in U} (\Indicator{\obs{S}_1}(x) - \Indicator{\obs{S}_2}(x))^2
+\end{equation}
+Under $H_0$, $T$ follows a scaled $\chi^2$ distribution.
+\end{theorem}
+
+\subsection{Testing Independence}
+
+\begin{theorem}[Test for Independent Observations]
+To test if two observations are independent:
+\begin{equation}
+\chi^2 = \sum_{i,j} \frac{(O_{ij} - E_{ij})^2}{E_{ij}}
+\end{equation}
+where $O_{ij}$ are observed joint frequencies and $E_{ij}$ are expected under independence.
+\end{theorem}
+
+\section{Fundamental Limits: Rank and Asymptotic Indistinguishability}
+
+The confusion matrix framework reveals fundamental limits on set distinguishability that persist even with unlimited observations.
+
+\begin{theorem}[Asymptotic Set Indistinguishability]
+Consider two latent sets $S_1, S_2 \subseteq U$ observed through confusion matrix $Q$. If their symmetric difference $S_1 \triangle S_2$ lies entirely within the null space of $Q$, then $S_1$ and $S_2$ remain indistinguishable regardless of the number of membership queries.
+\end{theorem}
+
+This has crucial implications for set-based data structures:
+
+\begin{itemize}
+    \item \textbf{Privacy by construction**: Sets can be designed to be provably indistinguishable by ensuring their differences map to the same equivalence class
+    \item \textbf{Information-theoretic compression bounds**: There exist theoretical limits beyond which further compression makes certain set distinctions impossible
+    \item \textbf{Optimal false positive rates**: For some set families, false positive rates cannot be improved beyond levels determined by rank constraints
+\end{itemize}
+
+\begin{remark}[Connection to Privacy-Preserving Sets]
+This analysis provides theoretical foundations for privacy-preserving set operations: by designing observation processes with specific rank deficiencies, sensitive sets can be made computationally indistinguishable from public sets, providing unconditional privacy guarantees.
+\end{remark}
+
+\section{Conclusion}
+
+We have developed a comprehensive mathematical theory of Bernoulli sets that:
+\begin{enumerate}
+\item Treats observed error rates as random variables with known distributions
+\item Derives all binary classification measures and their distributions
+\item Provides exact and asymptotic confidence intervals
+\item Characterizes error propagation through set operations
+\item Proves space-optimality bounds from information theory
+\item Enables hypothesis testing on approximate sets
+\end{enumerate}
+
+This framework unifies all probabilistic set data structures as observations of latent sets through different channels. The key insight—that membership queries observe latent truth through noisy channels—transforms approximate data structures from ad hoc space-saving techniques into a principled theory with predictable composition and provable optimality.
+
+Future work includes extending to Bernoulli maps (Part 3), exploring implications for type systems (Part 4), and developing space-optimal implementations (Part 6).
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

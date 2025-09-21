@@ -1,0 +1,36 @@
+\nomenclatureentry{a$\vec{x}$@[{$\vec{x}$}]\begingroup Vectors are denoted in boldface font. The \jth component of $\vec{x}$ is denoted by $x_j$.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{S$\Set{S}$@[{$\Set{S}$}]\begingroup Sets are normally notated like this.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{S$\RealSet$@[{$\RealSet$}]\begingroup The set of reals $(-\infty,\infty)$.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{S$\NatSet$@[{$\NatSet$}]\begingroup The set of natural numbers $\{0,1\}$.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{S$\BitSet$@[{$\BitSet$}]\begingroup The binary set $\{0,1\}$.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{S$\Set{A}_{p}$@[{$\Set{A}_{p}$}]\begingroup The set $\SetBuilder{a \in \Set{A}}{\operatorname{p}(a)}$ where $\operatorname{p} \colon \Set{U} \mapsto \{0,1}$ is a predicate function over some universal set.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{R$\ASet{A}$@[{$\ASet{A}$}]\begingroup A \emph{random approximate set} of $\Set{A}$ where the false positive and negative rates are unspecified.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{R$\ASet{A}[\fnrate][\fprate]$@[{$\ASet{A}[\fnrate][\fprate]$}]\begingroup A \emph{random approximate set} of $\Set{A}$ where the parameterizations are $\fnrate$ and $\fprate$.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{R$\ASet{A}[\fnrate][+]$@[{$\ASet{A}[\fnrate][+]$}]\begingroup A \emph{random approximate set} of $\Set{A}$ where the false positive rate is unspecified.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{R$\ASet{A}[-][\fprate]$@[{$\ASet{A}[-][\fprate]$}]\begingroup A \emph{random approximate set} of $\Set{A}$ where the true positive rate is unspecified.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{R$\ASet{A}[-][\tnrate]$@[{$\ASet{A}[-][\tnrate]$}]\begingroup A \emph{random approximate set} of $\Set{A}$ where the false negative rate is unspecified.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{R$\PASet{A}$@[{$\PASet{A}$}]\begingroup A \emph{positive} random approximate set of $\Set{A}$ where the false positive rate is unspecified.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{R$\PASet{A}[\fprate]$@[{$\PASet{A}[\fprate]$}]\begingroup A \emph{positive} random approximate set of $\Set{A}$ where the false positive rate is $\fprate$.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{R$\NASet{A}$@[{$\NASet{A}$}]\begingroup A \emph{negative} random approximate set of $\Set{A}$ where the true positive rate is unspecified.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{R$\NASet{A}[\fnrate]$@[{$\NASet{A}[\fnrate]$}]\begingroup A \emph{negative} random approximate set of $\Set{A}$ where the false negative rate is $\fnrate$.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{R$\fprate$@[{$\fprate$}]\begingroup By convention, an \emph{expected} false positive rate if nothing about it is known.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{R$\tprate$@[{$\tprate$}]\begingroup By convention, an \emph{expected} true positive rate if nothing about it is known.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{R$\tnrate$@[{$\tnrate$}]\begingroup By convention, an \emph{expected} true negative rate if nothing about it is known.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{R$\fnrate$@[{$\fnrate$}]\begingroup By convention, an \emph{expected} false negative rate if nothing about it is known.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{R$\fprateob$@[{$\fprateob$}]\begingroup By convention, an \emph{observed} false positive rate if nothing about it is known.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{R$\tprateob$@[{$\tprateob$}]\begingroup By convention, an \emph{observed} true positive rate if nothing about it is known.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{R$\tnrateob$@[{$\tnrateob$}]\begingroup By convention, an \emph{observed} true negative rate if nothing about it is known.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{R$\fnrateob$@[{$\fnrateob$}]\begingroup By convention, an \emph{observed} false negative rate if nothing about it is known.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{T$\Card{\Set{A}}$@[{$\Card{\Set{A}}$}]\begingroup The cardinality of a set $\Set{A}$.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{T$\Set{A} \times \Set{B}$@[{$\Set{A} \times \Set{B}$}]\begingroup The Cartesian product of $\Set{A}$ and $\Set{B}$ defined as $\SetBuilder{\Pair{a}{b}}{a \in \Set{A} \land b \in \Set{B}}$.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{T$\Set{B}^n$@[{$\Set{B}^n$}]\begingroup The Cartesian product $\Set{B} \times \cdots \times \Set{B}$, $n$ times.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{T$\SetIndicator{}$@[{$\SetIndicator{}$}]\begingroup The indicator function, $\SetIndicator{\Set{A}} \colon \Set{X} \mapsto \{0,1\}$ is defined by $\SetIndicator{\Set{A}}(x) = 1$ if $x \in \Set{A}$ and otherwise equals $0$.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{T$\PowerSet(A)$@[{$\PowerSet(A)$}]\begingroup The power set of $\Set{A}$.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{T$\PS{A}$@[{$\PS{A}$}]\begingroup The power set of $\Set{A}$.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{T$\SetUnion[\Set{A}][\Set{B}]$@[{$\SetUnion[\Set{A}][\Set{B}]$}]\begingroup The union of $\Set{A}$ and $\Set{B}$.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{T$\SetUnion[\ASet{A}][\ASet{B}]$@[{$\SetUnion[\ASet{A}][\ASet{B}]$}]\begingroup The union of random approximate sets $\ASet{A}$ and $\ASet{B}$.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{P$\PDF[\RV{X}]$@[{$\PDF[\RV{X}]$}]\begingroup The probability mass or density function of random variable $\RV{X}$.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{P$\CDF[\RV{X}]$@[{$\CDF[\RV{X}]$}]\begingroup The cumulative distribution function of random variable $\RV{X}$.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{a$\BL$@[{$\BL$}]\begingroup The bit length function.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{a$\RE$@[{$\RE$}]\begingroup The relative efficiency function.\nomeqref {0.0}|nompageref}{2}
+\nomenclatureentry{a$\AbsoluteEfficiency$@[{$\AbsoluteEfficiency$}]\begingroup The absolute efficiency function.\nomeqref {0.0}|nompageref}{2}

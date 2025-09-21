@@ -1,0 +1,82 @@
+% Canonical Notation for Bernoulli Type Papers
+% This file defines unified notation used across all three canonical papers
+
+% Basic Sets and Types
+\newcommand{\Universe}{\mathcal{U}}  % Universe of elements
+\newcommand{\Bool}{\mathbb{B}}       % Boolean type
+\newcommand{\Real}{\mathbb{R}}       % Real numbers
+\newcommand{\Nat}{\mathbb{N}}        % Natural numbers
+
+% Latent vs Observed Notation
+\newcommand{\latent}[1]{#1}          % Latent (true) value
+\newcommand{\observed}[1]{\tilde{#1}} % Observed (approximate) value
+\newcommand{\LatentSpace}{\mathcal{L}} % Latent space
+\newcommand{\ObservedSpace}{\mathcal{O}} % Observed space
+
+% Probability and Error Rates
+\newcommand{\Prob}{\mathbb{P}}       % Probability measure
+\newcommand{\Expect}{\mathbb{E}}     % Expectation
+\newcommand{\falsepos}{\alpha}       % False positive rate (Boolean only)
+\newcommand{\falseneg}{\beta}        % False negative rate (Boolean only)
+\newcommand{\trueparam}{p}           % True parameter
+\newcommand{\obsparam}{\tilde{p}}    % Observed parameter
+
+% General Confusion Matrix Notation
+% For general types: Q_{ij} = P(observe j | latent i)
+% For Booleans: Q is 2x2 with false positive/negative rates
+% For sets over U: Q is 2^|U| x 2^|U|
+% For maps A->B: Q is |B|^|A| x |B|^|A|
+
+% Bernoulli Types
+\newcommand{\Bernoulli}{\text{Bernoulli}}
+\newcommand{\BernoulliSet}{\text{BernoulliSet}}
+\newcommand{\BernoulliMap}{\text{BernoulliMap}}
+\newcommand{\BernBool}{\Bernoulli(\Bool)}  % Bernoulli Boolean
+\newcommand{\ObsBool}{\observed{\Bool}}
+\newcommand{\ObsSet}{\observed{\mathcal{P}}}
+\newcommand{\ObsMap}{\observed{\mathcal{M}}}
+\newcommand{\obs}[1]{\observed{#1}}  % Shorthand for observed
+
+% Operations
+\newcommand{\member}{\in_{\observed{}}} % Observed membership
+\newcommand{\union}{\cup_{\observed{}}}  % Observed union
+\newcommand{\intersect}{\cap_{\observed{}}} % Observed intersection
+\newcommand{\compose}{\circ_{\observed{}}}  % Observed composition
+
+% Hash Functions
+\newcommand{\Hash}{\mathcal{H}}      % Hash family
+\newcommand{\hash}{h}                % Individual hash function
+\newcommand{\hashcount}{k}           % Number of hash functions
+\newcommand{\hashrange}{m}           % Hash range/array size
+
+% Confusion Matrix
+\newcommand{\TP}{\text{TP}}          % True Positive
+\newcommand{\TN}{\text{TN}}          % True Negative
+\newcommand{\FP}{\text{FP}}          % False Positive
+\newcommand{\FN}{\text{FN}}          % False Negative
+
+% Privacy Notation
+\newcommand{\privacy}{\epsilon}      % Privacy parameter
+\newcommand{\indist}{\approx_{\epsilon}} % Indistinguishability
+\newcommand{\rank}{\text{rank}}      % Matrix rank
+\newcommand{\kernel}{\text{ker}}     % Kernel/nullspace
+
+% Complexity Notation
+\newcommand{\BigO}{\mathcal{O}}      % Big-O notation
+\newcommand{\Space}{\mathcal{S}}     % Space complexity
+\newcommand{\Time}{\mathcal{T}}      % Time complexity
+\newcommand{\optimal}{\text{opt}}    % Optimal value
+
+% Standard Definitions
+\newcommand{\defn}[1]{\textbf{Definition #1}}
+\newcommand{\thm}[1]{\textbf{Theorem #1}}
+\newcommand{\lem}[1]{\textbf{Lemma #1}}
+\newcommand{\prop}[1]{\textbf{Proposition #1}}
+\newcommand{\cor}[1]{\textbf{Corollary #1}}
+
+% Common Mathematical Operators
+\DeclareMathOperator{\supp}{supp}    % Support
+\DeclareMathOperator{\dom}{dom}      % Domain
+\DeclareMathOperator{\range}{range}  % Range
+\DeclareMathOperator{\argmin}{argmin}
+\DeclareMathOperator{\argmax}{argmax}

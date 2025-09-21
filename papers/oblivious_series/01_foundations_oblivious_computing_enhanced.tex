@@ -1,0 +1,459 @@
+\documentclass[11pt,final]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amsthm,amssymb}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{algorithm2e}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric}
+
+% Theorem environments
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{axiom}{Axiom}
+\newtheorem{construction}[theorem]{Construction}
+
+% Unified notation
+\newcommand{\obs}[1]{\widetilde{#1}}
+\newcommand{\Oblivious}[1]{\mathcal{O}\langle #1 \rangle}
+\newcommand{\Hidden}[1]{\mathtt{hide}(#1)}
+\newcommand{\Reveal}[1]{\mathtt{reveal}(#1)}
+\newcommand{\Pattern}[1]{\pi(#1)}
+\newcommand{\Leakage}[1]{\mathcal{L}(#1)}
+\newcommand{\Entropy}[1]{H(#1)}
+\newcommand{\MutualInfo}[2]{I(#1; #2)}
+\newcommand{\Prob}[1]{\mathbb{P}\left[#1\right]}
+\newcommand{\Expect}[1]{\mathbb{E}\left[#1\right]}
+\newcommand{\negl}[1]{\mathtt{negl}(#1)}
+\newcommand{\Adversary}{\mathcal{A}}
+\newcommand{\fprate}{\alpha}
+\newcommand{\fnrate}{\beta}
+
+\title{Foundations of Oblivious Computing: From Latent/Observed to Hidden/Observable}
+\author{
+    Alexander Towell\\
+    \texttt{atowell@siue.edu}
+}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We present a comprehensive framework for oblivious computing that extends the latent/observed duality of Bernoulli types to the hidden/observable paradigm of secure computation. While Bernoulli types observe latent mathematical truth through noisy channels constrained by space, oblivious computing hides computational truth behind cryptographic channels constrained by security. We formalize this through confusion matrices that characterize what an adversary learns from observations, showing that perfect obliviousness corresponds to a confusion matrix with uniform rows (all inputs produce indistinguishable observations). Our key contribution is recognizing that both frameworks address the same fundamental problem: controlling information flow through observation channels. We derive the distribution theory of information leakage, prove composition theorems for cascaded oblivious operations, and show that standard cryptographic primitives (PRFs, homomorphic encryption, garbled circuits) implement specific confusion matrices. The framework unifies oblivious RAM, private information retrieval, searchable encryption, and secure multiparty computation as different instantiations of hiding computation behind carefully designed observation channels.
+\end{abstract}
+
+\section{Introduction: Two Sides of the Same Coin}
+
+\subsection{The Fundamental Duality}
+
+In Part 1 of this series (Bernoulli types), we explored the \textit{latent/observed} duality:
+\begin{itemize}
+\item \textbf{Latent}: True mathematical values that exist conceptually
+\item \textbf{Observed}: Noisy approximations we compute with
+\end{itemize}
+
+Oblivious computing presents the complementary \textit{hidden/observable} duality:
+\begin{itemize}
+\item \textbf{Hidden}: Actual data and computation, encrypted or concealed
+\item \textbf{Observable}: What adversaries see—access patterns, timing, ciphertext
+\end{itemize}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|c|c|}
+\hline
+\textbf{Aspect} & \textbf{Bernoulli Types} & \textbf{Oblivious Computing} \\
+\hline
+Motivation & Space efficiency & Privacy/Security \\
+Channel & Probabilistic (hash collision) & Cryptographic (encryption) \\
+Error type & False positives/negatives & Information leakage \\
+Observation & Noisy due to compression & Obscured for privacy \\
+Optimality & Information-theoretic bound & Perfect indistinguishability \\
+\hline
+\end{tabular}
+\caption{Bernoulli types vs Oblivious computing: complementary frameworks}
+\end{table}
+
+\subsection{Unifying Through Confusion Matrices}
+
+Both frameworks can be understood through confusion matrices that characterize observation channels:
+
+\begin{definition}[Observation Confusion Matrix]
+For hidden values $\{h_1, ..., h_n\}$ and observable values $\{o_1, ..., o_m\}$:
+\begin{equation}
+Q_{ij} = \Prob{\text{observe } o_j | \text{hidden } h_i}
+\end{equation}
+\end{definition}
+
+The key difference:
+\begin{itemize}
+\item \textbf{Bernoulli}: Accepts non-uniform $Q$ to save space
+\item \textbf{Oblivious}: Requires uniform rows in $Q$ for privacy
+\end{itemize}
+
+\section{Orders of Obliviousness}
+
+Parallel to orders of approximation in Bernoulli types, we define orders of obliviousness:
+
+\begin{definition}[Orders of Obliviousness]
+\begin{itemize}
+\item \textbf{Order 0}: Perfect obliviousness (uniform confusion matrix rows)
+\item \textbf{Order 1}: Differential privacy (bounded row differences)
+\item \textbf{Order 2}: Pattern hiding (groups of indistinguishable operations)
+\item \textbf{Order k}: k-anonymous (k indistinguishable elements)
+\end{itemize}
+\end{definition}
+
+\subsection{Order 0: Perfect Obliviousness}
+
+\begin{definition}[Perfect Oblivious Channel]
+A channel is perfectly oblivious if its confusion matrix has identical rows:
+\begin{equation}
+Q = \begin{pmatrix}
+p_1 & p_2 & \cdots & p_m \\
+p_1 & p_2 & \cdots & p_m \\
+\vdots & \vdots & \ddots & \vdots \\
+p_1 & p_2 & \cdots & p_m
+\end{pmatrix}
+\end{equation}
+where $\sum_j p_j = 1$.
+\end{definition}
+
+This means all hidden values produce the same distribution of observations—perfect privacy.
+
+\subsection{Order 1: Differential Privacy}
+
+\begin{definition}[$\epsilon$-Differentially Private Channel]
+A channel provides $\epsilon$-differential privacy if for any adjacent inputs $x, x'$:
+\begin{equation}
+\frac{Q_{x,o}}{Q_{x',o}} \leq e^\epsilon \quad \forall o
+\end{equation}
+\end{definition}
+
+This bounds how much observations can differ between adjacent inputs.
+
+\subsection{Order 2: Pattern Obliviousness}
+
+\begin{definition}[Pattern-Oblivious Channel]
+A channel is pattern-oblivious if inputs with the same access pattern produce identical observations:
+\begin{equation}
+\Pattern{x} = \Pattern{y} \Rightarrow Q_{x,\cdot} = Q_{y,\cdot}
+\end{equation}
+\end{definition}
+
+Example: Two database queries accessing the same records in the same order produce indistinguishable observations.
+
+\section{Distribution Theory of Information Leakage}
+
+\subsection{Quantifying Leakage}
+
+The information leaked through observations follows a distribution:
+
+\begin{theorem}[Leakage Distribution]
+Given $n$ hidden operations producing observations, the mutual information:
+\begin{equation}
+I(\text{Hidden}; \text{Observable}) = \Entropy{\text{Hidden}} - \Entropy{\text{Hidden}|\text{Observable}}
+\end{equation}
+follows a distribution with:
+\begin{align}
+\Expect[I] &= \sum_{h,o} p(h,o) \log \frac{p(h,o)}{p(h)p(o)} \\
+\text{Var}[I] &= \text{Var}\left[\log \frac{p(H,O)}{p(H)p(O)}\right]
+\end{align}
+\end{theorem}
+
+\subsection{Asymptotic Behavior}
+
+\begin{theorem}[Asymptotic Leakage]
+As the number of operations $n \to \infty$:
+\begin{enumerate}
+\item Perfect obliviousness: $I_n = 0$ for all $n$
+\item Differential privacy: $I_n = O(\epsilon n)$
+\item Pattern obliviousness: $I_n = O(\log k)$ for $k$ patterns
+\item No protection: $I_n = \Theta(n)$
+\end{enumerate}
+\end{theorem}
+
+\section{The Fundamental Construction: Oblivious Maps}
+
+\subsection{From Bernoulli Maps to Oblivious Maps}
+
+Recall from enhanced Paper 02 that a Bernoulli map observes a latent function with controlled errors. An oblivious map hides a function while controlling leakage:
+
+\begin{definition}[Oblivious Map]
+An oblivious map $f^*: X^* \to Y^*$ where:
+\begin{itemize}
+\item $X^*$ are encoded inputs (ciphertexts or hashes)
+\item $Y^*$ are encoded outputs
+\item The encoding ensures uniform distribution
+\item Undefined mappings return random oracle outputs
+\end{itemize}
+\end{definition}
+
+\begin{construction}[Universal Oblivious Map]
+Given function $f: X \to Y$:
+\begin{enumerate}
+\item For each $x \in X$, generate $\lceil 1/p(x) \rceil$ valid encodings
+\item For each $y \in Y$, generate $\lceil 1/p(y|x) \rceil$ output encodings
+\item Store mapping table: encoded inputs $\to$ encoded outputs
+\item For undefined inputs, return $H(\text{input})$ as random oracle
+\end{enumerate}
+\end{construction}
+
+This achieves:
+\begin{itemize}
+\item \textbf{Perfect obliviousness}: All encodings uniformly distributed
+\item \textbf{Optimal space}: Entropy of the function
+\item \textbf{Practical implementation}: Using cryptographic hashes
+\end{itemize}
+
+\section{Composition and Error Propagation}
+
+\subsection{Composition of Oblivious Operations}
+
+When composing oblivious operations, leakage accumulates:
+
+\begin{theorem}[Leakage Composition]
+For sequential oblivious operations with leakage $L_1, L_2, ..., L_k$:
+\begin{equation}
+L_{\text{total}} \leq \sum_{i=1}^k L_i + \sum_{i<j} I(L_i; L_j)
+\end{equation}
+The cross-information terms $I(L_i; L_j)$ capture correlation between leakages.
+\end{theorem}
+
+\begin{corollary}[Independent Composition]
+If operations leak independently:
+\begin{equation}
+L_{\text{total}} = \sum_{i=1}^k L_i
+\end{equation}
+\end{corollary}
+
+\subsection{Parallel Composition}
+
+\begin{theorem}[Parallel Leakage]
+For parallel operations on disjoint data:
+\begin{equation}
+L_{\text{parallel}} = \max_i L_i
+\end{equation}
+Leakage is dominated by the weakest link.
+\end{theorem}
+
+\section{Cryptographic Instantiations}
+
+\subsection{PRF-Based Oblivious Maps}
+
+\begin{construction}[PRF Oblivious Map]
+Using pseudorandom function $\text{PRF}_k$:
+\begin{enumerate}
+\item Encode input: $x^* = \text{PRF}_k(x || \text{nonce})$
+\item Compute: $y = f(x)$
+\item Encode output: $y^* = \text{PRF}_k(y || x^*)$
+\item Store: $(x^*, y^*)$
+\end{enumerate}
+\end{construction}
+
+Confusion matrix: Computationally indistinguishable from uniform.
+
+\subsection{Homomorphic Encryption}
+
+\begin{construction}[FHE Oblivious Computation]
+\begin{enumerate}
+\item Client encrypts input: $\text{Enc}(x)$
+\item Server computes on ciphertext: $\text{Eval}(f, \text{Enc}(x))$
+\item Result is $\text{Enc}(f(x))$
+\item Client decrypts: $\text{Dec}(\text{Enc}(f(x))) = f(x)$
+\end{enumerate}
+\end{construction}
+
+Confusion matrix: Perfect obliviousness (server sees only random ciphertexts).
+
+\subsection{Garbled Circuits}
+
+\begin{construction}[Garbled Circuit Protocol]
+\begin{enumerate}
+\item Garbler creates circuit $\tilde{C}$ and input labels
+\item Evaluator obtains labels for their input via oblivious transfer
+\item Evaluator computes $\tilde{C}$ gate by gate
+\item Output labels decode to final result
+\end{enumerate}
+\end{construction}
+
+Confusion matrix: Each wire carries random labels independent of values.
+
+\section{Applications and Instantiations}
+
+\subsection{Oblivious RAM (ORAM)}
+
+ORAM hides memory access patterns:
+
+\begin{example}[Path ORAM Confusion Matrix]
+For accessing logical address $i$:
+\begin{itemize}
+\item Hidden: Actual address $i$
+\item Observable: Random path in tree + shuffling
+\item Confusion matrix: Uniform over all paths (perfect obliviousness)
+\end{itemize}
+\end{example}
+
+\subsection{Private Information Retrieval (PIR)}
+
+PIR retrieves items without revealing which:
+
+\begin{example}[Computational PIR]
+\begin{itemize}
+\item Hidden: Index $i$ to retrieve
+\item Observable: Homomorphic query ciphertext
+\item Confusion matrix: Computationally uniform over ciphertext space
+\end{itemize}
+\end{example}
+
+\subsection{Searchable Encryption}
+
+Enables search on encrypted data:
+
+\begin{example}[SSE Leakage Profile]
+\begin{itemize}
+\item Hidden: Search keywords and document contents
+\item Observable: Search pattern (repeated queries) and access pattern
+\item Confusion matrix: Groups keywords by search pattern
+\end{itemize}
+\end{example}
+
+\section{Connection to Regular Types}
+
+The philosophical tension with regular types (from comprehensive review) extends to oblivious computing:
+
+\begin{remark}[Oblivious Equality]
+In oblivious computing, equality comparison itself must be oblivious:
+\begin{itemize}
+\item Traditional: $a == b$ returns boolean
+\item Oblivious: $a == b$ returns encrypted boolean
+\item Observable: Only that a comparison occurred, not the result
+\end{itemize}
+This breaks reflexivity, symmetry, and transitivity at the observable level while preserving them at the hidden level.
+\end{remark}
+
+\section{Optimal Constructions and Lower Bounds}
+
+\subsection{Information-Theoretic Limits}
+
+\begin{theorem}[Oblivious Storage Lower Bound]
+Any oblivious storage system for $n$ items of $b$ bits each with perfect obliviousness requires:
+\begin{equation}
+\text{Space} \geq nb + \Omega(n \log n) \text{ bits}
+\end{equation}
+The $\Omega(n \log n)$ overhead is necessary for hiding access patterns.
+\end{theorem}
+
+\subsection{Computational Trade-offs}
+
+\begin{theorem}[Obliviousness-Performance Trade-off]
+For any oblivious system with leakage $L$ and overhead $T$:
+\begin{equation}
+L \cdot T \geq \Omega(n)
+\end{equation}
+Perfect obliviousness ($L = 0$) requires $T = \Omega(n)$ overhead.
+\end{theorem}
+
+\section{Statistical Hypothesis Testing for Obliviousness}
+
+\subsection{Testing Perfect Obliviousness}
+
+\begin{theorem}[Hypothesis Test for Obliviousness]
+To test $H_0$: System is perfectly oblivious vs $H_1$: System leaks information:
+\begin{equation}
+\chi^2 = \sum_{i,j} \frac{(O_{ij} - E_{ij})^2}{E_{ij}}
+\end{equation}
+where $O_{ij}$ are observed pattern frequencies and $E_{ij}$ are expected under perfect obliviousness.
+\end{theorem}
+
+\subsection{Measuring Actual Leakage}
+
+\begin{definition}[Empirical Leakage]
+Given observations $\{o_1, ..., o_m\}$ from hidden operations $\{h_1, ..., h_n\}$:
+\begin{equation}
+\hat{L} = \hat{I}(H; O) = \sum_{h,o} \frac{\#(h,o)}{n} \log \frac{\#(h,o) \cdot n}{\#(h) \cdot \#(o)}
+\end{equation}
+\end{definition}
+
+\section{Future Directions}
+
+\subsection{Adaptive Obliviousness}
+
+Like adaptive frequency normalization in Bernoulli types:
+\begin{itemize}
+\item Monitor observed access patterns
+\item Dynamically adjust dummy operations
+\item Maintain target leakage bounds
+\end{itemize}
+
+\subsection{Hybrid Constructions}
+
+Combining Bernoulli approximation with oblivious computing:
+\begin{itemize}
+\item Use Bloom filters for oblivious membership tests
+\item Probabilistic padding for differential privacy
+\item Approximate algorithms with hidden errors
+\end{itemize}
+
+\section{Fundamental Limits: Rank-Deficiency and Unconditional Privacy}
+
+The confusion matrix framework reveals that the strongest privacy guarantees come from rank-deficient observation processes, which create fundamental limits on what adversaries can learn.
+
+\begin{theorem}[Rank-Based Privacy Bounds]
+Consider an oblivious system with confusion matrix $Q$. If $\text{rank}(Q) < |H|$ where $H$ is the hidden input space, then there exist distinct hidden operations that are information-theoretically indistinguishable to any adversary, regardless of computational resources.
+\end{theorem}
+
+\begin{proof}
+When $\text{rank}(Q) < |H|$, the observation channel projects the hidden space onto a lower-dimensional subspace. Hidden operations that differ only within the null space of $Q$ produce identical observation distributions, making them fundamentally indistinguishable.
+\end{proof}
+
+This has profound implications for privacy-preserving systems:
+
+\begin{itemize}
+    \item \textbf{Unconditional security**: Rank-deficient systems provide privacy guarantees that hold against unbounded adversaries
+    \item \textbf{Information-theoretic limits**: Some private information remains protected even if cryptographic assumptions are broken
+    \item \textbf{Optimal obliviousness}: Perfect obliviousness (uniform confusion matrix) is actually rank-1, providing maximum privacy
+\end{itemize}
+
+\begin{remark}[Connection to Cryptographic Primitives]
+Many cryptographic constructions can be understood as implementing rank-deficient confusion matrices:
+\begin{itemize}
+    \item \textbf{One-time pad**: Rank-1 confusion matrix (all messages produce uniform ciphertext distribution)
+    \item \textbf{Perfect hash functions**: Rank preservation vs rank reduction determines collision resistance
+    \item \textbf{Differential privacy**: Controlled rank deficiency provides plausible deniability
+\end{itemize}
+\end{remark}
+
+\begin{corollary}[Asymptotic Privacy Bounds]
+No amount of side-channel observation can breach privacy when the underlying confusion matrix is rank-deficient in the directions that encode sensitive information. This provides a theoretical foundation for unconditional privacy in oblivious systems.
+\end{corollary}
+
+\section{Conclusion}
+
+We have shown that oblivious computing and Bernoulli types are two sides of the same fundamental coin: controlling information flow through observation channels. The key insights:
+
+\begin{enumerate}
+\item \textbf{Unified Framework}: Confusion matrices characterize both probabilistic approximation and cryptographic hiding
+\item \textbf{Orders of Protection}: From perfect obliviousness to pattern hiding, parallel to orders of approximation
+\item \textbf{Distribution Theory}: Information leakage follows predictable distributions enabling analysis
+\item \textbf{Composition Laws}: Leakage accumulates predictably through operations
+\item \textbf{Optimal Constructions}: Achieve information-theoretic bounds using encoding distributions
+\item \textbf{Practical Systems}: ORAM, PIR, and searchable encryption as instantiations
+\end{enumerate}
+
+The latent/observed duality of Bernoulli types and the hidden/observable duality of oblivious computing together provide a complete theory of computation under observation constraints—whether those constraints come from space limitations or privacy requirements.
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

@@ -232,6 +232,88 @@ Router $r: X \to [k]$ mapping $x$ to its partition\;
 \caption{Hierarchical Entropy Map}
 \end{algorithm}
 
+\section{Practical Implementation Considerations}
+
+\subsection{Order vs Rank in Implementation}
+
+The theoretical insights from Part 1 about order (parameter count) and rank (matrix rank) have direct implementation implications:
+
+\begin{remark}[Implementation Complexity]
+\textbf{Parameter estimation complexity} scales with order:
+\begin{itemize}
+    \item First-order approximations need 1 parameter (e.g., global error rate $\epsilon$)
+    \item Higher-order approximations need more parameters, increasing calibration complexity
+\end{itemize}
+
+\textbf{Inference quality} scales with rank:
+\begin{itemize}
+    \item High-rank confusion matrices enable better latent value recovery
+    \item Structured sparsity (e.g., Bloom filter constraints) can increase effective rank
+    \item Implementation should preserve structure that enhances rank
+\end{itemize}
+\end{remark}
+
+\begin{example}[Bloom Filter Implementation Insights]
+Bloom filters achieve high effective rank through:
+\begin{itemize}
+    \item \textbf{Subset preservation structure**: Implementation ensures observed sets are supersets of latent sets
+    \item \textbf{Hash independence**: Multiple hash functions create near-orthogonal error patterns
+    \item \textbf{Bit array sparsity**: Structure prevents many impossible transitions
+\end{itemize}
+
+Implementation should maintain these structural properties rather than treating errors as generic noise.
+\end{example}
+
+\subsection{Compositional vs Direct Implementation}
+
+Following Part 4's analysis of composite types, implementation strategies differ:
+
+\begin{definition}[Compositional Implementation]
+Approximate each component independently, then compose:
+\begin{verbatim}
+struct CompositionalPair {
+    bernoulli<A> first;   // Independent approximation
+    bernoulli<B> second;  // Independent approximation
+};
+\end{verbatim}
+
+\textbf{Advantages**: Modular, reuses existing approximation algorithms
+\textbf{Disadvantages**: Higher total error rates, no correlation exploitation
+\end{definition}
+
+\begin{definition}[Direct Implementation]
+Approximate the composite type as a unit:
+\begin{verbatim}
+using DirectPair = bernoulli<std::pair<A, B>>;
+// Single approximation algorithm for entire pair
+\end{verbatim}
+
+\textbf{Advantages**: Lower error rates, can exploit correlation structure
+\textbf{Disadvantages**: Requires custom algorithms for each composite type
+\end{definition}
+
+\subsection{Information Hierarchy in Implementation}
+
+Implementations can exploit the information hierarchy from Part 1:
+
+\begin{example}[Adaptive Error Rates]
+\begin{verbatim}
+class AdaptiveBloomFilter {
+    // Level 1: Structural constraint ("Bloom filter")
+    static constexpr bool NO_FALSE_NEGATIVES = true;
+    
+    // Level 2: Parameter knowledge (target false positive rate)
+    double target_fpr;
+    
+    // Level 3: Runtime adaptation based on observed queries
+    void adapt_to_workload(const QueryHistory& history) {
+        // Use observed patterns to improve parameter estimates
+        update_hash_functions(history.collision_patterns);
+    }
+};
+\end{verbatim}
+\end{example}
+
 \section{Applications}
 
 \subsection{Privacy-Preserving Membership Tests}
@@ -304,6 +386,135 @@ C = \max_{p(x)} I(X; \obs{Y}) = \log_2 \Card{Y}
 \end{equation}
 achieved when all codes have equal probability.
 \end{theorem}
+
+\section{C++ Implementation Framework}
+
+\subsection{Approximate Value Monad in Practice}
+
+Building on the theoretical foundation from Part 1, we now show how the approximate value monad translates to practical C++ implementation. The key insight from our algebraic analysis is that approximate computations can be composed systematically while tracking error propagation.
+
+\begin{verbatim}
+template<typename T>
+class ApproxValue {
+private:
+    T value_;
+    double false_positive_rate_;
+    double false_negative_rate_;
+    
+public:
+    // Monad return: embed exact value
+    static ApproxValue<T> pure(const T& exact_value) {
+        return ApproxValue(exact_value, 0.0, 0.0);
+    }
+    
+    // Monad bind: compose approximate computations
+    template<typename U>
+    ApproxValue<U> bind(std::function<ApproxValue<U>(const T&)> f) const {
+        auto result = f(value_);
+        // Error propagation following algebraic laws from Part 2
+        result.propagate_errors(false_positive_rate_, false_negative_rate_);
+        return result;
+    }
+    
+    // Lift function to work on approximate values
+    template<typename U>
+    static auto lift(std::function<U(T)> f) {
+        return [f](const ApproxValue<T>& approx) {
+            return ApproxValue<U>::pure(f(approx.value_));
+        };
+    }
+};
+\end{verbatim}
+
+\subsection{Type Erasure for Modularity}
+
+The PDF analysis revealed that concrete error parameters can be erased for modularity. This enables uniform handling of different approximate types:
+
+\begin{verbatim}
+// Type-erased approximate value
+class ApproxBase {
+public:
+    virtual ~ApproxBase() = default;
+    virtual double false_positive_rate() const = 0;
+    virtual double false_negative_rate() const = 0;
+    virtual std::unique_ptr<ApproxBase> clone() const = 0;
+};
+
+template<typename T>
+class ApproxImpl : public ApproxBase {
+private:
+    ApproxValue<T> value_;
+public:
+    ApproxImpl(ApproxValue<T> val) : value_(std::move(val)) {}
+    
+    double false_positive_rate() const override {
+        return value_.false_positive_rate();
+    }
+    
+    std::unique_ptr<ApproxBase> clone() const override {
+        return std::make_unique<ApproxImpl<T>>(value_);
+    }
+};
+
+// Generic approximate container
+class ApproxAny {
+    std::unique_ptr<ApproxBase> impl_;
+public:
+    template<typename T>
+    ApproxAny(ApproxValue<T> val) 
+        : impl_(std::make_unique<ApproxImpl<T>>(std::move(val))) {}
+};
+\end{verbatim}
+
+\subsection{Algebraic Data Type Support}
+
+The systematic X$^{\pm}$ lifting from Part 1 translates directly to C++ templates:
+
+\begin{verbatim}
+// Approximate sum type (variant)
+template<typename... Ts>
+using ApproxVariant = ApproxValue<std::variant<Ts...>>;
+
+// Approximate product type (tuple)  
+template<typename... Ts>
+using ApproxTuple = ApproxValue<std::tuple<Ts...>>;
+
+// Approximate function type
+template<typename From, typename To>
+class ApproxFunction {
+    std::function<ApproxValue<To>(const From&)> impl_;
+public:
+    ApproxFunction(std::function<ApproxValue<To>(const From&)> f)
+        : impl_(std::move(f)) {}
+        
+    ApproxValue<To> operator()(const From& input) const {
+        return impl_(input);
+    }
+};
+\end{verbatim}
+
+\subsection{Integration with Entropy Maps}
+
+The entropy map construction can be integrated with the approximate value monad:
+
+\begin{verbatim}
+template<typename Domain, typename Codomain>
+class EntropyMap {
+    std::function<size_t(const Domain&)> hasher_;
+    PrefixCodeTable<Codomain> codes_;
+    
+public:
+    ApproxValue<Codomain> query(const Domain& input) const {
+        auto hash_val = hasher_(input);
+        auto [observed_value, error_rates] = codes_.decode(hash_val);
+        return ApproxValue<Codomain>(observed_value, 
+                                   error_rates.false_positive,
+                                   error_rates.false_negative);
+    }
+};
+\end{verbatim}
+
+This implementation demonstrates how the theoretical framework from Parts 1-2 translates to practical, type-safe C++ code that maintains the algebraic properties while providing efficient execution.
 
 \section{Extensions and Generalizations}
 

@@ -1,0 +1,306 @@
+\chapter{Prerequisites and Background}
+\label{app:prerequisites}
+
+This appendix covers the background knowledge helpful for understanding this book. If you're comfortable with most of these topics, you're ready to proceed. If not, we provide resources for catching up.
+
+\section{Mathematical Background}
+
+\subsection{Probability Theory}
+
+\textbf{Essential Concepts:}
+\begin{itemize}
+\item Probability spaces and events
+\item Random variables and distributions
+\item Expected value and variance
+\item Independence and conditional probability
+\item Bayes' theorem
+\item Law of large numbers (basic understanding)
+\end{itemize}
+
+\textbf{Self-Assessment:}
+Can you answer: If we flip a biased coin with $P(\text{heads}) = 0.6$ three times, what's the probability of getting exactly two heads?
+
+\textbf{Answer:} $\binom{3}{2} \cdot 0.6^2 \cdot 0.4^1 = 3 \cdot 0.36 \cdot 0.4 = 0.432$
+
+\textbf{Resources to Review:}
+\begin{itemize}
+\item \textit{Introduction to Probability} by Bertsekas \& Tsitsiklis (Chapters 1-3)
+\item MIT OCW 6.041 Probabilistic Systems Analysis
+\item Khan Academy Probability Course
+\end{itemize}
+
+\subsection{Discrete Mathematics}
+
+\textbf{Essential Concepts:}
+\begin{itemize}
+\item Set theory and operations
+\item Functions and relations
+\item Combinatorics (permutations, combinations)
+\item Graph theory basics
+\item Modular arithmetic
+\item Logarithms and exponentials
+\end{itemize}
+
+\textbf{Self-Assessment:}
+Can you explain why $\log_2(1000) \approx 10$?
+
+\textbf{Answer:} Because $2^{10} = 1024 \approx 1000$
+
+\textbf{Resources to Review:}
+\begin{itemize}
+\item \textit{Discrete Mathematics and Its Applications} by Rosen (Chapters 1-2, 5-6)
+\item MIT OCW 6.042J Mathematics for Computer Science
+\end{itemize}
+
+\subsection{Linear Algebra (Optional but Helpful)}
+
+\textbf{Useful Concepts:}
+\begin{itemize}
+\item Vectors and matrices
+\item Matrix operations
+\item Eigenvalues (conceptual understanding)
+\end{itemize}
+
+\textbf{Resources:}
+\begin{itemize}
+\item 3Blue1Brown's Essence of Linear Algebra (YouTube)
+\item \textit{Linear Algebra Done Right} by Axler (Chapters 1-3)
+\end{itemize}
+
+\section{Computer Science Background}
+
+\subsection{Algorithms and Data Structures}
+
+\textbf{Essential Concepts:}
+\begin{itemize}
+\item Big-O notation and complexity analysis
+\item Basic data structures (arrays, lists, trees, hash tables)
+\item Searching and sorting algorithms
+\item Hash functions and hash tables
+\item Binary representation
+\end{itemize}
+
+\textbf{Self-Assessment:}
+What's the expected time complexity of searching in a hash table? What about worst case?
+
+\textbf{Answer:} Expected $O(1)$, worst case $O(n)$ (if all items hash to same bucket)
+
+\textbf{Resources to Review:}
+\begin{itemize}
+\item \textit{Introduction to Algorithms} by CLRS (Chapters 1-3, 11)
+\item \textit{Algorithms} by Sedgewick \& Wayne
+\item Coursera Algorithms Course (Princeton)
+\end{itemize}
+
+\subsection{Systems Programming}
+
+\textbf{Helpful Concepts:}
+\begin{itemize}
+\item Memory management (stack vs heap)
+\item Caching and memory hierarchy
+\item Network protocols (TCP/IP basics)
+\item Concurrency basics
+\end{itemize}
+
+\textbf{Resources:}
+\begin{itemize}
+\item \textit{Computer Systems: A Programmer's Perspective} by Bryant \& O'Hallaron
+\item \textit{The Linux Programming Interface} by Kerrisk
+\end{itemize}
+
+\section{Programming Background}
+
+\subsection{Python Proficiency}
+
+\textbf{Required Skills:}
+\begin{itemize}
+\item Functions and classes
+\item List comprehensions
+\item Dictionaries and sets
+\item File I/O
+\item Basic libraries (hashlib, random, collections)
+\item Exception handling
+\end{itemize}
+
+\textbf{Self-Assessment:}
+Can you write a function that counts word frequencies in a text file?
+
+\begin{lstlisting}[language=Python]
+def count_words(filename):
+    """Count word frequencies in a file"""
+    from collections import Counter
+    with open(filename, 'r') as f:
+        words = f.read().lower().split()
+    return Counter(words)
+\end{lstlisting}
+
+\textbf{Resources:}
+\begin{itemize}
+\item \textit{Fluent Python} by Ramalho
+\item Python.org official tutorial
+\item \textit{Effective Python} by Slatkin
+\end{itemize}
+
+\subsection{Other Languages (Optional)}
+
+Helpful to know basics of:
+\begin{itemize}
+\item C/C++ (for performance-critical code)
+\item SQL (for database examples)
+\item JavaScript (for web-based demos)
+\end{itemize}
+
+\section{Cryptography Background}
+
+\subsection{Basic Concepts}
+
+\textbf{Helpful to Understand:}
+\begin{itemize}
+\item Symmetric vs asymmetric encryption
+\item Hash functions vs encryption
+\item Digital signatures (conceptual)
+\item TLS/SSL (basic idea)
+\end{itemize}
+
+\textbf{NOT Required:}
+\begin{itemize}
+\item Number theory depth
+\item Elliptic curves
+\item Lattice cryptography
+\item Zero-knowledge proofs
+\end{itemize}
+
+\textbf{Resources:}
+\begin{itemize}
+\item \textit{Serious Cryptography} by Aumasson (Chapters 1-3, 6)
+\item Cryptography I Course on Coursera (Stanford)
+\end{itemize}
+
+\section{Quick Review Exercises}
+
+Work through these to check your readiness:
+
+\subsection{Exercise 1: Probability}
+A Bloom filter has 1000 bits and uses 7 hash functions. After inserting 100 items, estimate the fraction of bits set to 1.
+
+\textbf{Solution:}
+Probability a specific bit is still 0: $(1 - 1/1000)^{700} \approx e^{-0.7} \approx 0.497$
+Fraction of bits set to 1: $1 - 0.497 = 0.503$ (about 50\%)
+
+\subsection{Exercise 2: Algorithms}
+Why might a hash table perform poorly even with a good hash function?
+
+\textbf{Solution:}
+\begin{itemize}
+\item Load factor too high (too many items for table size)
+\item Adversarial input causing many collisions
+\item Cache misses from random memory access
+\item Resizing overhead when growing
+\end{itemize}
+
+\subsection{Exercise 3: Programming}
+Write a function to check if a number is probably prime using Fermat's test:
+
+\begin{lstlisting}[language=Python]
+import random
+
+def is_probably_prime(n, k=5):
+    """Fermat primality test with k iterations"""
+    if n < 2:
+        return False
+    if n == 2:
+        return True
+    if n % 2 == 0:
+        return False
+    
+    for _ in range(k):
+        a = random.randint(2, n - 2)
+        if pow(a, n - 1, n) != 1:  # Fermat's little theorem
+            return False
+    return True  # Probably prime
+\end{lstlisting}
+
+\subsection{Exercise 4: Hashing}
+Explain why MD5 shouldn't be used for security purposes.
+
+\textbf{Solution:}
+MD5 is broken cryptographically:
+\begin{itemize}
+\item Collision attacks exist (can find two inputs with same hash)
+\item Only 128-bit output (too small for modern security)
+\item Fast to compute (enables brute force)
+\item Should use SHA-256 or SHA-3 instead
+\end{itemize}
+
+\section{Mathematical Notation Guide}
+
+Common notation used in this book:
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Notation} & \textbf{Meaning} \\
+\hline
+$\mathbb{N}, \mathbb{Z}, \mathbb{R}$ & Natural numbers, integers, reals \\
+$|S|$ & Cardinality (size) of set $S$ \\
+$S \cup T, S \cap T$ & Union, intersection \\
+$S \setminus T$ & Set difference \\
+$2^S$ & Power set of $S$ \\
+$\{0,1\}^n$ & Binary strings of length $n$ \\
+$\{0,1\}^*$ & Binary strings of any length \\
+$[n]$ & Set $\{1, 2, \ldots, n\}$ \\
+$x \leftarrow S$ & Sample $x$ uniformly from $S$ \\
+$\Pr[E]$ & Probability of event $E$ \\
+$\mathbb{E}[X]$ & Expected value of $X$ \\
+$X \sim D$ & $X$ follows distribution $D$ \\
+$O(f(n))$ & Big-O notation \\
+$\log$ & Logarithm base 2 (unless specified) \\
+$\ln$ & Natural logarithm (base $e$) \\
+$\lceil x \rceil, \lfloor x \rfloor$ & Ceiling, floor \\
+$x \approx y$ & Approximately equal \\
+$x \ll y$ & $x$ much less than $y$ \\
+$\text{negl}(n)$ & Negligible function \\
+\hline
+\end{tabular}
+\end{center}
+
+\section{Getting Help}
+
+If you need help with prerequisites:
+
+\begin{enumerate}
+\item \textbf{Online Forums}
+    \begin{itemize}
+    \item Book forum: \url{forum.bernoulli-types.org}
+    \item Stack Overflow for programming questions
+    \item Mathematics Stack Exchange for math questions
+    \end{itemize}
+
+\item \textbf{Study Groups}
+    \begin{itemize}
+    \item Find local meetups
+    \item Join online study groups
+    \item Form reading groups with colleagues
+    \end{itemize}
+
+\item \textbf{Office Hours}
+    \begin{itemize}
+    \item Monthly online office hours (see website)
+    \item Video explanations of difficult concepts
+    \item Q\&A sessions
+    \end{itemize}
+\end{enumerate}
+
+\section{Ready to Start?}
+
+If you:
+\begin{itemize}
+\item Understood most of the self-assessment questions
+\item Feel comfortable with basic probability and algorithms
+\item Can write and understand Python code
+\item Know what a hash function does
+\end{itemize}
+
+Then you're ready for Chapter 1! Don't worry if you don't know everything—we'll develop concepts as needed. The important thing is curiosity and willingness to learn.
+
+Remember: This book is about ideas more than formulas. Focus on understanding the concepts, and the mathematics will follow.

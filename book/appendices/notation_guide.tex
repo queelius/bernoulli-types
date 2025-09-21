@@ -1,0 +1,259 @@
+\chapter{Notation Guide}
+\label{app:notation}
+
+This appendix provides a comprehensive reference for all mathematical notation used in this book.
+
+\section{Sets and Logic}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Symbol} & \textbf{Meaning} \\
+\hline
+$\in, \notin$ & Element of, not element of \\
+$\subseteq, \subset$ & Subset (possibly equal), proper subset \\
+$\cup, \cap$ & Union, intersection \\
+$\setminus$ & Set difference: $A \setminus B = \{x \in A : x \notin B\}$ \\
+$\triangle$ & Symmetric difference: $A \triangle B = (A \setminus B) \cup (B \setminus A)$ \\
+$\emptyset$ & Empty set \\
+$|S|$ & Cardinality (size) of set $S$ \\
+$2^S$ or $\mathcal{P}(S)$ & Power set (set of all subsets) \\
+$S \times T$ & Cartesian product \\
+$\neg, \land, \lor$ & Logical NOT, AND, OR \\
+$\implies, \iff$ & Implies, if and only if \\
+$\forall, \exists$ & For all, there exists \\
+\hline
+\end{tabular}
+\end{center}
+
+\section{Number Sets}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Symbol} & \textbf{Meaning} \\
+\hline
+$\mathbb{N}$ & Natural numbers: $\{0, 1, 2, \ldots\}$ \\
+$\mathbb{Z}$ & Integers: $\{\ldots, -2, -1, 0, 1, 2, \ldots\}$ \\
+$\mathbb{Q}$ & Rational numbers \\
+$\mathbb{R}$ & Real numbers \\
+$\mathbb{C}$ & Complex numbers \\
+$[n]$ & Set $\{1, 2, \ldots, n\}$ \\
+$[a, b]$ & Closed interval (includes endpoints) \\
+$(a, b)$ & Open interval (excludes endpoints) \\
+$\mathbb{F}_2$ & Binary field $\{0, 1\}$ \\
+\hline
+\end{tabular}
+\end{center}
+
+\section{Probability and Statistics}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Symbol} & \textbf{Meaning} \\
+\hline
+$\Pr[E]$ or $P(E)$ & Probability of event $E$ \\
+$P(A|B)$ & Conditional probability of $A$ given $B$ \\
+$\mathbb{E}[X]$ or $E[X]$ & Expected value of random variable $X$ \\
+$\text{Var}(X)$ & Variance of $X$ \\
+$\text{Cov}(X,Y)$ & Covariance of $X$ and $Y$ \\
+$X \sim D$ & $X$ follows distribution $D$ \\
+$X \perp Y$ & $X$ and $Y$ are independent \\
+$\mathcal{N}(\mu, \sigma^2)$ & Normal distribution \\
+$\text{Bernoulli}(p)$ & Bernoulli distribution with parameter $p$ \\
+$\text{Binomial}(n, p)$ & Binomial distribution \\
+$\text{Uniform}(a, b)$ & Uniform distribution on $[a, b]$ \\
+\hline
+\end{tabular}
+\end{center}
+
+\section{Bernoulli Types Notation}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Symbol} & \textbf{Meaning} \\
+\hline
+$\mathcal{B}$ & Generic Bernoulli type \\
+$\tilde{x}$ & Observed (noisy) value of latent $x$ \\
+$\varepsilon$ & Error rate or false positive probability \\
+$\delta$ & False negative probability (when different from $\varepsilon$) \\
+$\text{fprate}$ & False positive rate \\
+$\text{fnrate}$ & False negative rate \\
+$\BF$ & Bloom filter \\
+$\tilde{S}$ & Bernoulli set (observed set) \\
+$\tilde{M}$ & Bernoulli map \\
+$\tilde{h}$ & Probabilistic hash function \\
+$\mathcal{E}$ & Encoding function \\
+$\mathcal{D}$ & Decoding function \\
+\hline
+\end{tabular}
+\end{center}
+
+\section{Cryptography and Security}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Symbol} & \textbf{Meaning} \\
+\hline
+$\{0,1\}^n$ & Binary strings of length $n$ \\
+$\{0,1\}^*$ & Binary strings of any length \\
+$x \leftarrow S$ & Sample $x$ uniformly at random from set $S$ \\
+$x \stackrel{\$}{\leftarrow} S$ & Same as above (emphasizing randomness) \\
+$H$ & Hash function \\
+$\mathcal{H}$ & Family of hash functions \\
+$\lambda$ & Security parameter \\
+$\text{negl}(\lambda)$ & Negligible function in $\lambda$ \\
+$\text{poly}(\lambda)$ & Polynomial function in $\lambda$ \\
+$\mathcal{A}$ & Adversary \\
+$\perp$ & Failure or abort symbol \\
+$\approx_c$ & Computationally indistinguishable \\
+$\equiv_s$ & Statistically indistinguishable \\
+$\equiv$ & Perfectly indistinguishable \\
+\hline
+\end{tabular}
+\end{center}
+
+\section{Information Theory}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Symbol} & \textbf{Meaning} \\
+\hline
+$H(X)$ & Shannon entropy of $X$ \\
+$H(X|Y)$ & Conditional entropy \\
+$I(X;Y)$ & Mutual information \\
+$D(P||Q)$ & KL divergence from $Q$ to $P$ \\
+$H_2(p)$ & Binary entropy: $-p\log p - (1-p)\log(1-p)$ \\
+\hline
+\end{tabular}
+\end{center}
+
+\section{Asymptotic Notation}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Symbol} & \textbf{Meaning} \\
+\hline
+$O(f(n))$ & Big-O: grows at most as fast as $f(n)$ \\
+$\Omega(f(n))$ & Big-Omega: grows at least as fast as $f(n)$ \\
+$\Theta(f(n))$ & Big-Theta: grows at the same rate as $f(n)$ \\
+$o(f(n))$ & Little-o: grows strictly slower than $f(n)$ \\
+$\omega(f(n))$ & Little-omega: grows strictly faster than $f(n)$ \\
+$\tilde{O}(f(n))$ & Soft-O: $O(f(n) \cdot \text{polylog}(n))$ \\
+\hline
+\end{tabular}
+\end{center}
+
+\section{Mathematical Operations}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Symbol} & \textbf{Meaning} \\
+\hline
+$\sum_{i=1}^n$ & Summation from $i=1$ to $n$ \\
+$\prod_{i=1}^n$ & Product from $i=1$ to $n$ \\
+$\binom{n}{k}$ & Binomial coefficient "n choose k" \\
+$n!$ & Factorial: $n \cdot (n-1) \cdot \ldots \cdot 2 \cdot 1$ \\
+$\lceil x \rceil$ & Ceiling: smallest integer $\geq x$ \\
+$\lfloor x \rfloor$ & Floor: largest integer $\leq x$ \\
+$\log x$ & Logarithm base 2 (unless otherwise specified) \\
+$\ln x$ & Natural logarithm (base $e$) \\
+$\log_b x$ & Logarithm base $b$ \\
+$a \bmod n$ & Remainder when $a$ divided by $n$ \\
+$a \equiv b \pmod{n}$ & $a$ congruent to $b$ modulo $n$ \\
+$\gcd(a,b)$ & Greatest common divisor \\
+$\text{lcm}(a,b)$ & Least common multiple \\
+\hline
+\end{tabular}
+\end{center}
+
+\section{Special Functions}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Symbol} & \textbf{Meaning} \\
+\hline
+$\mathbf{1}_A$ or $\mathbb{I}_A$ & Indicator function (1 if true, 0 if false) \\
+$\text{sgn}(x)$ & Sign function \\
+$|x|$ & Absolute value \\
+$||x||$ & Norm of vector $x$ \\
+$\langle x, y \rangle$ & Inner product \\
+$x \oplus y$ & XOR operation \\
+$x \land y$ & Bitwise AND \\
+$x \lor y$ & Bitwise OR \\
+$\neg x$ & Bitwise NOT \\
+\hline
+\end{tabular}
+\end{center}
+
+\section{Relations}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Symbol} & \textbf{Meaning} \\
+\hline
+$=, \neq$ & Equal, not equal \\
+$<, \leq$ & Less than, less than or equal \\
+$>, \geq$ & Greater than, greater than or equal \\
+$\approx$ & Approximately equal \\
+$\sim$ & Asymptotically equivalent \\
+$\propto$ & Proportional to \\
+$\ll, \gg$ & Much less than, much greater than \\
+$:=$ & Defined as \\
+$\mapsto$ & Maps to (function notation) \\
+\hline
+\end{tabular}
+\end{center}
+
+\section{Algorithm Notation}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Notation} & \textbf{Meaning} \\
+\hline
+$\gets$ or $\leftarrow$ & Assignment \\
+\textbf{return} & Return value from function \\
+\textbf{if-then-else} & Conditional execution \\
+\textbf{for} $i = 1$ \textbf{to} $n$ & Loop from 1 to $n$ \\
+\textbf{while} & Loop while condition true \\
+\textbf{repeat-until} & Loop until condition true \\
+$\Call{Function}{args}$ & Function call \\
+$\bot$ & Undefined or error value \\
+\hline
+\end{tabular}
+\end{center}
+
+\section{Greek Letters Used}
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Letter} & \textbf{Name} & \textbf{Common Usage} \\
+\hline
+$\alpha$ & alpha & Significance level \\
+$\beta$ & beta & Type II error probability \\
+$\gamma$ & gamma & Discount factor \\
+$\delta$ & delta & Small change, error bound \\
+$\varepsilon, \epsilon$ & epsilon & Error rate, small value \\
+$\lambda$ & lambda & Security parameter, rate \\
+$\mu$ & mu & Mean, measure \\
+$\sigma$ & sigma & Standard deviation \\
+$\tau$ & tau & Threshold, time \\
+$\phi$ & phi & Feature function \\
+$\psi$ & psi & Wave function \\
+$\omega$ & omega & Frequency, outcome \\
+$\Omega$ & Omega (capital) & Sample space \\
+$\Sigma$ & Sigma (capital) & Alphabet, sum \\
+$\Pi$ & Pi (capital) & Product \\
+\hline
+\end{tabular}
+\end{center}

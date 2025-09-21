@@ -1,0 +1,444 @@
+\chapter{From Hashing to Hiding: The Mathematics of Observation}
+\label{ch:hashing-to-hiding}
+
+\section{Learning Objectives}
+
+By the end of this chapter, you will understand:
+\begin{itemize}
+\item How \textbf{confusion matrices} formally characterize observation channels
+\item The \textbf{information-theoretic limits} on space-efficient approximation
+\item How \textbf{hash functions} enable practical implementation of Bernoulli types
+\item The \textbf{space-optimality} of Bloom filters and related structures
+\item Why \textbf{perfect hashing} is the theoretical ideal we approximate
+\end{itemize}
+
+\section{Confusion Matrices: The Mathematics of Observation}
+
+In Chapter 1, we introduced the latent/observed distinction. Now we formalize how observation channels transform latent values into observed values through \textit{confusion matrices}.
+
+\subsection{The General Confusion Matrix}
+
+\begin{definition}[Confusion Matrix]
+For a type $T$ with values $\{t_1, ..., t_n\}$, a confusion matrix $Q$ is an $n \times n$ stochastic matrix where:
+\begin{equation}
+Q_{ij} = \mathbb{P}[\text{observe } t_j | \text{latent value is } t_i]
+\end{equation}
+Each row sums to 1: $\sum_j Q_{ij} = 1$.
+\end{definition}
+
+\begin{example}[Boolean Confusion Matrix]
+For a Boolean with false positive rate $\alpha$ and false negative rate $\beta$:
+\begin{equation}
+Q = \begin{pmatrix}
+\mathbb{P}[\text{obs true} | \text{lat true}] & \mathbb{P}[\text{obs false} | \text{lat true}] \\
+\mathbb{P}[\text{obs true} | \text{lat false}] & \mathbb{P}[\text{obs false} | \text{lat false}]
+\end{pmatrix} = \begin{pmatrix}
+1-\beta & \beta \\
+\alpha & 1-\alpha
+\end{pmatrix}
+\end{equation}
+\end{example}
+
+\subsection{Orders of Approximation via Confusion Matrices}
+
+The confusion matrix structure determines the approximation order:
+
+\begin{definition}[Order Classification]
+\begin{itemize}
+\item \textbf{Order 0}: Identity matrix (perfect observation)
+\begin{equation}
+Q^{(0)} = I = \begin{pmatrix}
+1 & 0 & \cdots & 0 \\
+0 & 1 & \cdots & 0 \\
+\vdots & \vdots & \ddots & \vdots \\
+0 & 0 & \cdots & 1
+\end{pmatrix}
+\end{equation}
+
+\item \textbf{Order 1}: Symmetric channel (single parameter $\epsilon$)
+\begin{equation}
+Q^{(1)}_{ij} = \begin{cases}
+1-\epsilon & \text{if } i = j \\
+\epsilon/(n-1) & \text{if } i \neq j
+\end{cases}
+\end{equation}
+
+\item \textbf{Order 2}: Two parameter model (e.g., $\alpha$, $\beta$ for Boolean)
+
+\item \textbf{Order k}: Up to $k$ independent parameters
+\end{itemize}
+\end{definition}
+
+\subsection{Properties of Confusion Matrices}
+
+\begin{theorem}[Confusion Matrix Properties]
+For any valid confusion matrix $Q$:
+\begin{enumerate}
+\item \textbf{Stochastic}: Each row sums to 1
+\item \textbf{Invertible observation}: If $Q$ is invertible, we can recover latent probabilities from observed
+\item \textbf{Channel capacity}: $C = \max_{p(x)} I(X;\tilde{X})$ where $I$ is mutual information
+\item \textbf{Stationary}: Time-invariant (same $Q$ for all observations)
+\end{enumerate}
+\end{theorem}
+
+\section{From Sets to Observations: The Bloom Filter}
+
+The Bloom filter is the canonical example of observing a latent set through a confusion matrix.
+
+\subsection{The Membership Confusion Matrix}
+
+For set membership queries, we have a Boolean confusion matrix:
+
+\begin{definition}[Set Membership Channel]
+For a latent set $S \subseteq U$ and element $x \in U$:
+\begin{equation}
+Q_{\text{membership}} = \begin{pmatrix}
+\mathbb{P}[\text{obs } x \in \tilde{S} | x \in S] & \mathbb{P}[\text{obs } x \notin \tilde{S} | x \in S] \\
+\mathbb{P}[\text{obs } x \in \tilde{S} | x \notin S] & \mathbb{P}[\text{obs } x \notin \tilde{S} | x \notin S]
+\end{pmatrix}
+\end{equation}
+\end{definition}
+
+Bloom filters implement an order-2 channel with $\beta = 0$ (no false negatives):
+\begin{equation}
+Q_{\text{Bloom}} = \begin{pmatrix}
+1 & 0 \\
+\alpha & 1-\alpha
+\end{pmatrix}
+\end{equation}
+
+\subsection{Hash Functions: The Engine of Observation}
+
+Hash functions map the infinite space of possible elements to a finite observation space:
+
+\begin{definition}[Hash Function as Channel]
+A hash function $h: U \to \{0,1\}^m$ creates an observation channel where:
+\begin{itemize}
+\item Latent: Element $x \in U$
+\item Observed: Hash value $h(x) \in \{0,1\}^m$
+\item Collisions create confusion: $h(x) = h(y)$ for $x \neq y$
+\end{itemize}
+\end{definition}
+
+\begin{lstlisting}[language=Python, caption={Bloom filter as observation through hashing}]
+class BloomFilter:
+    """Observes set membership through multiple hash functions"""
+    
+    def __init__(self, size: int, num_hashes: int):
+        self.bits = [False] * size
+        self.size = size
+        self.num_hashes = num_hashes
+        
+        # The confusion matrix parameters
+        self.confusion_matrix = self._compute_confusion_matrix()
+    
+    def _compute_confusion_matrix(self):
+        """Compute the observation confusion matrix"""
+        # Probability of all k hashes hitting set bits
+        p = (self.set_bits / self.size) ** self.num_hashes
+        
+        return np.array([
+            [1.0, 0.0],      # True member: always observed
+            [p, 1.0 - p]     # False member: false positive rate p
+        ])
+    
+    def add(self, item):
+        """Add item to latent set"""
+        for i in range(self.num_hashes):
+            idx = hash(item, seed=i) % self.size
+            self.bits[idx] = True
+        self.set_bits = sum(self.bits)
+    
+    def observe_membership(self, item) -> bool:
+        """Observe membership through hash collisions"""
+        for i in range(self.num_hashes):
+            idx = hash(item, seed=i) % self.size
+            if not self.bits[idx]:
+                return False  # Definitely not in set
+        
+        # All bits set - probably in set (or false positive)
+        return True
+\end{lstlisting}
+
+\section{Information-Theoretic Limits}
+
+\subsection{The Space Lower Bound}
+
+Information theory provides fundamental limits on how much we can compress while maintaining a given confusion matrix:
+
+\begin{theorem}[Information-Theoretic Lower Bound]
+To distinguish $n$ elements with false positive rate $\epsilon$ requires at least:
+\begin{equation}
+B(n, \epsilon) = n \log_2(1/\epsilon) \text{ bits}
+\end{equation}
+This is achieved when the confusion matrix has maximal entropy.
+\end{theorem}
+
+\begin{proof}[Proof Sketch]
+Each element provides $\log_2(1/\epsilon)$ bits of information. With $n$ independent elements, we need $n \log_2(1/\epsilon)$ bits total. Any less and the pigeonhole principle forces higher error rates.
+\end{proof}
+
+\subsection{Bloom Filter Near-Optimality}
+
+\begin{theorem}[Bloom Filter Space Usage]
+A Bloom filter with optimal parameters uses:
+\begin{equation}
+m = -\frac{n \ln \epsilon}{(\ln 2)^2} \approx 1.44 n \log_2(1/\epsilon) \text{ bits}
+\end{equation}
+This is within 44\% of the information-theoretic lower bound.
+\end{theorem}
+
+The 44\% overhead comes from:
+\begin{itemize}
+\item Hash functions aren't perfectly random
+\item Bit array can't perfectly encode the probability distribution
+\item Independence assumptions aren't perfectly met
+\end{itemize}
+
+\section{The Space-Optimal Construction: Perfect Hashing}
+
+While Bloom filters are practical, there exists a theoretical construction that achieves the information-theoretic bound:
+
+\subsection{The Perfect Hash Filter}
+
+\begin{definition}[Perfect Hash Filter]
+Given set $S$ and hash function family $h_s: U \to \{0,1\}^k$, find seed $s^*$ such that:
+\begin{equation}
+\forall x \in S: h_{s^*}(x) = 0^k
+\end{equation}
+Membership test: $x \in? S \Leftrightarrow h_{s^*}(x) = 0^k$
+\end{definition}
+
+\begin{theorem}[Perfect Hash Filter Optimality]
+The perfect hash filter achieves:
+\begin{itemize}
+\item Space: $k$ bits per element (information-theoretic optimal)
+\item False positive rate: $2^{-k}$ (as designed)
+\item Query time: $O(1)$ hash computation
+\item Construction time: $O(2^{kn})$ (exponential - the catch!)
+\end{itemize}
+\end{theorem}
+
+\begin{lstlisting}[language=Python, caption={Perfect hash filter (theoretical construction)}]
+def construct_perfect_hash_filter(S, k):
+    """
+    Find seed that maps all elements to zero
+    Achieves information-theoretic bound but exponential construction
+    """
+    for seed in range(2**(k * len(S))):  # Try all seeds
+        success = True
+        for x in S:
+            if hash(x, seed) % (2**k) != 0:
+                success = False
+                break
+        
+        if success:
+            return seed
+    
+    raise Exception("No perfect seed found (probability negligible)")
+
+class PerfectHashFilter:
+    def __init__(self, S, bits_per_element):
+        self.k = bits_per_element
+        self.seed = construct_perfect_hash_filter(S, self.k)
+        self.fpr = 2**(-self.k)  # Exactly as designed
+    
+    def contains(self, x):
+        """Perfect false positive rate, optimal space"""
+        return hash(x, self.seed) % (2**self.k) == 0
+\end{lstlisting}
+
+\section{The Hashing-Hiding Connection}
+
+Hash functions don't just save space—they hide information:
+
+\subsection{Observation as Information Hiding}
+
+\begin{theorem}[Hashing as Lossy Compression]
+A hash function $h: U \to \{0,1\}^m$ implements a lossy compression channel:
+\begin{itemize}
+\item Information before: $\log_2 |U|$ bits
+\item Information after: $m$ bits
+\item Information lost: $\log_2 |U| - m$ bits (hidden/destroyed)
+\end{itemize}
+\end{theorem}
+
+This hiding is crucial for:
+\begin{itemize}
+\item \textbf{Privacy}: Can't recover original from hash
+\item \textbf{Security}: One-way property of cryptographic hashes
+\item \textbf{Efficiency}: Smaller representation to store/transmit
+\end{itemize}
+
+\subsection{Controlled Information Leakage}
+
+The confusion matrix precisely controls what information leaks through:
+
+\begin{example}[Privacy-Preserving Set Membership]
+\begin{lstlisting}[language=Python]
+class PrivateBloomFilter:
+    """Bloom filter with calibrated privacy guarantees"""
+    
+    def __init__(self, epsilon_privacy):
+        """
+        epsilon_privacy: Differential privacy parameter
+        Controls the confusion matrix to limit information leakage
+        """
+        # Set false positive rate based on privacy requirement
+        self.fpr = 1 / (1 + math.exp(epsilon_privacy))
+        
+        # Confusion matrix for privacy
+        self.Q = np.array([
+            [1 - self.fpr, self.fpr],      # True member
+            [self.fpr, 1 - self.fpr]        # False member
+        ])
+    
+    def observe_membership(self, x):
+        """Returns noisy observation preserving privacy"""
+        true_membership = x in self.latent_set
+        
+        # Sample from confusion matrix row
+        if true_membership:
+            return np.random.random() > self.fpr
+        else:
+            return np.random.random() < self.fpr
+\end{lstlisting}
+\end{example}
+
+\section{Optimal Parameters and Trade-offs}
+
+\subsection{The Fundamental Trade-off}
+
+Every approximate data structure faces the trilemma:
+\begin{enumerate}
+\item \textbf{Space}: How many bits to store
+\item \textbf{Time}: How fast to query
+\item \textbf{Accuracy}: How low the error rate
+\end{enumerate}
+
+You can optimize two at the expense of the third:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Structure} & \textbf{Space} & \textbf{Time} & \textbf{Accuracy} \\
+\hline
+Perfect Hash Filter & Optimal & $O(1)$ & Exact control \\
+Bloom Filter & Near-optimal & $O(k)$ & Probabilistic \\
+Cuckoo Filter & Good & $O(1)$ & Better than Bloom \\
+Hash Table & $O(n)$ & $O(1)$ expected & Perfect \\
+\hline
+\end{tabular}
+\caption{Trade-offs in set membership data structures}
+\end{table}
+
+\subsection{Choosing Parameters}
+
+For a Bloom filter with $n$ elements and target false positive rate $\epsilon$:
+
+\begin{theorem}[Optimal Bloom Filter Parameters]
+\begin{align}
+\text{Bits needed: } m &= -n \frac{\ln \epsilon}{(\ln 2)^2} \\
+\text{Hash functions: } k &= -\log_2 \epsilon \\
+\text{Bits per element: } m/n &= -1.44 \log_2 \epsilon
+\end{align}
+\end{theorem}
+
+\begin{example}[Practical Parameter Selection]
+For 1 million elements with 1\% false positive rate:
+\begin{itemize}
+\item Bits needed: $m = 9,585,059$ bits $\approx$ 1.2 MB
+\item Hash functions: $k = 7$
+\item Bits per element: $9.6$ bits
+\item Compare to storing 32-bit IDs: 4 MB (3.4× larger)
+\end{itemize}
+\end{example}
+
+\section{Beyond Binary: Multi-valued Confusion Matrices}
+
+\subsection{Counting Bloom Filters}
+
+Instead of binary observations, observe counts:
+
+\begin{definition}[Counting Bloom Filter Channel]
+Maps latent counts to observed counts with confusion matrix:
+\begin{equation}
+Q_{ij} = \mathbb{P}[\text{observe count } j | \text{true count } i]
+\end{equation}
+Typically concentrated around diagonal with decay based on hash collisions.
+\end{definition}
+
+\subsection{Frequency Estimation}
+
+Count-Min Sketch observes frequency distributions:
+
+\begin{lstlisting}[language=Python, caption={Count-Min Sketch confusion matrix}]
+class CountMinSketch:
+    def __init__(self, width, depth):
+        self.counters = np.zeros((depth, width))
+        self.width = width
+        self.depth = depth
+    
+    def get_confusion_matrix(self, true_freq, observed_freq):
+        """
+        Confusion matrix for frequency estimation
+        Always overestimates due to collisions
+        """
+        if observed_freq < true_freq:
+            return 0.0  # Never underestimates
+        
+        # Probability of collision adding extra count
+        collision_prob = 1.0 / self.width
+        extra = observed_freq - true_freq
+        
+        # Binomial probability of exactly 'extra' collisions
+        from scipy.stats import binom
+        return binom.pmf(extra, self.depth, collision_prob)
+\end{lstlisting}
+
+\section{Chapter Summary}
+
+This chapter showed how observation channels, characterized by confusion matrices, transform latent values into observed values:
+
+\begin{enumerate}
+\item \textbf{Confusion matrices} formally define observation channels with $Q_{ij} = \mathbb{P}[\text{obs } j | \text{lat } i]$
+
+\item \textbf{Orders of approximation} correspond to confusion matrix structure (identity, symmetric, asymmetric, general)
+
+\item \textbf{Hash functions} implement practical observation channels by mapping infinite domains to finite codomains
+
+\item \textbf{Information theory} provides fundamental limits: $n\log_2(1/\epsilon)$ bits for false positive rate $\epsilon$
+
+\item \textbf{Bloom filters} achieve near-optimal space (within 44\% of lower bound) with practical construction time
+
+\item \textbf{Perfect hash filters} achieve optimal space but require exponential construction
+
+\item \textbf{Privacy emerges} from controlling the confusion matrix to limit information leakage
+\end{enumerate}
+
+The key insight: hashing doesn't just compress data—it creates observation channels with precisely characterized confusion. This controlled confusion enables both space efficiency and privacy, setting the stage for oblivious computing in the next chapters.
+
+\section{Exercises}
+
+\begin{enumerate}
+\item \textbf{Confusion Matrix Analysis}: Given a Boolean channel with $\alpha = 0.1$ and $\beta = 0.05$:
+   \begin{itemize}
+   \item Write the confusion matrix
+   \item Calculate the channel capacity
+   \item Determine the order of approximation
+   \end{itemize}
+
+\item \textbf{Bloom Filter Parameters}: You need to store 10 million URLs with 0.1\% false positive rate:
+   \begin{itemize}
+   \item Calculate optimal $m$ and $k$
+   \item How many MB of memory needed?
+   \item What's the query time complexity?
+   \end{itemize}
+
+\item \textbf{Perfect Hashing}: Implement a tiny perfect hash filter for 4 elements with $k=8$ bits. What's the construction time complexity?
+
+\item \textbf{Privacy Analysis}: If a Bloom filter has 1\% false positive rate, what differential privacy $\epsilon$ does it provide?
+
+\item \textbf{Composition}: If you OR two Bloom filters each with 1\% FPR, what's the combined FPR? Write the composed confusion matrix.
+\end{enumerate}

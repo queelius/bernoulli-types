@@ -1,0 +1,65 @@
+\documentclass[ ../main.tex]{subfiles}
+\providecommand{\mainx}{..}
+\begin{document}
+\section{Approximate sets}
+\label{sec:asets}
+Given an objective set $\Set{A}$, any element that is a member of $\Set{A}$ is denoted a \emph{positive} (of $\Set{A})$ and otherwise the element is denoted a \emph{negative}.
+Suppose $\hat{\Set{A}}$ is used as an \emph{approximation} of $\Set{A}$.
+If the \emph{only} information we have about $\Set{A}$ is given by $\hat{\Set{A}}$, then we may perform membership tests on $\hat{\Set{A}}$ to make \emph{predictions} or \emph{estimations} about $\Set{A}$.
+
+There are two ways a binary prediction can be false.
+\begin{enumerate}
+    \item A \emph{false positive} occurs if a negative of the objective set is predicted to be a positive. False positives are also known as \emph{type I errors}.
+    The complement of false positives are \emph{true negatives}.
+    \item A \emph{false negative} occurs if a positive of the objective set is predicted to be a negative. False negatives are also known as \emph{type II errors}.
+    The complement of false negatives are \emph{true positives}.
+\end{enumerate} 
+
+If we denote the set of false positives by $\PlainSet{FP}$, true positives by $\PlainSet{TP}$, false negatives by $\PlainSet{FN}$, and true negatives by $\PlainSet{TN}$, then the objective set $\Set{A}=\SetUnion[\PlainSet{FN}][\Set{TP}]$ and the approximate set $\hat{\Set{A}}=\SetUnion[\PlainSet{TP}][\PlainSet{FP}]$.
+See \cref{fig:ex_approx_set} for an illustration.
+\begin{figure}[ht]
+\caption{An approximate set $\hat{\Set{A}}$ of an objective set $\Set{A}$}
+\label{fig:ex_approx_set}
+\centering
+\def\svgwidth{\columnwidth/4}
+\input{img/aset_fp_fn.tex}
+\end{figure}
+
+If we only have access to the approximation $\hat{\Set{A}}$, we do not have the ability to partition the universe into the disjoint sets $\PlainSet{FP}$, $\PlainSet{TP}$, $\PlainSet{FN}$, and $\PlainSet{TN}$ as demonstrated in \cref{fig:ex_approx_set}.
+However, we can quantify the degree of \emph{uncertainty} about the elements that it predicts to be positive or negative.
+The false positive and true negative rates are given by the following.
+\begin{definition}
+\label{def:fprate}
+The \emph{false positive rate} is the proportion of predictions that are \emph{false positives} as given by
+\begin{equation}
+     \hat{\fprate} = \frac{\Card{\PlainSet{FP}}}{\Card{\PlainSet{FP}} + \Card{\PlainSet{TN}}}
+\end{equation}
+and the \emph{true negative rate} is given by $\hat{\tnrate} = 1 - \hat{\fprate}$.
+\end{definition}
+The true positive and false negative rates are given by the following.
+\begin{definition}
+The \emph{true positive rate} is the proportion of predictions that are \emph{true positives} as given by
+\begin{equation}
+\hat{\tprate} = \frac{\Card{\PlainSet{TP}}}{\Card{\PlainSet{TP}} + \Card{\PlainSet{FN}}}
+\end{equation}
+and the \emph{false negative rate} is given by $\hat{\fnrate} = 1 - \hat{\tprate}$.
+\end{definition}
+
+The \emph{probabilities} of the four possible predictive outcomes are given by 
+\cref{tbl:contingency_table}.
+\begin{table}[ht]
+\centering
+\begin{tabular}{@{} l l l @{}}
+    \toprule
+    & \textbf{positive} & \textbf{negative}\\
+    \midrule
+    \textbf{predict positive} & $\hat{\tprate}=1-\hat{\fnrate}$ & 
+    $\hat{\fprate}=1-\hat{\tnrate}$\\
+    \textbf{predict negative} & $\hat{\fnrate}=1-\hat{\tprate}$ & 
+    $\hat{\tnrate}=1-\hat{\fprate}$\\
+    \bottomrule
+\end{tabular}
+\caption{The $2 \times 2$ contingency table of outcomes for approximate sets.}
+\label{tbl:contingency_table}        
+\end{table}
+\end{document}

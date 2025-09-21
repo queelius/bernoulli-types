@@ -97,6 +97,76 @@ This paper provides rigorous statistical analysis of Bernoulli sets, focusing on
 
 \section{Fundamental Distributions}
 
+\subsection{Statistical Implications of the Refined Framework}
+
+The theoretical insights from Parts 1-6 have direct statistical implications:
+
+\begin{theorem}[Order-Rank-Entropy Statistical Relationship]
+For a Bernoulli approximation with confusion matrix $Q$:
+\begin{itemize}
+    \item \textbf{Order} (parameter count) determines estimation complexity from samples
+    \item \textbf{Rank} determines fundamental identifiability of latent values
+    \item \textbf{Entropy} quantifies information content and sampling requirements
+\end{itemize}
+\end{theorem}
+
+\begin{example}[Statistical Impact of High-Rank Structure]
+Bloom filters exhibit high-rank confusion matrix structure that improves statistical performance:
+\begin{itemize}
+    \item \textbf{Enhanced identifiability**: High rank enables better latent set reconstruction
+    \item \textbf{Correlated errors**: Structured sparsity creates predictable error patterns
+    \item \textbf{Lower confidence intervals**: Structure reduces uncertainty compared to random error models
+\end{itemize}
+This means confidence intervals derived from independent error assumptions are often \emph{conservative} for Bloom filters.
+\end{example}
+
+\begin{remark}[Small vs Large Sample Behavior]
+\textbf{Small samples}: Confusion matrix structure dominates statistical behavior
+\begin{itemize}
+    \item Finite-sample corrections become essential
+    \item Structural constraints provide significant information
+    \item Bayesian methods naturally incorporate prior structure knowledge
+\end{itemize}
+
+\textbf{Large samples**: Classical asymptotic theory applies
+\begin{itemize}
+    \item Central limit theorem dominates
+    \item Structural effects become relatively smaller
+    \item Maximum likelihood estimators approach optimal performance
+\end{itemize}
+\end{remark}
+
+\subsection{Information-Theoretic Statistical Bounds}
+
+The entropy analysis from Part 1 provides fundamental limits on statistical performance:
+
+\begin{theorem}[Cramér-Rao Bounds for Bernoulli Approximations]
+For estimating confusion matrix parameters from observations:
+\begin{itemize}
+    \item Variance lower bound scales inversely with Fisher information
+    \item Fisher information relates directly to matrix entropy $\Entropy{Q}$
+    \item Structural constraints (e.g., "Bloom filter") can increase Fisher information
+\end{itemize}
+\end{theorem}
+
+\begin{example}[Statistical Efficiency of Compositional vs Direct Approximation]
+From Part 4's compositional vs direct analysis:
+
+\textbf{Compositional approximation**: $(\BValue{A}{a}, \BValue{B}{b})$
+\begin{itemize}
+    \item Independent parameter estimation for each component
+    \item Higher variance due to error accumulation
+    \item Confidence intervals product over components
+\end{itemize}
+
+\textbf{Direct approximation**: $\BValue{A \times B}{(a,b)}$
+\begin{itemize}
+    \item Joint parameter estimation with potential correlation structure
+    \item Lower variance when correlation is exploited
+    \item More complex confidence interval construction
+\end{itemize}
+\end{example}
+
 \subsection{The Statistical Model}
 
 We model the observation of a latent set $S \subseteq U$ through a noisy channel that produces an observed set $\obs{S}$. The key insight is that for finite sets, the observation errors follow well-understood probability distributions.
@@ -562,6 +632,28 @@ This statistical analysis builds on:
     \item Interval arithmetic methods \cite{moore1966}
     \item Statistical analysis of streaming algorithms \cite{cormode2005}
 \end{itemize}
+
+\section{Fundamental Limits: When Statistics Cannot Help}
+
+Even perfect statistical analysis has fundamental limits imposed by the rank structure of observation matrices.
+
+\begin{theorem}[Asymptotic Statistical Indistinguishability]
+Consider two latent probability distributions $P_1, P_2$ that generate observations through a rank-deficient confusion matrix $Q$. If $P_1$ and $P_2$ produce identical observation distributions (i.e., they lie in the same equivalence class under the observation process), then no statistical test can distinguish them, regardless of sample size.
+\end{theorem}
+
+This has profound implications for statistical inference:
+
+\begin{itemize}
+    \item \textbf{Unidentifiable parameters}: Some model parameters remain fundamentally unestimable due to rank constraints, not insufficient data
+    \item \textbf{Convergence barriers}: Maximum likelihood estimation may converge to the wrong values if the true parameters lie in a rank-deficient subspace
+    \item \textbf{Confidence interval limitations**: Standard confidence intervals may exclude the true parameter even with infinite data if rank deficiency creates systematic bias
+\end{itemize}
+
+\begin{remark}[Beyond Sample Complexity]
+Traditional statistical analysis focuses on how much data is needed for accurate estimation. Rank-based analysis reveals which parameters can never be estimated accurately, regardless of data quantity. This creates a fundamental distinction between statistically identifiable and unidentifiable model components.
+\end{remark}
+
+For Bernoulli types, this means that some error rates are inherently unobservable, creating theoretical limits on the performance of any statistical estimation procedure.
 
 \section{Conclusions}
 

@@ -1,0 +1,102 @@
+\documentclass[11pt,oneside]{book}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amsthm,amssymb}
+\usepackage{algorithm2e}
+\usepackage{tikz}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{listings}
+\usepackage{graphicx}
+\usepackage{makeidx}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,patterns,decorations.pathreplacing}
+
+% Theorem environments
+\newtheorem{theorem}{Theorem}[chapter]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{construction}[theorem]{Construction}
+
+% Custom environments
+\newenvironment{inpractice}{\begin{quote}\textbf{In Practice:}}{\end{quote}}
+\newenvironment{researchfrontier}{\begin{quote}\textbf{Research Frontier:}}{\end{quote}}
+
+% Code listing style
+\lstset{
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{gray},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    frame=single,
+    breaklines=true,
+    captionpos=b
+}
+
+% Include unified notation
+\input{notation}
+
+\makeindex
+
+\title{Probabilistic Privacy:\\
+\Large The Bernoulli-Oblivious Computing Framework\\
+\vspace{1cm}
+\huge \textbf{Volume 1: Foundations}}
+\author{Alexander Towell}
+\date{2024}
+
+\begin{document}
+
+\frontmatter
+\maketitle
+
+% Copyright page
+\thispagestyle{empty}
+\vspace*{\fill}
+\begin{center}
+\textbf{Probabilistic Privacy: The Bernoulli-Oblivious Computing Framework}\\
+Volume 1: Foundations\\
+\vspace{0.5cm}
+Copyright \copyright\ 2024 Alexander Towell\\
+All rights reserved.\\
+\vspace{0.5cm}
+First Edition\\
+\vspace{1cm}
+\textit{This volume introduces the foundational concepts of privacy through approximation.\\
+Future volumes will cover mathematical theory, systems implementation, and applications.}
+\end{center}
+\vspace*{\fill}
+\clearpage
+
+\tableofcontents
+
+\input{preface_volume1}
+
+\mainmatter
+
+\part{Foundations: The Power of Imperfection}
+
+\input{chapters/ch01_approximation_advantage_revised}
+\input{chapters/ch02_hashing_to_hiding_revised}
+\input{chapters/ch03_privacy_problem_revised}
+\input{chapters/ch04_first_oblivious_system_revised}
+\input{chapters/ch05_mathematical_bridge}
+
+\part{Looking Ahead}
+
+\input{chapters/roadmap_future_volumes}
+
+\appendix
+\input{appendices/prerequisites}
+\input{appendices/notation_guide}
+\input{appendices/quick_reference_v1}
+
+\backmatter
+\input{bibliography_v1}
+\printindex
+
+\end{document}

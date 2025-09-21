@@ -1,0 +1,80 @@
+% Unified Notation for Bernoulli-Oblivious Framework
+
+% Basic Sets and Types
+\newcommand{\Bool}{\mathbb{B}}
+\newcommand{\Nat}{\mathbb{N}}
+\newcommand{\Real}{\mathbb{R}}
+
+% Bernoulli Types
+\newcommand{\Bernoulli}[2]{\mathcal{B}^{#1}(#2)}  % B^k(T) 
+\newcommand{\BernoulliSet}[1]{\mathcal{B}^2(\text{Set}(#1))}
+\newcommand{\BernoulliMap}[2]{\mathcal{B}^2(\text{Map}(#1 \to #2))}
+\newcommand{\BernoulliBool}{\mathcal{B}^2(\Bool)}
+
+% Error Rates
+\newcommand{\fprate}{\alpha}  % False positive rate
+\newcommand{\fnrate}{\beta}   % False negative rate
+\newcommand{\errorrate}{\varepsilon}  % Generic error rate
+
+% Oblivious Types
+\newcommand{\Obv}[1]{\widehat{#1}}  % Oblivious version
+\newcommand{\ObvSet}[1]{\Obv{\text{Set}(#1)}}
+\newcommand{\ObvMap}[2]{\Obv{\text{Map}(#1 \to #2)}}
+\newcommand{\ObvQuery}{\Obv{Q}}
+\newcommand{\ObvResult}{\Obv{R}}
+
+% Hash Functions and Encoding
+\newcommand{\Hash}[1]{h(#1)}
+\newcommand{\HashSpace}{\{0,1\}^{256}}
+\newcommand{\Encode}[1]{\text{encode}(#1)}
+\newcommand{\Decode}[1]{\text{decode}(#1)}
+\newcommand{\ValidEnc}[1]{\text{ValidEncodings}(#1)}
+\newcommand{\Seed}{s}
+
+% Probability and Information Theory
+\newcommand{\Prob}[1]{\mathbb{P}[#1]}
+\newcommand{\Expect}[1]{\mathbb{E}[#1]}
+\newcommand{\Entropy}[1]{H(#1)}
+\newcommand{\MI}[2]{I(#1;#2)}  % Mutual information
+\newcommand{\KL}[2]{D_{KL}(#1 \| #2)}  % KL divergence
+
+% Complexity
+\newcommand{\BigO}[1]{O(#1)}
+\newcommand{\negl}[1]{\text{negl}(#1)}
+\newcommand{\poly}[1]{\text{poly}(#1)}
+
+% Operations
+\newcommand{\Union}{\cup}
+\newcommand{\Intersect}{\cap}
+\newcommand{\Complement}[1]{\overline{#1}}
+\newcommand{\XOR}{\oplus}
+\newcommand{\AND}{\wedge}
+\newcommand{\OR}{\vee}
+\newcommand{\NOT}{\neg}
+
+% Special Values
+\newcommand{\True}{\mathsf{true}}
+\newcommand{\False}{\mathsf{false}}
+\newcommand{\Null}{\mathsf{null}}
+\newcommand{\Bottom}{\perp}
+
+% Adversary and Security
+\newcommand{\Adversary}{\mathcal{A}}
+\newcommand{\Challenger}{\mathcal{C}}
+\newcommand{\SecurityParam}{\lambda}
+\newcommand{\View}[1]{\text{View}_{#1}}
+
+% Common Abbreviations
+\newcommand{\BF}{\text{BF}}  % Bloom Filter
+\newcommand{\PIR}{\text{PIR}}  % Private Information Retrieval
+\newcommand{\MAB}{\text{MAB}}  % Moving Average Bootstrap
+\newcommand{\FPR}{\text{FPR}}  % False Positive Rate
+\newcommand{\FNR}{\text{FNR}}  % False Negative Rate
+
+% Tuple Encoding
+\newcommand{\Tuple}[1]{\langle #1 \rangle}
+\newcommand{\TupleEnc}[1]{\Hash{\Tuple{#1}}}
+
+% Frequency-based Encoding
+\newcommand{\Freq}[1]{f(#1)}
+\newcommand{\InvFreq}[1]{1/f(#1)}

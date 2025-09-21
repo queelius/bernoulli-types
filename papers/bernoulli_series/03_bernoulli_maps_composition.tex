@@ -137,9 +137,24 @@ This measures how often our observation differs from the latent truth.
 Every algorithm that computes a function is effectively providing observations of a latent mathematical function. The error profile characterizes the quality of these observations—whether errors arise from randomization, truncation, or resource bounds.
 \end{remark}
 
-\subsection{Confusion Matrix for Functions}
+\subsection{Confusion Matrix Scales for Functions}
 
-When the domain and codomain are finite, we can represent a Bernoulli map using a confusion matrix, generalizing the concept from classification:
+Function approximation exhibits different confusion matrix structures depending on the function space size:
+
+\begin{definition}[Small vs Large Function Spaces]
+\textbf{Small Function Spaces:} For functions $X \mapsto Y$ with $|Y|^{|X|}$ small (e.g., $\Bool \mapsto \Bool$ has 4 functions), we can construct and analyze the complete confusion matrix explicitly.
+
+\textbf{Large Function Spaces:} When $|Y|^{|X|}$ is large, the confusion matrix becomes exponentially large. However, \emph{structural patterns} imposed by specific algorithms still determine:
+\begin{itemize}
+    \item \textbf{Sparsity structure}: Which function-to-function transitions are impossible
+    \item \textbf{Rank properties**: Whether structure enhances or reduces inferability
+    \item \textbf{Information limits**: What can theoretically be recovered about latent functions
+\end{itemize}
+\end{definition}
+
+\subsection{Function Confusion Matrix}
+
+When the domain and codomain are finite, we can represent a Bernoulli map using a confusion matrix:
 
 \begin{definition}[Function Confusion Matrix]
 For functions of type $X \mapsto Y$ where $|X \mapsto Y| = n$, the confusion matrix $Q \in \mathbb{R}^{n \times n}$ has entries:
@@ -149,8 +164,8 @@ q_{ij} = \Prob{\text{observe } f_j | \text{latent } f_i}
 where $f_1, \ldots, f_n$ enumerate all functions from $X$ to $Y$.
 \end{definition}
 
-\begin{example}[Boolean Function Confusion Matrix]
-For $\Bool \mapsto \Bool$, there are 4 functions: $\mathsf{id}$, $\mathsf{not}$, $\mathsf{true}$, $\mathsf{false}$. A first-order Bernoulli approximation has the mini confusion matrix in Figure~\ref{fig:bool-func-confusion}.
+\begin{example}[Small Function Space: $\Bool \mapsto \Bool$]
+The Boolean function space $\{\mathsf{id}, \mathsf{not}, \mathsf{true}, \mathsf{false}\}$ has only 4 functions, enabling complete confusion matrix analysis in Figure~\ref{fig:bool-func-confusion}.
 \begin{figure}[t]
 \centering
 \begin{tabular}{c|cccc}
@@ -161,10 +176,26 @@ $\mathsf{not}$ & $\epsilon/3$ & $1-\epsilon$ & $\epsilon/3$ & $\epsilon/3$ \\
 $\mathsf{true}$ & $\epsilon/3$ & $\epsilon/3$ & $1-\epsilon$ & $\epsilon/3$ \\
 $\mathsf{false}$ & $\epsilon/3$ & $\epsilon/3$ & $\epsilon/3$ & $1-\epsilon$
 \end{tabular}
-\caption{Mini confusion matrix for $\Bool\to\Bool$ under a first-order (symmetric) error model.}
+\caption{Complete confusion matrix for $\Bool\to\Bool$ under first-order (symmetric) error model.}
 \label{fig:bool-func-confusion}
 \end{figure}
-This represents a maximum-entropy distribution over off-diagonal errors.
+\textbf{Analysis:}
+\begin{itemize}
+    \item \textbf{Order}: 1 (single parameter $\epsilon$)
+    \item \textbf{Rank}: 4 when $\epsilon \neq 3/4$ (full rank, maximum inferability)
+    \item \textbf{Entropy}: Maximum entropy over off-diagonal errors
+\end{itemize}
+\end{example}
+
+\begin{example}[Large Function Space: Hash Functions]
+Consider hash functions $h: \{0,1\}^* \mapsto \{0,1\}^k$ that approximate latent bijections. The confusion matrix has $(2^k)^{2^{|input|}} \times (2^k)^{2^{|input|}}$ entries—intractable to construct explicitly.
+
+\textbf{Structural Properties:}
+\begin{itemize}
+    \item \textbf{Collision structure}: Functions that agree on most inputs are more likely to be confused
+    \item \textbf{Hash quality}: Good hash functions maximize effective rank by minimizing structured collisions
+    \item \textbf{Sparsity patterns}: Many function-to-function transitions have probability 0 due to cryptographic properties
+\end{itemize}
 \end{example}
 
 \begin{proposition}[Function Confusion Matrix Properties]
@@ -789,6 +820,30 @@ In the Bernoulli map setting, the test operates on observations $\obs{f},\obs{g}
     \item \textbf{PAC Learning}: Valiant's framework \cite{valiant1984} for learning approximate concepts
     \item \textbf{Differential Privacy}: McSherry and Talwar \cite{mcsherry2007} on privacy through approximation
 \end{itemize}
+
+\section{Fundamental Limits: Rank and Asymptotic Indistinguishability}
+
+The confusion matrix framework reveals fundamental limits on what can be learned about latent functions, even with unlimited computational resources.
+
+\begin{theorem}[Asymptotic Function Indistinguishability]
+Consider two latent functions $f, g: X \to Y$ and their observations through confusion matrix $Q$. If the observed outputs $\obs{f}(x)$ and $\obs{g}(x)$ lie in the same equivalence class under the rank-deficient observation process, then $f$ and $g$ remain asymptotically indistinguishable regardless of the number of observations.
+\end{theorem}
+
+\begin{proof}
+When $\text{rank}(Q) < |Y|$, the observation process projects the output space $Y$ onto a lower-dimensional subspace. Functions that map to distinct outputs in the null space of $Q$ produce identical observation distributions, making them fundamentally indistinguishable.
+\end{proof}
+
+This has profound implications for function approximation and learning:
+
+\begin{itemize}
+    \item \textbf{Approximation barriers}: No amount of sampling can distinguish functions whose outputs differ only in the null space of the observation matrix
+    \item \textbf{Privacy preservation}: Functions can be designed to be indistinguishable by ensuring their differences lie in rank-deficient subspaces
+    \item \textbf{Learning bounds}: Some function classes are inherently unlearnable due to rank constraints, not sample complexity
+\end{itemize}
+
+\begin{remark}[Implications for Algorithm Design]
+Traditional complexity analysis focuses on computational resources required to solve problems exactly. Rank-based analysis reveals which problems become fundamentally unsolvable when observations are imperfect, regardless of computational resources. This creates a hierarchy of knowable vs unknowable function properties that persists even as computational power increases.
+\end{remark}
 
 \section{Conclusions}
 

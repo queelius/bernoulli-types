@@ -1,0 +1,164 @@
+\chapter*{Preface to Volume 1}
+\addcontentsline{toc}{chapter}{Preface}
+
+\section*{The Journey Begins}
+
+In an age where data is the new oil and privacy is increasingly scarce, we face a fundamental challenge: how can we compute on sensitive information without revealing it? This volume introduces a radical approach—embracing imperfection to achieve perfection in privacy.
+
+\section*{Why This Book Exists}
+
+Traditional approaches to privacy-preserving computation force us into impossible corners:
+\begin{itemize}
+\item Homomorphic encryption provides perfect privacy but at 1000x computational cost
+\item Secure multiparty computation requires complex protocols and trusted setups
+\item Differential privacy adds noise but struggles with complex queries
+\end{itemize}
+
+This book presents a different path: \textbf{probabilistic privacy through Bernoulli types and oblivious computing}. By accepting small, bounded errors (like 0.1\% false positives), we achieve something remarkable—practical systems that reveal nothing about their queries.
+
+\section*{What Makes This Approach Different}
+
+Our framework rests on three key insights:
+
+\begin{enumerate}
+\item \textbf{Approximation enables privacy}: Exact computation inherently leaks information. Probabilistic data structures can achieve uniform representations indistinguishable from random noise.
+
+\item \textbf{Composition preserves guarantees}: Unlike differential privacy where errors compound exponentially, our Bernoulli types compose predictably with bounded error rates.
+
+\item \textbf{Practical efficiency matters}: A privacy system unused due to poor performance provides no privacy at all. Our methods achieve microsecond query times.
+\end{enumerate}
+
+\section*{Volume 1: Laying the Foundation}
+
+This first volume establishes the conceptual and practical foundations:
+
+\begin{description}
+\item[Chapter 1] introduces probabilistic data structures through Bloom filters, showing how approximation saves space
+\item[Chapter 2] explores hashing and its role in creating uniform representations
+\item[Chapter 3] exposes the privacy problem—what adversaries learn from patterns
+\item[Chapter 4] builds your first oblivious system with working code
+\item[Chapter 5] bridges to the mathematical framework (preview of Volume 2)
+\end{description}
+
+\section*{Who Should Read This Book}
+
+This volume is designed for:
+\begin{itemize}
+\item \textbf{Graduate students} in computer science, cryptography, or security
+\item \textbf{Practitioners} building privacy-preserving systems
+\item \textbf{Researchers} exploring new approaches to private computation
+\item \textbf{Anyone} concerned about privacy in our digital age
+\end{itemize}
+
+\subsection*{Prerequisites}
+
+Readers should have:
+\begin{itemize}
+\item Undergraduate-level understanding of algorithms and data structures
+\item Basic probability theory (expected values, independence)
+\item Programming experience (examples use Python)
+\item Familiarity with hashing (helpful but not required)
+\end{itemize}
+
+Mathematical maturity is more important than specific knowledge—we develop the necessary theory as needed.
+
+\section*{The Road Ahead}
+
+This is Volume 1 of a planned three-volume series:
+
+\begin{description}
+\item[Volume 1: Foundations] (This book) Core concepts and first implementation
+\item[Volume 2: Theory] Mathematical framework, security proofs, optimal constructions
+\item[Volume 3: Systems] Distributed systems, performance engineering, real applications
+\end{description}
+
+Each volume stands alone but builds on previous material. Start here to understand the core ideas, then dive deeper based on your interests.
+
+\section*{A Note on Terminology}
+
+We introduce several new terms:
+\begin{itemize}
+\item \textbf{Bernoulli types}: Probabilistic data structures with bounded error rates
+\item \textbf{Oblivious computing}: Computation that reveals nothing about its inputs
+\item \textbf{Uniform encoding}: Representations indistinguishable from random noise
+\end{itemize}
+
+These aren't arbitrary—each captures a precise technical concept that existing terms don't quite cover.
+
+\section*{How to Use This Book}
+
+\subsection*{For Courses}
+\begin{itemize}
+\item \textbf{One semester}: Cover all five chapters with programming projects
+\item \textbf{Module in privacy course}: Use Chapters 3-4 as standalone unit
+\item \textbf{Seminar}: Each chapter can drive 1-2 weeks of discussion
+\end{itemize}
+
+\subsection*{For Self-Study}
+\begin{itemize}
+\item Read chapters in order—each builds on previous concepts
+\item Implement the code examples—understanding comes through doing
+\item Try the exercises—solutions available at \url{book.bernoulli-types.org}
+\end{itemize}
+
+\subsection*{For Practitioners}
+\begin{itemize}
+\item Start with Chapter 4 for immediate practical value
+\item Reference Chapter 3 for threat model understanding
+\item Use Chapter 5 to evaluate security guarantees
+\end{itemize}
+
+\section*{Code and Resources}
+
+All code from this book is available at:
+\begin{center}
+\url{https://github.com/bernoulli-types/book-volume1}
+\end{center}
+
+The repository includes:
+\begin{itemize}
+\item Complete implementations
+\item Extended examples
+\item Test suites
+\item Benchmark code
+\item Jupyter notebooks
+\end{itemize}
+
+\section*{Acknowledgments}
+
+This work builds on decades of research in probabilistic data structures, cryptography, and privacy. Special recognition goes to:
+
+\begin{itemize}
+\item Burton Bloom for the filter that started it all (1970)
+\item The cryptography community for showing what's possible
+\item The systems community for demanding practical solutions
+\item Early readers who provided invaluable feedback
+\end{itemize}
+
+Special thanks to [specific individuals to be added].
+
+\section*{Join the Conversation}
+
+Privacy-preserving computation is a rapidly evolving field. Join our community:
+
+\begin{itemize}
+\item Discussion forum: \url{forum.bernoulli-types.org}
+\item Updates and errata: \url{book.bernoulli-types.org}
+\item Contact: \url{feedback@bernoulli-types.org}
+\end{itemize}
+
+\section*{A Personal Note}
+
+Ten years ago, I faced a simple question: how can a journalist search leaked documents without revealing what they're investigating? Existing solutions were either impractical (homomorphic encryption) or insufficient (basic hashing). This book is the answer I wish I'd had then.
+
+Privacy isn't about hiding wrongdoing—it's about preserving the space for thought, investigation, and growth without fear of observation. In building these systems, we're not just solving technical problems; we're defending fundamental human values.
+
+The journey from exact to approximate, from deterministic to probabilistic, from observable to oblivious, isn't just a technical transformation. It's a new way of thinking about privacy, computation, and the tradeoffs we make.
+
+Welcome to the world of probabilistic privacy. Let's build systems that compute without watching.
+
+\vspace{1cm}
+\begin{flushright}
+\textit{Alexander Towell}\\
+\textit{December 2024}
+\end{flushright}

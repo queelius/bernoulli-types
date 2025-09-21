@@ -31,16 +31,22 @@
 \newtheorem{remark}[theorem]{Remark}
 \newtheorem{axiom}{Axiom}
 
-% Unified notation for latent/observed framework
-% (These are now defined in unified_notation.tex)
+% Unified notation for algebraic data types and X± framework
+\newcommand{\xpm}{X^{\pm}} % X± notation for approximate types
+\newcommand{\voidtype}{\mathsf{Void}}
+\newcommand{\unittype}{\mathsf{Unit}}
+\newcommand{\sumtype}[2]{#1 + #2}
+\newcommand{\prodtype}[2]{#1 \times #2}
+\newcommand{\exptype}[2]{#1 \to #2}
+\newcommand{\approxmap}[3]{#1 \xrightarrow{#2}_{#3} #2}
+\newcommand{\setpm}[1]{#1^{\pm}} % Set± notation for approximate sets
+\newcommand{\powpm}[1]{\mathcal{P}^{\pm}(#1)} % Approximate powerset
 
-% Set operations and probability notation now in unified_notation.tex
-
-% Legacy compatibility (to be phased out)
-\newcommand{\Set}[1]{#1}  % Just use S instead of \Set{S}
-\newcommand{\ASet}[1]{\obs{#1}}  % Use \obs{S} instead
-\newcommand{\PASet}[1]{\obs{#1}^+}  % Positive approximate set
-\newcommand{\NASet}[1]{\obs{#1}^-}  % Negative approximate set
+% Legacy compatibility with enhanced semantics
+\newcommand{\Set}[1]{#1}  % Latent set
+\newcommand{\ASet}[1]{\setpm{#1}}  % Use S± instead of \obs{S}
+\newcommand{\PASet}[1]{\setpm{#1}^+}  % Positive approximate set
+\newcommand{\NASet}[1]{\setpm{#1}^-}  % Negative approximate set
 
 \title{An Algebra of Random Approximate Sets with Binary Classification Measures}
 \author{
@@ -54,7 +60,7 @@
 \NotationSection
 
 \begin{abstract}
-We develop a comprehensive algebraic theory for Bernoulli sets, where membership queries provide noisy observations of latent set membership. Given a latent set $S$, we can only observe membership through a probabilistic channel that may produce false positives and false negatives. We show that set-theoretic operations on these observed sets follow predictable error propagation laws, forming an approximate Boolean algebra. Our key insight is that by explicitly modeling the gap between latent sets and their observations, we can derive optimal space-accuracy trade-offs and enable new applications in distributed systems, privacy-preserving computation, and approximate query processing. The framework unifies Bloom filters, counting filters, and other probabilistic set data structures as special cases of observing latent sets through different channels.
+We develop a comprehensive algebraic theory for approximate sets within the X$^{\pm}$ framework established in Part 1. Building on the algebraic data type foundations, we show that the powerset constructor can be systematically lifted to approximate powersets $\mathcal{P}^{\pm}(U)$, where membership queries provide noisy observations of latent set membership. Given a latent set $S$, approximate sets $S^{\pm}$ observe membership through probabilistic channels with false positives and false negatives. We derive the algebra of such approximate sets, showing that set-theoretic operations follow predictable error propagation laws that respect the algebraic structure. The resulting approximate Boolean algebra enables compositional reasoning about complex set expressions. Our key insight is that by grounding approximate sets in the systematic X$^{\pm}$ type theory, we obtain principled error bounds and optimal space-accuracy trade-offs. The framework unifies Bloom filters, counting filters, and other probabilistic set data structures as instances of the general algebraic pattern, while enabling new applications in distributed systems, privacy-preserving computation, and approximate query processing.
 \end{abstract}
 
 \section{Introduction}
@@ -72,7 +78,7 @@ This paper develops the algebra of such \emph{Bernoulli sets}—probabilistic da
 
 The Bloom filter, introduced in 1970 \cite{bloom1970}, pioneered this trade-off by allowing false positives but guaranteeing no false negatives. Since then, numerous variants have been proposed, including counting Bloom filters \cite{fan2000}, cuckoo filters \cite{fan2014}, and quotient filters \cite{bender2012}. However, these are typically studied as isolated data structures rather than as instances of a general algebraic framework.
 
-We introduce the concept of \emph{Bernoulli sets} as a unifying framework that encompasses both false positives and false negatives. A Bernoulli set $\obs{S}[\fprate][\fnrate]$ provides observations of a latent set $S$ with false positive rate $\fprate$ and false negative rate $\fnrate$. This generalization enables:
+We introduce the concept of \emph{approximate sets} as instances of the X$^{\pm}$ framework applied to the powerset constructor. An approximate set $S^{\pm}$ from the approximate powerset $\mathcal{P}^{\pm}(U)$ provides observations of a latent set $S \subseteq U$ with controlled false positive and false negative rates. This generalization enables:
 
 \begin{itemize}
     \item Modeling real-world systems with two-sided errors
@@ -83,7 +89,111 @@ We introduce the concept of \emph{Bernoulli sets} as a unifying framework that e
 
 \paragraph{Scope and organization.}  This paper is the second installment in our series on Bernoulli types.  It builds on the definitions and channel interpretation introduced in Part~1 (specifically the confusion matrix formulation in Section~2 and the Bayesian inference framework in Section~3) and develops an algebra of approximate sets.  Later parts explore approximate functions (Part~3), implications for regular types (Part~4), search and retrieval (Part~5), space–optimal implementations (Part~6), and statistical analysis (Part~7).  The accompanying technical report on random approximate sets provides complementary background on the probability space underlying Bernoulli sets.
 
-\section{The Bernoulli Set Model}
+\section{Approximate Sets in the X$^{\pm}$ Framework}
+
+\subsection{Connection to Algebraic Data Types}
+
+Building on Part 1's algebraic foundation, we now specialize the X$^{\pm}$ framework to sets. The powerset constructor $\mathcal{P}: \mathsf{Type} \to \mathsf{Type}$ maps any type $U$ to the type of all subsets of $U$. Under the X$^{\pm}$ framework, this lifts systematically to approximate powersets.
+
+\begin{definition}[Approximate Powerset]
+Given a universe $U$, the \emph{approximate powerset} $\mathcal{P}^{\pm}(U)$ is the type of approximate sets over $U$. Each $S^{\pm} \in \mathcal{P}^{\pm}(U)$ provides noisy observations of membership in some latent set $S \subseteq U$.
+\end{definition}
+
+\subsection{Confusion Matrix Scales for Sets}
+
+Bernoulli sets exhibit fundamentally different confusion matrix structures depending on the universe size:
+
+\begin{definition}[Small vs Large Universe Analysis]
+\textbf{Small Universe:} For universe $U$ with $|U|$ small, we can construct and analyze the complete $2^{|U|} \times 2^{|U|}$ confusion matrix explicitly, with entries $\Confusion{S}{T} = \Prob{\text{observe } T \mid \text{latent } S}$ for all $S, T \subseteq U$.
+
+\textbf{Large Universe:} When $|U|$ is large, the confusion matrix becomes exponentially large ($2^{|U|} \times 2^{|U|}$ entries). However, \emph{structural patterns} imposed by specific algorithms still determine fundamental properties:
+\begin{itemize}
+    \item \textbf{Sparsity structure}: Which subset-to-subset transitions are possible
+    \item \textbf{Rank properties}: How structure affects inferability
+    \item \textbf{Information limits}: What can theoretically be recovered
+\end{itemize}
+\end{definition}
+
+\begin{example}[Bloom Filter Structural Analysis]
+A Bloom filter for universe $U$ creates a confusion matrix with $2^{|U|} \times 2^{|U|}$ entries, but with crucial structural constraints:
+
+\textbf{Sparsity Structure:}
+\begin{itemize}
+    \item \textbf{Impossible transitions}: $\Prob{\text{observe } T \mid \text{latent } S} = 0$ when $T \not\subseteq S$ (cannot observe proper subsets)
+    \item \textbf{Subset preservation}: $\Prob{\text{observe } T \mid \text{latent } S} > 0$ only when $T \supseteq S$
+    \item \textbf{Superset errors}: False positives create $S \subseteq \text{observed} \supseteq S$
+\end{itemize}
+
+\textbf{High-Rank Structure:}
+Contrary to intuition, Bloom filters actually \emph{increase} the effective rank:
+\begin{itemize}
+    \item \textbf{Diagonal dominance}: For any $S \subseteq U$, $\Prob{\text{observe } S \mid \text{latent } S}$ is high
+    \item \textbf{Identity-like blocks}: Subset-to-subset transitions form near-identity structure
+    \item \textbf{Effective rank} $\approx 2^{|S|}$: Each possible subset creates an independent dimension
+    \item \textbf{Enhanced inferability}: Structure enables better inference than random matrices
+\end{itemize}
+
+\textbf{Individual Membership Query}: Each membership query reduces to a Bernoulli Boolean with $2 \times 2$ matrix:
+$$Q = \begin{pmatrix} 1-\fnrate & \fnrate \\ \fprate & 1-\fprate \end{pmatrix}$$
+For standard Bloom filters: $\fnrate = 0$, giving $Q = \begin{pmatrix} 1 & 0 \\ \fprate & 1-\fprate \end{pmatrix}$.
+\end{example}
+
+\begin{remark}[Computational vs Theoretical Analysis]
+While the full $2^{|U|} \times 2^{|U|}$ confusion matrix is computationally intractable to construct, its structural properties determine:
+\begin{itemize}
+    \item Space-accuracy trade-offs in implementation
+    \item Error propagation through set operations  
+    \item Fundamental limits of inference about latent sets
+    \item Optimal parameter choices for specific applications
+\end{itemize}
+\end{remark}
+
+\subsection{Information-Theoretic Analysis of Bernoulli Sets}
+
+Following the information hierarchy established in Part 1, Bernoulli sets exhibit entropy structure at multiple scales:
+
+\begin{theorem}[Set Entropy Hierarchy]
+For Bernoulli sets over universe $U$, information constraints reduce uncertainty hierarchically:
+\begin{enumerate}
+    \item \textbf{Unconstrained}: Maximum entropy over all $2^{|U|} \times 2^{|U|}$ stochastic matrices
+    \item \textbf{Structural constraints}: Algorithm-specific structure (e.g., "Bloom filter", "lossy compression") reduces entropy
+    \item \textbf{Parameter knowledge}: Known error rates $\fprate, \fnrate$ further reduce entropy
+    \item \textbf{Observed membership}: Given observed set reduces to conditional entropy
+\end{enumerate}
+\end{theorem}
+
+\begin{example}[Bloom Filter Entropy Analysis]
+For a Bloom filter with false positive rate $\fprate$:
+\begin{itemize}
+    \item \textbf{Structural constraint}: "No false negatives" eliminates half the parameter space
+    \item \textbf{Parameter knowledge}: Known $\fprate$ reduces matrix entropy to $-[\fprate \log(\fprate) + (1-\fprate)\log(1-\fprate)]$ per query
+    \item \textbf{Enhanced inference}: Structural sparsity enables reconstruction of latent set with high confidence for well-separated sets
+\end{itemize}
+\end{example}
+
+\begin{definition}[Conditional Entropy for Set Membership]
+Given observed set membership $\obs{S}$, the conditional entropy of latent membership is:
+$$\ConditionalEntropy{x \in S}{\obs{S}} = \ConditionalEntropy{x \in S}{x \in \obs{S}} \Prob{x \in \obs{S}} + \ConditionalEntropy{x \in S}{x \notin \obs{S}} \Prob{x \notin \obs{S}}$$
+
+For element-wise queries, this reduces to standard Boolean conditional entropy from Part 1.
+\end{definition}
+
+\begin{remark}[Mutual Information and Set Operations]
+Set operations (union, intersection, complement) create complex mutual information relationships:
+\begin{itemize}
+    \item $\MutualInfo{\obs{A} \cup \obs{B}}{A \cup B}$ depends on overlap between $A$ and $B$
+    \item Maximum mutual information occurs when sets are disjoint (independent errors)
+    \item Minimum mutual information occurs when sets are identical (correlated errors)
+\end{itemize}
+\end{remark}
+
+This construction preserves the essential structure: just as $\mathcal{P}(U)$ forms a Boolean algebra under union, intersection, and complement, we will show that $\mathcal{P}^{\pm}(U)$ forms an approximate Boolean algebra with predictable error propagation.
+
+\begin{remark}[Relationship to Bernoulli Types]
+In the notation of Part 1, approximate sets correspond to second-order Bernoulli types: $S^{\pm} \in \bernoulli{\mathcal{P}(U)}{2}$. The "second-order" reflects that errors can be asymmetric (different rates for false positives vs false negatives), unlike first-order symmetric errors.
+\end{remark}
+
+\section{The Approximate Set Model}
 
 \subsection{Formal Definition}
 
@@ -93,12 +203,13 @@ Let $U$ be a universal set. We distinguish between:
     \item \textbf{Observed sets}: Approximate sets $\obs{S}$ that provide noisy observations of membership
 \end{itemize}
 
-\begin{definition}[Bernoulli Set]
-Given a latent set $S \subseteq U$, a Bernoulli set $\obs{S}[\fprate][\fnrate]$ is an observed set where membership queries are related to true membership through a probabilistic channel:
+\begin{definition}[Approximate Set with Error Parameters]
+Given a latent set $S \subseteq U$, an approximate set $S^{\pm}(\varepsilon, \omega) \in \mathcal{P}^{\pm}(U)$ is characterized by the probabilistic channel relating observations to latent membership:
 \begin{align}
-\Prob{\text{observe } x \in \obs{S} | \text{latent } x \notin S} &= \fprate \quad \text{(false positive rate)} \\
-\Prob{\text{observe } x \notin \obs{S} | \text{latent } x \in S} &= \fnrate \quad \text{(false negative rate)}
+\Prob{\text{observe } x \in S^{\pm} | \text{latent } x \notin S} &= \varepsilon \quad \text{(false positive rate)} \\
+\Prob{\text{observe } x \notin S^{\pm} | \text{latent } x \in S} &= \omega \quad \text{(false negative rate)}
 \end{align}
+This extends the X$^{\pm}$ notation with explicit error parameters: $S^{\pm}(\varepsilon, \omega)$.
 \end{definition}
 
 \begin{remark}[Interpretation]

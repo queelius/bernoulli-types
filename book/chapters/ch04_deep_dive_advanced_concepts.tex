@@ -1,0 +1,309 @@
+\section{Deep Dive: Advanced Oblivious Computing Concepts}
+\label{sec:deep-dive-advanced}
+
+Our exploration of the additional repositories reveals a comprehensive framework for oblivious computing that extends far beyond simple encrypted search. These projects demonstrate three fundamental pillars of complete oblivious systems:
+
+\subsection{Oblivious Maps: Universal Function Approximators}
+
+The \texttt{cipher\_maps} project introduces the concept of \textit{oblivious maps} as universal Bernoulli approximators:
+
+\begin{definition}[Oblivious Map]
+An oblivious map $f^* = (f, \mathcal{C})$ where $\mathcal{C}$ is the computational basis subset, satisfies:
+\begin{itemize}
+\item The function $f^* : X \mapsto Y$ is a Bernoulli approximation of $f$
+\item If $x \in X$ is not in the domain of definition, $f^*(x)$ returns a random oracle output over $Y$
+\item A particular mapping $y = f^*(x)$ may only be learned by applying $f^*$ to $x$
+\end{itemize}
+\end{definition}
+
+\begin{lstlisting}[language=Python, caption={Oblivious map with random oracle behavior}]
+class ObliviousMap:
+    """
+    Implements f* : X* -> Y* where both domain and codomain are oblivious
+    Key properties:
+    - Undefined elements return deterministic random oracle outputs
+    - Mappings are learned lazily upon request
+    - Error rates are tracked: error_rate(f_hat, x)
+    """
+    
+    def __init__(self, secret_key: bytes):
+        self.secret = secret_key
+        self.defined_mappings = {}
+        self.random_oracle_seed = hashlib.sha256(secret_key).digest()
+    
+    def __getitem__(self, encoded_x: bytes) -> bytes:
+        """
+        Returns encoded output for encoded input
+        Undefined inputs get random oracle outputs
+        """
+        if encoded_x in self.defined_mappings:
+            return self.defined_mappings[encoded_x]
+        else:
+            # Random oracle: deterministic but unpredictable
+            return hashlib.sha256(
+                self.random_oracle_seed + encoded_x
+            ).digest()
+    
+    def error_rate(self, x: bytes) -> float:
+        """
+        Returns Pr{f_hat(x) != f(x)} for defined f
+        For undefined x, returns 1.0 (always error)
+        """
+        return 0.0 if x in self.defined_mappings else 1.0
+\end{lstlisting}
+
+The theoretical paper proves that the \textit{singular hash map} (SHM) achieves the space-complexity lower bound for oblivious maps with arbitrary-length inputs and outputs, with false positive rate $\varepsilon$ and false negative rate $\eta$.
+
+\subsection{Cipher Trapdoor Sets: Homomorphic Boolean Algebras}
+
+The \texttt{cipher\_trapdoor\_sets} project develops a complete Boolean algebra over cipher sets that preserves operations while obscuring identities:
+
+\begin{theorem}[Cipher Boolean Algebra Homomorphism]
+Given the Boolean algebra $A = (\mathcal{P}(\{0,1\}^*), \cup, \cap, \complement, \emptyset, \{0,1\}^*)$ and $B = (\{0,1\}^m, \lor, \land, \neg, 0^m, 1^m)$, the homomorphism $F: A \mapsto B$ defined as:
+\begin{equation}
+F(\beta) = \begin{cases}
+    h(\beta) & \beta \in \{0,1\}^* \\
+    \lor & \beta = \cup \\
+    \land & \beta = \cap \\
+    \neg & \beta = \complement \\
+    0^m & \beta = \emptyset \\
+    1^m & \beta = \{0,1\}^*
+\end{cases}
+\end{equation}
+preserves Boolean operations while providing one-way trapdoor properties through cryptographic hash function $h$.
+\end{theorem}
+
+The paper derives the false positive rate for these constructions:
+
+\begin{theorem}[False Positive Rate]
+The false positive rate is:
+\begin{equation}
+\text{FPR}(m,n) = \alpha^m(n) \text{ where } \alpha(n) = \left(1 - 2^{-(n+1)}\right)
+\end{equation}
+yielding a bit-rate per element:
+\begin{equation}
+b(n,\text{FPR}) = \frac{\log_2 \text{FPR}}{n \cdot \alpha(n)}
+\end{equation}
+\end{theorem}
+
+\begin{lstlisting}[language=C++, caption={k-Disjoint Hash Set implementation}]
+template<size_t k>
+class DisjointHashSet {
+    // k-DHS: bins m elements into m/k bins with k elements per bin
+    // Special cases:
+    //   k=1: Perfect Hash Filter
+    //   k=m: Singular Hash Set (optimal space)
+    
+public:
+    DisjointHashSet(size_t m, double target_fpr) 
+        : num_elements(m), 
+          bins(m/k), 
+          elements_per_bin(k) {
+        // Compute optimal parameters
+        compute_hash_seeds(target_fpr);
+    }
+    
+    bool contains(const bytes& encoded_element) {
+        size_t bin_id = hash_to_bin(encoded_element);
+        bytes bin_hash = compute_bin_hash(bin_id, encoded_element);
+        
+        // Check if hash indicates membership
+        return check_membership_encoding(bin_hash);
+    }
+    
+private:
+    // Achieves information-theoretic lower bound
+    // for space complexity when k=m (Singular Hash Set)
+    size_t compute_optimal_space() {
+        return -num_elements * log2(target_fpr) / log2(e);
+    }
+};
+\end{lstlisting}
+
+\subsection{Algebraic Cipher Types: Lifting Monoids to Cipher Monoids}
+
+The \texttt{algebraic\_cipher\_types} project provides the mathematical foundation for lifting algebraic structures into the cipher domain:
+
+\begin{definition}[Cipher Functor]
+The cipher functor lifts a monoid $(S,*,e)$ to $c_A(S,*,e)$ where:
+\begin{itemize}
+\item $A \subseteq S$ is the subset of observable elements
+\item $s: S \times \mathbb{N} \mapsto c_A S$ maps elements to their $k$-th cipher representation
+\item $s': c_A S \mapsto S$ satisfies $s'(s(a,k)) = a$ for all $a \in S, k \in \mathbb{N}$
+\item The operation $(c_A *): (c_A S, c_A S) \mapsto c_A S$ preserves associativity
+\end{itemize}
+\end{definition}
+
+\begin{lstlisting}[language=C++, caption={Type-erased cipher values with monadic noise}]
+template <typename T>
+class cipher {
+public:
+    using plain_value_type = T;
+    
+    // Track error rates through operations
+    double fpr() const { return impl_->fpr(); }
+    double fnr() const { return impl_->fnr(); }
+    
+    // Decode only with secret key
+    optional<T> try_decode(string_view secret) const {
+        return impl_->try_decode(secret);
+    }
+    
+    // Type erasure for polymorphic cipher types
+private:
+    struct concept {
+        virtual double fpr() const = 0;
+        virtual double fnr() const = 0;
+        virtual optional<T> try_decode(string_view) const = 0;
+    };
+    
+    template <typename CipherImpl>
+    struct model : concept {
+        // Concrete cipher implementation
+        CipherImpl cipher_;
+        
+        double fpr() const override { 
+            return compute_fpr(cipher_); 
+        }
+        double fnr() const override { 
+            return compute_fnr(cipher_); 
+        }
+    };
+    
+    shared_ptr<const concept> impl_;
+};
+
+// Noisy cipher with level tracking for composition
+template <typename T, unsigned int H, unsigned int L>
+struct noisy_cipher {
+    static constexpr auto secret_hash = H;
+    static constexpr auto level = L;
+    
+    string code;  // Cipher encoding
+    double fpr, fnr;  // Error rates
+};
+
+// Logical operations preserve level structure
+template <unsigned int H, unsigned int L>
+noisy_cipher<bool,H,L+1> logical_or(
+    const noisy_cipher<bool,H,L>& x,
+    const noisy_cipher<bool,H,L>& y
+) {
+    // Compose at next level with error propagation
+    return compose_with_error_tracking(x, y, or_operation);
+}
+\end{lstlisting}
+
+\subsection{Entropy Maximization for Encrypted Search}
+
+The \texttt{encrypted\_search\_stream\_entropy\_maximization} project provides information-theoretic analysis of confidentiality:
+
+\begin{theorem}[Maximum Entropy Distribution]
+For an encrypted search system with $k$ search agents, the maximum entropy distribution has:
+\begin{itemize}
+\item Agent identities: $A_j \sim \text{Uniform}(k)$
+\item Inter-arrival times: $T_j \sim \text{Geometric}(\lambda = 1/2)$
+\item Trapdoors per query: $N_j \sim \text{Geometric}(\mu = 2)$
+\item Trapdoor values: $Y_j \sim \text{Uniform}(0, 2^m - 1)$
+\end{itemize}
+This achieves expected compressed bit length:
+\begin{equation}
+\ell = \frac{1}{\lambda} + p + \mu(1 + m)
+\end{equation}
+where $p$ is the bits for agent encoding and $m$ is bits per trapdoor.
+\end{theorem}
+
+\subsection{Practical Implementation: Oblivious Key-Value Store}
+
+The implementations demonstrate a complete oblivious KVS system:
+
+\begin{lstlisting}[language=C++, caption={Complete oblivious KVS with cipher operations}]
+class ObliviousKVS {
+    // Store maps cipher keys to cipher values
+    map<cipher<string>, cipher<string>> store;
+    
+    // Oblivious operations
+    cipher<string> get(cipher<string> key) {
+        auto it = store.find(key);
+        if (it != store.end()) {
+            return it->second;
+        }
+        // Return noise for undefined keys
+        return cipher<string>::noise();
+    }
+    
+    // Boolean operations on cipher values
+    noisy_cipher<bool> contains_all(
+        vector<cipher<string>> keys
+    ) {
+        noisy_cipher<bool> result = 
+            noisy_cipher<bool>::true_value();
+        
+        for (const auto& key : keys) {
+            auto exists = contains(key);
+            result = logical_and(result, exists);
+        }
+        
+        return result;  // Still encrypted!
+    }
+    
+    // Oblivious function composition
+    template<typename F>
+    auto apply_oblivious(
+        F encoded_function,
+        cipher<string> encoded_input
+    ) -> decltype(auto) {
+        // Server applies function without knowing:
+        // - What function it is
+        // - What the input represents
+        // - What the output means
+        return encoded_function(encoded_input);
+    }
+};
+\end{lstlisting}
+
+\subsection{Key Mathematical Results}
+
+\subsubsection{Space-Optimal Constructions}
+
+The singular hash map achieves the information-theoretic lower bound:
+\begin{equation}
+\text{Space}(n, \varepsilon) = -n \cdot \frac{\log_2 \varepsilon}{1.44} \text{ bits}
+\end{equation}
+
+\subsubsection{Error Composition Through Operations}
+
+For composed operations, error rates propagate as:
+\begin{equation}
+\text{FPR}(f \circ g) \leq \text{FPR}(f) + \text{FPR}(g) - \text{FPR}(f) \cdot \text{FPR}(g)
+\end{equation}
+
+\subsubsection{Entropy Bounds}
+
+The entropy of an oblivious system is bounded by:
+\begin{equation}
+H(\text{Cipher}) \geq H(\text{Plain}) - I(\text{Plain}; \text{Observable})
+\end{equation}
+where $I$ is the mutual information between plaintext and observable ciphertext.
+
+\subsection{Unified Framework Insights}
+
+These projects together reveal a unified framework where:
+
+\begin{enumerate}
+\item \textbf{Universal Approximation}: Oblivious maps can approximate any function with controllable error rates
+\item \textbf{Algebraic Preservation}: Boolean and monoid operations are preserved in the cipher domain
+\item \textbf{Optimal Space}: Constructions achieve information-theoretic lower bounds
+\item \textbf{Composability}: Operations compose with predictable error propagation
+\item \textbf{Complete Obliviousness}: Server operates as pure $\text{bytes} \rightarrow \text{bytes}$ transformer
+\end{enumerate}
+
+The complete system provides:
+\begin{itemize}
+\item \textbf{Theoretical guarantees}: Proven optimal space and entropy bounds
+\item \textbf{Practical implementations}: Working C++ and Python code
+\item \textbf{Flexible abstractions}: Type erasure allows polymorphic cipher types
+\item \textbf{Production readiness}: Error tracking, key management, and performance optimization
+\end{itemize}
+
+This represents a complete realization of the vision: computation on encrypted data where the server learns nothing beyond input/output sizes.

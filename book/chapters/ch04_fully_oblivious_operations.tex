@@ -1,0 +1,401 @@
+\section{Fully Oblivious Operations}
+\label{sec:fully-oblivious-ops}
+
+\subsection{The Operation Leakage Problem}
+
+Even with encoded inputs and outputs, if the server knows which operation is being performed, it learns information:
+
+\begin{lstlisting}[language=Python, caption={Problem: Operations are observable}]
+def server_process(encoded_a, encoded_b, operation="AND"):  # LEAK: operation visible!
+    if operation == "AND":
+        return self.and_operation(encoded_a, encoded_b)
+    elif operation == "OR":
+        return self.or_operation(encoded_a, encoded_b)
+    # Server knows logical structure of computation!
+\end{lstlisting}
+
+\subsection{Oblivious Operations}
+
+The solution: encode the operations themselves!
+
+\begin{lstlisting}[language=Python, caption={Oblivious boolean operations}]
+class ObliviousBoolean:
+    """Oblivious representation of boolean values and operations"""
+    
+    def __init__(self, secret_key: bytes):
+        self.secret_key = secret_key
+        # Pre-compute operation encodings
+        self.operation_encodings = self._generate_op_encodings()
+        
+    def encode_boolean(self, value: bool) -> bytes:
+        """Encode boolean uniformly"""
+        # Multiple encodings per value for uniformity
+        nonce = random.randint(0, 100)
+        data = f"{value}:{nonce}:{self.secret_key.hex()}".encode()
+        return hashlib.sha256(data).digest()
+    
+    def encode_operation(self, op: str) -> bytes:
+        """Operations are also encoded!"""
+        # Server doesn't know if it's AND, OR, XOR, etc.
+        nonce = random.randint(0, 100)
+        data = f"{op}:{nonce}:{self.secret_key.hex()}".encode()
+        return hashlib.sha256(data).digest()
+    
+    def oblivious_binary_op(self, 
+                           encoded_op: bytes,
+                           encoded_a: bytes, 
+                           encoded_b: bytes) -> bytes:
+        """
+        Perform operation without knowing what it is!
+        All inputs and outputs are encoded.
+        """
+        # Server executes without knowing operation type
+        # Uses homomorphic-like property of encodings
+        
+        # Combine all encodings into single computation
+        combined = self._combine_for_computation(
+            encoded_op, encoded_a, encoded_b
+        )
+        
+        # Result is still encoded
+        return self._execute_oblivious(combined)
+    
+    def _execute_oblivious(self, combined: bytes) -> bytes:
+        """
+        Execute without revealing operation or values
+        Uses pre-computed lookup table
+        """
+        # Hash to index in pre-computed results table
+        index = int.from_bytes(combined[:8], 'big') % len(self.result_table)
+        return self.result_table[index]
+\end{lstlisting}
+
+\subsection{Oblivious Pairs vs Pairs of Oblivious Values}
+
+Critical distinction for correlation hiding:
+
+\begin{lstlisting}[language=Python, caption={Two approaches to encoding pairs}]
+class ObliviousPairEncoding:
+    """Different encodings reveal different information"""
+    
+    def pair_of_oblivious(self, a: bool, b: bool) -> Tuple[bytes, bytes]:
+        """
+        Encode each value separately
+        PROBLEM: Correlations visible through patterns
+        """
+        encoded_a = self.encode_boolean(a)
+        encoded_b = self.encode_boolean(b)
+        return (encoded_a, encoded_b)  # Two separate encodings
+    
+    def oblivious_pair(self, a: bool, b: bool) -> bytes:
+        """
+        Encode the pair as single unit
+        BENEFIT: Correlation hidden!
+        """
+        # Single encoding for the pair
+        pair_value = (a, b)
+        data = f"{pair_value}:{self.secret_key.hex()}".encode()
+        return hashlib.sha256(data).digest()  # One encoding for both!
+    
+    def demonstrate_difference(self):
+        """Show why oblivious pairs hide correlations"""
+        
+        # Scenario: Always query (term1=True, term2=True) together
+        correleted_queries = [(True, True)] * 100
+        
+        # Method 1: Pair of oblivious values
+        separate_encodings = [
+            self.pair_of_oblivious(a, b) 
+            for a, b in correleted_queries
+        ]
+        # PROBLEM: Statistical analysis reveals both values usually True
+        
+        # Method 2: Oblivious pair
+        pair_encodings = [
+            self.oblivious_pair(a, b)
+            for a, b in correleted_queries
+        ]
+        # BENEFIT: Just see random noise, no correlation visible!
+\end{lstlisting}
+
+\subsection{Universal Oblivious Computation}
+
+The complete framework where everything is oblivious:
+
+\begin{lstlisting}[language=Python, caption={Universal oblivious computation}]
+class UniversalObliviousComputer:
+    """
+    Everything is oblivious:
+    - Input values
+    - Operations  
+    - Intermediate results
+    - Output values
+    """
+    
+    def __init__(self, computation_space_size: int = 2**20):
+        """
+        Pre-compute results for all possible computations
+        in the defined space
+        """
+        self.computation_table = self._build_computation_table(
+            computation_space_size
+        )
+        
+    def _build_computation_table(self, size: int) -> Dict[bytes, bytes]:
+        """
+        Pre-compute all possible results
+        Maps: (encoded_op, encoded_inputs) -> encoded_output
+        """
+        table = {}
+        
+        # For each possible operation encoding
+        for op in ["AND", "OR", "XOR", "NAND", "NOR"]:
+            op_encodings = self._generate_encodings(op, count=100)
+            
+            # For each possible input combination
+            for a in [True, False]:
+                for b in [True, False]:
+                    # Generate input encodings
+                    a_encodings = self._generate_encodings(a, count=100)
+                    b_encodings = self._generate_encodings(b, count=100)
+                    
+                    # Compute actual result
+                    result = self._compute(op, a, b)
+                    result_encoding = self._generate_encoding(result)
+                    
+                    # Store all encoding combinations
+                    for op_enc in op_encodings:
+                        for a_enc in a_encodings:
+                            for b_enc in b_encodings:
+                                key = self._combine_encodings(
+                                    op_enc, a_enc, b_enc
+                                )
+                                table[key] = result_encoding
+        
+        return table
+    
+    def oblivious_compute(self,
+                         encoded_operation: bytes,
+                         encoded_inputs: bytes) -> bytes:
+        """
+        Server executes this:
+        - Doesn't know the operation
+        - Doesn't know the inputs
+        - Doesn't know the output
+        Just a lookup in pre-computed table!
+        """
+        key = self._combine_encodings(encoded_operation, encoded_inputs)
+        
+        # Simple table lookup - reveals nothing!
+        return self.computation_table.get(
+            key,
+            self._encode_error()  # Encoded error value
+        )
+\end{lstlisting}
+
+\subsection{Oblivious Function Composition}
+
+Operations can be composed while maintaining obliviousness:
+
+\begin{lstlisting}[language=Python, caption={Composing oblivious operations}]
+class ObliviousFunctionComposition:
+    """Compose functions without revealing structure"""
+    
+    def encode_function(self, func_description: str) -> bytes:
+        """Encode entire function as single unit"""
+        # E.g., "AND(OR(a,b), NOT(c))" encoded as one blob
+        return hashlib.sha256(func_description.encode()).digest()
+    
+    def oblivious_compose(self, 
+                         encoded_funcs: List[bytes],
+                         encoded_inputs: bytes) -> bytes:
+        """
+        Compose multiple functions obliviously
+        Server doesn't know composition structure
+        """
+        # Method 1: Encode composition pattern
+        composition_encoding = self._encode_composition_pattern(encoded_funcs)
+        
+        # Method 2: Use garbled circuits approach
+        garbled_circuit = self._create_garbled_circuit(
+            composition_encoding,
+            encoded_inputs
+        )
+        
+        # Execute without knowing structure
+        return self._evaluate_garbled(garbled_circuit)
+    
+    def oblivious_recursive(self,
+                          encoded_func: bytes,
+                          encoded_base: bytes,
+                          encoded_recursive_case: bytes,
+                          depth: int) -> bytes:
+        """Even recursion can be oblivious!"""
+        
+        result = encoded_base
+        for _ in range(depth):
+            # Apply function obliviously
+            result = self.oblivious_compute(
+                encoded_func,
+                self._combine_encodings(result, encoded_recursive_case)
+            )
+        
+        return result  # Still encoded!
+\end{lstlisting}
+
+\subsection{Practical Implementation with Garbled Circuits}
+
+For practical oblivious operations, we can use garbled circuit techniques:
+
+\begin{lstlisting}[language=Python, caption={Garbled circuit approach}]
+class GarbledObliviousComputation:
+    """Use garbled circuits for oblivious operations"""
+    
+    def __init__(self):
+        self.wire_labels = {}  # Maps wire -> (label_0, label_1)
+        self.garbled_gates = {}  # Encrypted truth tables
+        
+    def garble_operation(self, operation: str) -> Dict[str, bytes]:
+        """
+        Create garbled circuit for operation
+        Server can evaluate without knowing operation type
+        """
+        # Generate random labels for wires
+        input_a_labels = (os.urandom(16), os.urandom(16))  # For 0, 1
+        input_b_labels = (os.urandom(16), os.urandom(16))
+        output_labels = (os.urandom(16), os.urandom(16))
+        
+        # Create garbled truth table
+        garbled_table = []
+        for a_val in [0, 1]:
+            for b_val in [0, 1]:
+                # Compute actual result
+                if operation == "AND":
+                    result = a_val & b_val
+                elif operation == "OR":
+                    result = a_val | b_val
+                elif operation == "XOR":
+                    result = a_val ^ b_val
+                
+                # Encrypt output label with input labels
+                a_label = input_a_labels[a_val]
+                b_label = input_b_labels[b_val]
+                out_label = output_labels[result]
+                
+                # Double encryption
+                encrypted = self._encrypt(
+                    self._encrypt(out_label, a_label),
+                    b_label
+                )
+                garbled_table.append(encrypted)
+        
+        # Shuffle table to hide operation
+        random.shuffle(garbled_table)
+        
+        return {
+            'table': garbled_table,
+            'input_labels': (input_a_labels, input_b_labels),
+            'output_labels': output_labels
+        }
+    
+    def evaluate_garbled(self,
+                        garbled_circuit: Dict,
+                        input_a_label: bytes,
+                        input_b_label: bytes) -> bytes:
+        """
+        Evaluate garbled circuit
+        Server doesn't know:
+        - What operation this implements
+        - What values the labels represent
+        - What the output means
+        """
+        # Try decrypting each table entry
+        for encrypted_entry in garbled_circuit['table']:
+            try:
+                # Attempt double decryption
+                output_label = self._decrypt(
+                    self._decrypt(encrypted_entry, input_a_label),
+                    input_b_label
+                )
+                return output_label  # Found valid output
+            except:
+                continue  # Wrong input labels for this entry
+        
+        raise ValueError("Invalid input labels")
+\end{lstlisting}
+
+\subsection{The Complete Oblivious System}
+
+Putting it all together:
+
+\begin{lstlisting}[language=Python, caption={Complete oblivious system}]
+class CompletelyObliviousSystem:
+    """
+    Nothing is visible to the server:
+    - Not the data
+    - Not the operations
+    - Not the structure
+    - Not the results
+    """
+    
+    def client_side_prepare(self, 
+                          query: str,
+                          operation: str,
+                          correlation_aware: bool = True) -> bytes:
+        """Client prepares oblivious computation"""
+        
+        if correlation_aware:
+            # Encode correlated terms together
+            encoded_input = self.encode_oblivious_tuple(
+                self.extract_correlated_terms(query)
+            )
+        else:
+            # Encode separately
+            encoded_input = self.encode_separate_terms(query)
+        
+        # Encode the operation
+        encoded_op = self.encode_operation(operation)
+        
+        # Combine into single oblivious computation request
+        return self.create_oblivious_request(encoded_op, encoded_input)
+    
+    def server_side_process(self, oblivious_request: bytes) -> bytes:
+        """
+        Server processes without knowing anything
+        Just a deterministic function: bytes -> bytes
+        """
+        # Could be:
+        # - Table lookup
+        # - Garbled circuit evaluation  
+        # - Homomorphic computation
+        # - ORAM access
+        # Server doesn't know which!
+        
+        return self.oblivious_computation_engine.process(oblivious_request)
+    
+    def client_side_decode(self, 
+                         oblivious_result: bytes,
+                         expected_type: str) -> Any:
+        """Client decodes result"""
+        
+        if expected_type == "boolean":
+            return self.decode_oblivious_boolean(oblivious_result)
+        elif expected_type == "tuple":
+            return self.decode_oblivious_tuple(oblivious_result)
+        elif expected_type == "list":
+            return self.decode_oblivious_list(oblivious_result)
+        else:
+            return self.decode_generic(oblivious_result)
+\end{lstlisting}
+
+\subsection{Key Insight: Complete Obliviousness}
+
+The crucial realization: **everything** can and should be oblivious:
+
+1. **Values**: Encoded uniformly (Bernoulli types)
+2. **Operations**: Encoded so server doesn't know AND vs OR vs XOR
+3. **Composition**: Structure of computation hidden
+4. **Correlations**: Tuple encoding hides relationships
+5. **Control flow**: Even branches can be oblivious (compute both, select one)
+
+The server becomes a pure function evaluator: `bytes → bytes` with no semantic understanding of what it's computing. This achieves true oblivious computing where the server learns nothing beyond the size of inputs and outputs.

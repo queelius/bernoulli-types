@@ -1,0 +1,290 @@
+\chapter{From Hashing to Hiding}
+\label{ch:hashing}
+
+\begin{quote}
+\textit{``The secret to hiding information is not to hide it, but to make it indistinguishable from noise.''}
+\end{quote}
+
+\section*{Learning Objectives}
+By the end of this chapter, you will:
+\begin{itemize}
+\item Understand the difference between cryptographic and non-cryptographic hash functions
+\item Learn how deterministic hashing becomes probabilistic encoding
+\item Recognize the avalanche effect and its importance
+\item Implement Bernoulli encoding for uniform representations
+\item See how hashing enables both efficiency and privacy
+\end{itemize}
+
+\section{The Dual Nature of Hashing}
+
+Hash functions serve two masters: efficiency and security. Understanding both faces is crucial for building privacy-preserving systems.
+
+\subsection{Non-Cryptographic Hash Functions}
+
+For data structures like hash tables and Bloom filters, we need fast hash functions with good distribution properties:
+
+\begin{definition}[Non-Cryptographic Hash Function]
+A function $h: \{0,1\}^* \to \{0,1\}^m$ is a non-cryptographic hash if:
+\begin{enumerate}
+\item \textbf{Deterministic}: Same input always produces same output
+\item \textbf{Uniform distribution}: Outputs are evenly distributed
+\item \textbf{Fast computation}: Optimized for speed (often < 10 CPU cycles)
+\item \textbf{Good avalanche}: Small input changes cause large output changes
+\end{enumerate}
+\end{definition}
+
+Examples include MurmurHash3, xxHash, and CityHash. These prioritize speed over security.
+
+\subsection{Cryptographic Hash Functions}
+
+For security applications, we need stronger guarantees:
+
+\begin{definition}[Cryptographic Hash Function]
+A function $H: \{0,1\}^* \to \{0,1\}^n$ is cryptographically secure if:
+\begin{enumerate}
+\item \textbf{Pre-image resistance}: Given $y$, computationally infeasible to find $x$ where $H(x) = y$
+\item \textbf{Second pre-image resistance}: Given $x_1$, hard to find $x_2 \neq x_1$ where $H(x_1) = H(x_2)$
+\item \textbf{Collision resistance}: Hard to find any pair $(x_1, x_2)$ where $x_1 \neq x_2$ and $H(x_1) = H(x_2)$
+\end{enumerate}
+\end{definition}
+
+Examples include SHA-256, SHA-3, and BLAKE2. These sacrifice speed for security.
+
+\section{Hashing as Information Compression}
+
+Every hash function is fundamentally a compression function—mapping a large input space to a smaller output space. This compression is lossy and irreversible.
+
+\begin{example}[The Pigeonhole Principle in Action]
+SHA-256 maps arbitrary-length inputs to 256-bit outputs. There are $2^{256}$ possible outputs but infinitely many possible inputs. Therefore:
+\begin{itemize}
+\item Multiple inputs must map to the same output (collisions exist)
+\item Information is necessarily lost
+\item The mapping cannot be reversed
+\end{itemize}
+\end{example}
+
+This information loss, usually seen as a limitation, becomes our privacy advantage.
+
+\section{The Avalanche Effect}
+
+A crucial property for both efficiency and security is the avalanche effect:
+
+\begin{definition}[Avalanche Effect]
+A hash function exhibits the avalanche effect if changing a single bit in the input causes, on average, half of the output bits to change.
+\end{definition}
+
+\begin{example}[SHA-256 Avalanche]
+\begin{verbatim}
+Input: "hello"  → SHA-256: 2cf24dba5fb0a30e26e83b2ac5b9e29e...
+Input: "Hello"  → SHA-256: 185f8db32271fe25f561a6fc938b2e26...
+\end{verbatim}
+Changing one bit (h→H) completely changes the output.
+\end{example}
+
+The avalanche effect ensures:
+\begin{itemize}
+\item Similar inputs produce dissimilar outputs (good for hash tables)
+\item Input patterns don't leak through outputs (good for privacy)
+\item Small changes are amplified (good for integrity checking)
+\end{itemize}
+
+\section{From Deterministic to Probabilistic}
+
+Traditional hashing is deterministic—the same input always produces the same output. This is a problem for privacy: repeated queries reveal patterns. We need probabilistic encoding.
+
+\subsection{The Birthday Paradox Lottery}
+
+Imagine a lottery where:
+\begin{itemize}
+\item Your ticket number is your birthday (1-365)
+\item You can buy multiple tickets with the same birthday
+\item The winning number is drawn randomly each time
+\end{itemize}
+
+If you always use your actual birthday, an observer learns it after seeing enough tickets. But if you randomly select from \textit{plausible} birthdays, observers learn nothing specific about you.
+
+This is the key insight: we need multiple valid encodings for each input.
+
+\subsection{Bernoulli Encoding}
+
+\begin{definition}[Bernoulli Encoding]
+A Bernoulli encoding of value $v$ is a probabilistic function $\tilde{h}: V \to 2^H$ that:
+\begin{enumerate}
+\item Maps each value to a set of valid hash outputs
+\item Randomly selects from this set for each encoding
+\item Maintains uniform distribution across all outputs
+\item Preserves necessary properties (e.g., membership testing)
+\end{enumerate}
+\end{definition}
+
+Formally:
+\[
+\tilde{h}(v) = \text{RandomChoice}(\text{ValidEncodings}(v))
+\]
+
+\section{Building Uniform Representations}
+
+The goal is to make encoded values indistinguishable from random noise:
+
+\begin{theorem}[Uniformity Through Encoding]
+If ValidEncodings$(v)$ is constructed such that:
+\[
+\Pr[\tilde{h}(v_1) = h] = \Pr[\tilde{h}(v_2) = h] = \frac{1}{|H|}
+\]
+for all values $v_1, v_2$ and hash outputs $h \in H$, then the encoding is perfectly uniform and reveals no information about the input value.
+\end{theorem}
+
+\begin{proof}[Proof Sketch]
+By the definition of entropy, if all outputs are equally likely regardless of input, the mutual information $I(V; H) = 0$, meaning the output reveals nothing about the input.
+\end{proof}
+
+\section{Implementation: From Theory to Practice}
+
+Let's implement Bernoulli encoding in Python:
+
+\begin{lstlisting}[language=Python, caption={Bernoulli encoding implementation}]
+import hashlib
+import random
+from typing import Set, List
+
+class BernoulliEncoder:
+    """Encodes values using probabilistic hashing for uniformity"""
+    
+    def __init__(self, output_size: int = 256, redundancy: int = 10):
+        """
+        Initialize encoder
+        
+        Args:
+            output_size: Size of output space (bits)
+            redundancy: Number of valid encodings per value
+        """
+        self.output_size = output_size
+        self.redundancy = redundancy
+        # Secret salt for this instance (never revealed)
+        self.salt = random.randbytes(32)
+    
+    def _base_hash(self, value: str, nonce: int) -> bytes:
+        """
+        Generate base hash with nonce
+        
+        Note: Uses SHA-256 for security. In production, consider
+        BLAKE2 for better performance with same security.
+        """
+        data = f"{value}:{nonce}:{self.salt.hex()}".encode()
+        return hashlib.sha256(data).digest()
+    
+    def valid_encodings(self, value: str) -> Set[bytes]:
+        """Generate set of valid encodings for a value"""
+        encodings = set()
+        for nonce in range(self.redundancy):
+            h = self._base_hash(value, nonce)
+            encodings.add(h[:self.output_size // 8])
+        return encodings
+    
+    def encode(self, value: str) -> bytes:
+        """
+        Probabilistically encode a value
+        
+        Returns different encoding each time (uniformly random)
+        """
+        valid = self.valid_encodings(value)
+        return random.choice(list(valid))
+    
+    def verify(self, value: str, encoding: bytes) -> bool:
+        """Check if encoding is valid for value"""
+        return encoding in self.valid_encodings(value)
+    
+    def encode_uniform(self, value: str, frequency: float) -> bytes:
+        """
+        Encode with frequency-aware uniformity
+        
+        More encodings for rare values (1/p principle)
+        """
+        # Adjust redundancy based on frequency
+        adjusted_redundancy = max(1, int(self.redundancy / frequency))
+        
+        # Generate more encodings for rare values
+        encodings = set()
+        for nonce in range(adjusted_redundancy):
+            h = self._base_hash(value, nonce)
+            encodings.add(h[:self.output_size // 8])
+        
+        return random.choice(list(encodings))
+\end{lstlisting}
+
+\section{Security Analysis}
+
+\subsection{Threat Model}
+
+We consider an adversary who:
+\begin{itemize}
+\item Observes all encoded values
+\item Knows the encoding algorithm (but not the salt)
+\item Has unlimited computational power for analysis
+\item Cannot perform adaptive chosen-plaintext attacks
+\end{itemize}
+
+\subsection{Security Properties}
+
+Under this threat model, Bernoulli encoding provides:
+
+\begin{theorem}[Observational Indistinguishability]
+Given encodings $E_1 = \{\tilde{h}(v_1)^{(i)}\}$ and $E_2 = \{\tilde{h}(v_2)^{(i)}\}$ for different values $v_1, v_2$, an adversary cannot distinguish which set corresponds to which value with probability better than random guessing.
+\end{theorem}
+
+However, it does NOT provide:
+\begin{itemize}
+\item Protection against frequency analysis (without additional measures)
+\item Resistance to correlation attacks (without tuple encoding)
+\item Security against active adversaries who can inject chosen values
+\end{itemize}
+
+\section{The Path to Privacy}
+
+Bernoulli encoding transforms deterministic operations into probabilistic ones, but alone it's not enough. We need additional techniques:
+
+\begin{enumerate}
+\item \textbf{Frequency normalization}: Equal encoding rates regardless of value frequency
+\item \textbf{Tuple encoding}: Hide correlations between values
+\item \textbf{Temporal shuffling}: Randomize query timing
+\item \textbf{Noise injection}: Add fake queries
+\end{enumerate}
+
+These build on the foundation of Bernoulli encoding to achieve true privacy.
+
+\section{Exercises}
+
+\begin{enumerate}
+\item \textbf{Avalanche Testing}: Implement a function to measure the avalanche effect of different hash functions. Test MD5, SHA-256, and MurmurHash3.
+
+\item \textbf{Collision Finding}: For a hash function with $n$-bit output, how many random inputs do you need (on average) before finding a collision? Verify experimentally with small $n$.
+
+\item \textbf{Encoding Distribution}: Prove that if each value has $k$ valid encodings selected uniformly, the output distribution approaches uniform as $k$ increases.
+
+\item \textbf{Security Analysis}: Under what conditions can an adversary distinguish between Bernoulli encodings of two values? Consider frequency and correlation.
+
+\item \textbf{Implementation Challenge}: Extend the BernoulliEncoder to support efficient batch encoding while maintaining uniformity.
+\end{enumerate}
+
+\section{Chapter Summary}
+
+Hash functions are more than tools for efficiency—they're the foundation of privacy. By transforming deterministic hashing into probabilistic Bernoulli encoding, we achieve uniform representations indistinguishable from random noise.
+
+Key insights:
+\begin{itemize}
+\item Information loss through hashing enables privacy
+\item The avalanche effect amplifies small changes, hiding patterns
+\item Probabilistic encoding breaks the deterministic link between input and output
+\item Uniformity is achievable but requires careful construction
+\end{itemize}
+
+Next, we'll see what adversaries can observe and why traditional approaches fail to protect privacy, setting the stage for our complete oblivious solution.
+
+\section{Further Reading}
+
+\begin{itemize}
+\item Menezes, A. et al. (1996). ``Handbook of Applied Cryptography'' (Chapter 9: Hash Functions)
+\item Rogaway, P. \& Shrimpton, T. (2004). ``Cryptographic hash-function basics''
+\item Aumasson, J.P. (2019). ``Serious Cryptography'' (Modern hash function design)
+\item Bellare, M. et al. (2020). ``Mass-surveillance without the State: Strongly undetectable algorithm-substitution attacks''
+\end{itemize}

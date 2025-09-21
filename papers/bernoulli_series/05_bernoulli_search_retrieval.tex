@@ -145,6 +145,45 @@ An observed index $\OMakeIndex : D \to \obs{\PS{K}}$ provides noisy observations
 \end{equation}
 \end{definition}
 
+\subsection{Enhanced Inference Through Structured Approximation}
+
+Crucially, the structural constraints of approximation algorithms can \emph{improve} inference beyond what random error models suggest:
+
+\begin{theorem}[Bloom Filter Enhanced Inference]
+Bloom filters exhibit high-rank confusion matrix structure that enables enhanced inference:
+\begin{itemize}
+    \item \textbf{Subset preservation**: Observed terms always form supersets of latent terms
+    \item \textbf{Sparsity structure**: Many document-term transitions are impossible
+    \item \textbf{Correlation exploitation**: False positives are correlated across queries sharing hash functions
+\end{itemize}
+
+This structure enables better latent set reconstruction than predicted by independent error models.
+\end{theorem}
+
+\begin{example}[Correlation-Aware Ranking]
+For Bloom filter-based indexes, documents that produce consistent false positives across related queries can be identified and down-weighted:
+\begin{verbatim}
+// Traditional scoring ignores correlation
+score_traditional(doc, query) = sum over terms in query
+
+// Enhanced scoring exploits Bloom filter correlation structure  
+score_enhanced(doc, query) = score_traditional(doc, query)
+                           - correlation_penalty(doc, query_history)
+\end{verbatim}
+This leverages the high-rank structure to improve precision.
+\end{example}
+
+\begin{remark}[Information Hierarchy in Search]
+Following the information hierarchy from Part 1, search systems exhibit layered knowledge:
+\begin{enumerate}
+    \item \textbf{Unconstrained}: Any possible document-term relationships
+    \item \textbf{Structural constraints**: "Bloom filter index" constrains observation patterns
+    \item \textbf{Parameter knowledge**: Known false positive rate $\fprate$
+    \item \textbf{Query observations**: Specific observed results reduce uncertainty
+\end{enumerate}
+Each level provides additional information for better inference about latent relevance.
+\end{remark}
+
 \begin{theorem}[Observation Propagation]
 The observed search function $\OFind$ returns observations of latent result sets:
 \begin{equation}
@@ -439,6 +478,26 @@ For ranking function $\text{BM25}: D \times Q \to \mathbb{R}$, we can create $\o
 \end{itemize}
 This trades exact scores for compact indexes while maintaining retrieval effectiveness.
 \end{example}
+
+\subsection{Fundamental Limits of Search and Retrieval}
+
+The confusion matrix framework reveals that some search queries remain fundamentally ambiguous, even with unlimited computational resources.
+
+\begin{theorem}[Asymptotic Query Indistinguishability]
+Consider queries $q_1, q_2$ whose results differ only in documents that map to the same equivalence class under the observation process's rank-deficient matrix $Q$. These queries remain indistinguishable regardless of index size or computational power.
+\end{theorem}
+
+This has crucial implications for information retrieval:
+
+\begin{itemize}
+    \item \textbf{Privacy by design}: Queries about sensitive topics can be made indistinguishable from innocent queries by ensuring their document differences lie in the null space of the observation matrix
+    \item \textbf{Inherent ambiguity}: Some search intent distinctions are fundamentally unresolvable due to rank constraints in the observation process
+    \item \textbf{Optimal compression bounds}: There exist theoretical limits on index compression beyond which certain queries become impossible to distinguish
+\end{itemize}
+
+\begin{remark}[Connection to Oblivious Search]
+This analysis explains why certain oblivious search protocols can provide unconditional privacy guarantees: by designing the observation process to be rank-deficient in specific ways, sensitive queries become provably indistinguishable from cover queries, regardless of the computational resources available to an adversary.
+\end{remark}
 
 The latent/observed paradigm suggests that perfect information retrieval is not just impractical but conceptually impossible—we can only ever observe relevance, never access it directly. By acknowledging this fundamental limitation, we paradoxically gain power: the ability to build systems that are smaller, faster, more private, and more robust than their "exact" counterparts.
 

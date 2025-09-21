@@ -1,0 +1,142 @@
+\section{Implementation References}
+\label{sec:implementation-refs}
+
+The concepts presented in this chapter have been implemented in several complementary projects that demonstrate the practical application of oblivious computing principles:
+
+\subsection{Algebraic Cipher Types}
+
+The \texttt{algebraic\_cipher\_types} library provides a complete implementation of cipher types with monadic properties for noise injection:
+
+\begin{lstlisting}[language=C++, caption={Cipher boolean type with false positive/negative rates}]
+template <>
+class cipher<bool>
+{
+public:
+    using plain_value_type = bool;
+    
+    auto fpr() const { return bool_->fpr(); }  // False positive rate
+    auto fnr() const { return bool_->fnr(); }  // False negative rate
+    auto size() const { return bool_->size(); }
+    
+    // Decode with secret key
+    auto try_convert(string_view secret) const {
+        return bool_->try_convert(secret);
+    }
+    
+private:
+    // Type erasure for different cipher implementations
+    struct concept {
+        virtual double fnr() const = 0;
+        virtual double fpr() const = 0;
+        virtual size_t size() const = 0;
+        virtual optional<bool> try_convert(string_view) const = 0;
+    };
+};
+\end{lstlisting}
+
+This implementation demonstrates:
+\begin{itemize}
+\item Type erasure for polymorphic cipher behavior
+\item Tracking of error rates (FPR/FNR) through operations
+\item Secret-key-based decoding only on trusted client
+\end{itemize}
+
+\subsection{Cipher Maps and Oblivious Functions}
+
+The \texttt{cipher\_maps} project implements oblivious maps where:
+\begin{itemize}
+\item Undefined mappings return random oracle outputs
+\item Both domain and codomain can be oblivious values: $f^* : X^* \mapsto Y^*$
+\item Mappings are only learned upon request (lazy evaluation)
+\end{itemize}
+
+\begin{lstlisting}[language=Python, caption={Oblivious map with random oracle for undefined elements}]
+class ObliviousMap:
+    """
+    Map where undefined elements return random oracle outputs
+    Notation: f* = (f, C) where C is computational basis subset
+    """
+    
+    def __getitem__(self, key: bytes) -> bytes:
+        if key in self.defined_mappings:
+            return self.defined_mappings[key]
+        else:
+            # Random oracle for undefined elements
+            return self.random_oracle(key)
+    
+    def random_oracle(self, key: bytes) -> bytes:
+        """Deterministic but unpredictable mapping"""
+        return hashlib.sha256(self.seed + key).digest()
+\end{lstlisting}
+
+\subsection{Cipher Trapdoor Sets}
+
+The \texttt{cipher\_trapdoor\_sets} implementation provides:
+\begin{itemize}
+\item Boolean algebra over cipher sets
+\item Trapdoor functions for one-way transformations
+\item Preservation of set operations in encrypted domain
+\end{itemize}
+
+\subsection{Practical Key-Value Store}
+
+A complete oblivious key-value store demonstrates end-to-end system integration:
+
+\begin{lstlisting}[language=C++, caption={Oblivious KVS with cipher operations}]
+// From kvs.cpp - practical oblivious key-value store
+class ObliviousKVS {
+    // Store encrypted key-value pairs
+    map<cipher<string>, cipher<string>> store;
+    
+    // Oblivious lookup - returns cipher value or noise
+    cipher<string> lookup(cipher<string> key) {
+        auto it = store.find(key);
+        if (it != store.end()) {
+            return it->second;
+        }
+        // Return noise for undefined keys
+        return cipher<string>::noise();
+    }
+    
+    // Oblivious AND operation example
+    cipher<bool> oblivious_and(
+        cipher<bool> a, 
+        cipher<bool> b
+    ) {
+        // Operation on cipher values without decryption
+        return cipher_and_operation(a, b);
+    }
+};
+\end{lstlisting}
+
+\subsection{Integration with Bernoulli Types}
+
+These implementations integrate seamlessly with the Bernoulli type framework:
+
+\begin{itemize}
+\item \textbf{Error propagation}: Rate spans track uncertainty through compositions
+\item \textbf{Space optimization}: Two-level hashing with seed search
+\item \textbf{Frequency normalization}: Adaptive encoding based on observed distributions
+\item \textbf{Complete obliviousness}: Server processes bytes without semantic understanding
+\end{itemize}
+
+\subsection{Available Implementations}
+
+Complete working implementations are available in:
+\begin{itemize}
+\item \texttt{other/algebraic\_cipher\_types/} - Algebraic cipher type system
+\item \texttt{other/cipher\_maps/} - Oblivious map constructions
+\item \texttt{other/cipher\_trapdoor\_sets/} - Trapdoor set operations
+\item \texttt{other/bernoulli\_data\_type/} - Core Bernoulli type implementations
+\item \texttt{other/encrypted\_search\_*} - Various encrypted search systems
+\end{itemize}
+
+These implementations provide:
+\begin{enumerate}
+\item Production-ready C++ header-only libraries
+\item Python reference implementations for prototyping
+\item Comprehensive test suites verifying statistical properties
+\item Benchmarks demonstrating practical performance
+\end{enumerate}
+
+The key insight from these implementations: \textit{Complete obliviousness is achievable in practice} with reasonable performance overhead, typically 2-10x compared to plaintext operations, while providing provable privacy guarantees that exact computation cannot achieve.

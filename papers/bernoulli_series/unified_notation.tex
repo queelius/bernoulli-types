@@ -26,26 +26,57 @@
 
 % ========== BERNOULLI TYPES ==========
 
-% Bernoulli type constructor: B^n(T) or B_n(T)
-\newcommand{\Bernoulli}[2]{\mathcal{B}^{#2}(#1)}  % \Bernoulli{T}{n}
-\newcommand{\BernoulliSub}[2]{\mathcal{B}_{#2}(#1)}  % Alternative subscript notation
+% Bernoulli type constructor: B_T^{(k)} following the refined framework
+\newcommand{\BType}[1]{B_{#1}}  % Basic Bernoulli type B_T
+\newcommand{\BTypeOrder}[2]{B_{#1}^{(#2)}}  % Bernoulli type with order B_T^{(k)}
 
-% Common instances
-\newcommand{\BernoulliBool}[1]{\Bernoulli{\mathbb{B}}{#1}}  % Bernoulli Boolean
-\newcommand{\BernoulliSet}[1]{\Bernoulli{\mathcal{P}(#1)}{2}}  % Bernoulli power set
+% Specific Bernoulli types
+\newcommand{\BBool}{B_{\mathrm{bool}}}  % Bernoulli Boolean
+\newcommand{\BBoolOrder}[1]{B_{\mathrm{bool}}^{(#1)}}  % Bernoulli Boolean with order
+\newcommand{\BSet}[1]{B_{#1 \mapsto \mathrm{bool}}}  % Bernoulli set (set indicator function)
+\newcommand{\BMap}[2]{B_{#1 \mapsto #2}}  % Bernoulli map from type 1 to type 2
+
+% Latent value notation - B_T(x) represents observation of latent x
+\newcommand{\BValue}[2]{B_{#1}(#2)}  % B_T(x) - Bernoulli observation of latent x
+\newcommand{\BValueOrder}[3]{B_{#1}^{(#2)}(#3)}  % B_T^{(k)}(x) - with explicit order
 
 % ========== ERROR RATES ==========
 
-\newcommand{\fprate}{\alpha}  % False positive rate
-\newcommand{\fnrate}{\beta}   % False negative rate
-\newcommand{\tprate}{\tau}    % True positive rate
-\newcommand{\tnrate}{\rho}    % True negative rate
+% General error terminology (for any type)
+\newcommand{\errorrate}{\epsilon}  % Generic error rate
+\newcommand{\missrate}{\delta}     % Miss rate (fail to detect when present)
+\newcommand{\spuriousrate}{\alpha} % Spurious rate (detect when absent)
+\newcommand{\confusionrate}{\gamma} % Confusion between different values
+
+% Boolean-specific terminology (only use for Boolean/binary contexts)
+\newcommand{\fprate}{\alpha}  % False positive rate (Boolean only!)
+\newcommand{\fnrate}{\beta}   % False negative rate (Boolean only!)
+\newcommand{\tprate}{\tau}    % True positive rate (Boolean only!)
+\newcommand{\tnrate}{\rho}    % True negative rate (Boolean only!)
 \newcommand{\FPR}{\mathsf{FPR}}  % False positive rate (text form)
 \newcommand{\FNR}{\mathsf{FNR}}  % False negative rate (text form)
-\newcommand{\errorrate}{\epsilon}  % Generic error rate
+
+% General approximation error for type T
+\newcommand{\ApproxError}[2]{\epsilon_{#1 \to #2}}  % Error from type T1 to T2
+\newcommand{\TypeConfusion}[3]{\gamma_{#1}(#2 \to #3)}  % Confusion in type T: value1 -> value2
 
 % Error rate notation for specific structures
-\newcommand{\withError}[3]{#1_{#2,#3}}  % e.g., \withError{S}{\fprate}{\fnrate}
+\newcommand{\withError}[3]{#1_{#2,#3}}  % e.g., \withError{S}{\spuriousrate}{\missrate}
+
+% ========== ERROR MODEL ORDERS ==========
+
+% Order-2 error model (uniform error rates)
+\newcommand{\OrderTwo}{\text{Order-2}}
+\newcommand{\UniformError}[2]{\epsilon_{#1}, \delta_{#2}}  % Uniform rates
+
+% Order-|U| error model (element-specific error rates)
+\newcommand{\OrderU}{\text{Order-}|\Universe|}
+\newcommand{\ElementError}[1]{\text{error}(#1)}  % Element-specific error function
+\newcommand{\ElementSpuriousRate}[1]{\spuriousrate_{#1}}   % Element-specific spurious rate
+\newcommand{\ElementMissRate}[1]{\missrate_{#1}}           % Element-specific miss rate
+% Boolean-specific (only use when appropriate)
+\newcommand{\ElementFPRate}[1]{\fprate_{#1}}   % Element-specific false positive (Boolean only!)
+\newcommand{\ElementFNRate}[1]{\fnrate_{#1}}   % Element-specific false negative (Boolean only!)
 
 % ========== PROBABILITY AND EXPECTATION ==========
 
@@ -53,6 +84,14 @@
 \newcommand{\ProbCond}[2]{\mathbb{P}\left[#1 \mid #2\right]}  % Conditional probability
 \newcommand{\Expect}[1]{\mathbb{E}\left[#1\right]}
 \newcommand{\Var}[1]{\mathrm{Var}\left[#1\right]}
+
+% ========== INFORMATION THEORY ==========
+
+\newcommand{\Entropy}[1]{H(#1)}  % General entropy H(X)
+\newcommand{\ConditionalEntropy}[2]{H(#1 \mid #2)}  % Conditional entropy H(X|Y)
+\newcommand{\MatrixEntropy}[1]{H(#1)}  % Matrix entropy H(Q)
+\newcommand{\MutualInfo}[2]{I(#1; #2)}  % Mutual information I(X;Y)
+\newcommand{\KLDiv}[2]{D_{\mathrm{KL}}(#1 \parallel #2)}  % KL divergence
 
 % ========== SET NOTATION ==========
 
@@ -137,11 +176,21 @@
 $\obs{x}$ & Observed value corresponding to latent $x$ \\
 $\obs{S}$ & Observed (approximate) set for latent $S$ \\
 $\obs{f}$ & Observed map approximating latent $f$ \\
-$\fprate$ & False positive rate $\Prob\{\obs{x}\in\obs{S} \mid x\notin S\}$ \\
-$\fnrate$ & False negative rate $\Prob\{\obs{x}\notin\obs{S} \mid x\in S\}$ \\
-$\errorrate$ & Pointwise map error $\Prob\{\obs{f}(x)\neq f(x)\}$ \\
+$\spuriousrate$ & Spurious rate: $\Prob\{\obs{x}\in\obs{S} \mid x\notin S\}$ \\
+$\missrate$ & Miss rate: $\Prob\{\obs{x}\notin\obs{S} \mid x\in S\}$ \\
+$\confusionrate$ & Confusion rate between different values \\
+$\ElementError{x}$ & Element-specific error function for $x$ \\
+$\ElementSpuriousRate{x}$ & Spurious rate specific to element $x$ \\
+$\ElementMissRate{x}$ & Miss rate specific to element $x$ \\
+$\errorrate$ & Generic error rate $\Prob\{\obs{f}(x)\neq f(x)\}$ \\
+$\ApproxError{T_1}{T_2}$ & Approximation error from type $T_1$ to $T_2$ \\
+$\TypeConfusion{T}{v_1}{v_2}$ & Confusion in type $T$: value $v_1 \to v_2$ \\
+$\fprate, \fnrate$ & False pos./neg. rates (Boolean contexts only) \\
 $Q$ & Confusion matrix: $Q_{ij}=\Prob\{\text{obs } t_j\mid \text{lat } t_i\}$ \\
 $W(y\mid x)$ & Channel kernel from latent $x$ to observed $y$ \\
+$\Entropy{Q}$ & Matrix entropy of confusion matrix $Q$ \\
+$\ConditionalEntropy{\text{lat}}{\text{obs}}$ & Conditional entropy of latent given observed \\
+$\MutualInfo{X}{Y}$ & Mutual information between $X$ and $Y$ \\
 $\Indicator{S}$ & Set indicator function $U\to\Bool$ \\
 $\Complement{S}$ & Set complement \\
 $\Card{S}$ & Cardinality of a set $S$ \\

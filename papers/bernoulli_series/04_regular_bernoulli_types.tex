@@ -222,7 +222,112 @@ The probabilistic nature of equality affects all derived operations:
     \item \textbf{Invariants}: Class invariants become probabilistic
 \end{itemize}
 
-\section{New Programming Paradigms}
+\section{Compositional vs Direct Approximation in Regular Types}
+
+A fundamental design choice emerges when applying Bernoulli approximation to composite types: should we approximate each component independently (compositional) or approximate the composite type as a unit (direct)?
+
+\subsection{Two Approaches to Composite Type Approximation}
+
+\begin{definition}[Compositional Approximation]
+For a product type $A \times B$, \emph{compositional approximation} creates:
+$$\text{Pair of Bernoulli values}: (\BValue{A}{a}, \BValue{B}{b})$$
+where each component is independently approximated.
+\end{definition}
+
+\begin{definition}[Direct Approximation]
+For a product type $A \times B$, \emph{direct approximation} creates:
+$$\text{Bernoulli pair}: \BValue{A \times B}{(a,b)}$$
+where the pair itself is approximated as a single unit.
+\end{definition}
+
+\begin{theorem}[Structural Differences]
+Compositional and direct approximation exhibit fundamentally different structural properties:
+
+\textbf{Compositional}: 
+\begin{itemize}
+    \item Confusion matrix is Kronecker product of component matrices
+    \item Independent error structure between components
+    \item Higher-order due to independent parameters
+\end{itemize}
+
+\textbf{Direct}:
+\begin{itemize}
+    \item Single unified confusion matrix over product space
+    \item Can exhibit correlation between component errors
+    \item May have different error patterns than component-wise errors
+\end{itemize}
+\end{theorem}
+
+\begin{example}[Regular Type with Compositional Approximation]
+For a struct with multiple fields:
+\begin{verbatim}
+struct Person {
+    bernoulli<string> name;  // Independent approximation
+    bernoulli<int> age;      // Independent approximation
+};
+
+// Equality comparison requires both field comparisons to succeed
+bernoull<bool> operator==(const Person& p1, const Person& p2) {
+    return (p1.name == p2.name) && (p1.age == p2.age);
+    // Error rate: 1 - (1-ε_name)(1-ε_age)
+}
+\end{verbatim}
+\end{example}
+
+\begin{example}[Regular Type with Direct Approximation]
+Alternatively, approximate the entire struct:
+\begin{verbatim}
+struct LatentPerson {
+    string name;
+    int age;
+};
+
+using BernoulliPerson = bernoulli<LatentPerson>;
+
+// Single approximation error for entire object
+BernoulliPerson person = approximate_person(latent_person);
+// Error structure may correlate name and age errors
+\end{verbatim}
+\end{example}
+
+\subsection{Design Implications for Regular Types}
+
+\begin{theorem}[Regularity Under Compositional Approximation]
+Under compositional approximation, regular type axioms become:
+\begin{itemize}
+    \item \textbf{Reflexivity}: $\Prob{\obs{a} == \obs{a}} = \prod_{i} (1-\epsilon_i)$ where $\epsilon_i$ are component error rates
+    \item \textbf{Transitivity**: Requires three independent observations, each with compound error rate
+\end{itemize}
+\end{theorem}
+
+\begin{theorem}[Regularity Under Direct Approximation]
+Under direct approximation, regular type axioms have different structure:
+\begin{itemize}
+    \item \textbf{Error correlation}: Components errors can be correlated in ways impossible with compositional approach
+    \item \textbf{Lower effective error rates}: May achieve better overall approximation quality
+    \item \textbf{Implementation complexity**: Requires algorithm-specific design for each composite type
+\end{itemize}
+\end{theorem}
+
+\subsection{Practical Guidance}
+
+\begin{remark}[When to Use Each Approach]
+\textbf{Compositional approximation} is preferred when:
+\begin{itemize}
+    \item Components are logically independent
+    \item Implementing separate approximations is straightforward
+    \item Error budgets can be allocated per-component
+\end{itemize}
+
+\textbf{Direct approximation} is preferred when:
+\begin{itemize}
+    \item Components have natural correlation structure
+    \item A single approximation algorithm can handle the entire type
+    \item Lower overall error rates are critical
+\end{itemize}
+\end{remark}
+
+\section{New Programming Paradigms
 
 \subsection{Probabilistic Contracts}
 
@@ -547,6 +652,28 @@ If a type's equality operator returns an observed Boolean with nonzero error (i.
   \item \textbf{Contain scope}: Restrict observed equality to local algorithmic steps; publish only stabilized results across module boundaries.
   \item \textbf{Document assumptions}: Record independence/memoryless assumptions and expected error rates at API boundaries.
 \end{itemize}
+
+\section{Fundamental Limits: Rank and Asymptotic Indistinguishability}
+
+Even with perfect knowledge of confusion matrix parameters, some latent values remain asymptotically indistinguishable due to the rank structure of the observation process.
+
+\begin{theorem}[Asymptotic Indistinguishability in Regular Types]
+Consider the confusion matrix $Q$ for observing equality between regular type values. If $\text{rank}(Q) < |T|$ where $T$ is the type's value space, then there exist latent configurations that remain indistinguishable even with unlimited observations.
+\end{theorem}
+
+This has profound implications for regular types:
+
+\begin{itemize}
+    \item \textbf{Perfect parameter knowledge isn't enough}: Even knowing all error rates $\{\epsilon_{i,j}\}$ exactly, some latent equalities cannot be distinguished
+    \item \textbf{Fundamental privacy bounds}: The rank deficiency creates inherent privacy—some information remains protected regardless of computational resources
+    \item \textbf{Asymptotic convergence limits}: No amount of repeated observation can resolve certain ambiguities if they lie in the null space of the confusion matrix
+\end{itemize}
+
+\begin{remark}[Connection to Oblivious Computing]
+This rank-based analysis reveals why certain oblivious computation protocols provide unconditional security: the observation process is designed to be rank-deficient, ensuring that private inputs remain indistinguishable even with unlimited computational power applied to the observed outputs.
+\end{remark}
+
+For regular types, this means that some equality relationships are fundamentally unobservable, creating a hierarchy of knowable vs unknowable relationships that persists regardless of how perfect our measurement apparatus becomes.
 
 \section{Conclusions}
 

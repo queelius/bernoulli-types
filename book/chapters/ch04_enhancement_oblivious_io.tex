@@ -1,0 +1,357 @@
+\section{Enhancement: Fully Oblivious Input-Output}
+\label{sec:oblivious-io}
+
+\subsection{The Observable Output Problem}
+
+Our current implementation has a critical weakness:
+
+\begin{lstlisting}[language=Python, caption={Current approach - outputs are observable}]
+def search(self, query: str) -> bool:  # PROBLEM: Boolean output is observable!
+    encoded_query = self.encode(query)
+    bloom_result = self.index[encoded_query]
+    return bloom_result.contains(doc_id)  # Returns True/False - OBSERVABLE!
+\end{lstlisting}
+
+Even with oblivious queries, returning plaintext booleans leaks information:
+\begin{itemize}
+\item Result patterns reveal query selectivity
+\item True/False sequences can be correlated
+\item Timing of True results reveals investigation progress
+\end{itemize}
+
+\subsection{Bernoulli Map Construction for Oblivious Outputs}
+
+Instead of Bloom filters (which output observable booleans), we use Bernoulli maps that output encoded values:
+
+\begin{lstlisting}[language=Python, caption={Bernoulli map with encoded outputs}]
+class BernoulliMap:
+    """Maps encoded inputs to encoded outputs obliviously"""
+    
+    def __init__(self, secret_key: bytes):
+        self.secret_key = secret_key
+        # Map from input encodings to output encodings
+        self.encoding_map = {}
+        
+    def insert(self, key: str, value: Any):
+        """Store key-value pair with encoded representations"""
+        # Generate multiple input encodings
+        input_encodings = self.generate_encodings(key)
+        
+        # Generate encoded output (not plaintext!)
+        output_encoding = self.encode_output(value)
+        
+        # Store all input encodings -> same output encoding
+        for enc_in in input_encodings:
+            self.encoding_map[enc_in] = output_encoding
+    
+    def lookup(self, encoded_key: bytes) -> bytes:
+        """Returns ENCODED output, not plaintext"""
+        # Return encoded value or encoded "not found"
+        return self.encoding_map.get(
+            encoded_key,
+            self.encode_output(None)  # Encoded null
+        )
+    
+    def encode_output(self, value: Any) -> bytes:
+        """Encode output values uniformly"""
+        if value is None:
+            # Special encoding for "not found"
+            data = b"NULL" + self.secret_key
+        else:
+            # Encode actual value
+            data = str(value).encode() + self.secret_key
+        
+        # Generate uniform encoding
+        return hashlib.sha256(data).digest()
+    
+    def decode_output(self, encoded: bytes, expected_values: List[Any]) -> Any:
+        """Client-side decoding with expected value set"""
+        for value in expected_values:
+            if self.encode_output(value) == encoded:
+                return value
+        return None  # Not in expected set
+\end{lstlisting}
+
+\subsection{End-to-End Oblivious Computation}
+
+Now both inputs and outputs remain encoded throughout:
+
+\begin{lstlisting}[language=Python, caption={Fully oblivious search system}]
+class FullyObliviousSearch:
+    """Complete oblivious computation - encoded inputs AND outputs"""
+    
+    def __init__(self, secret_key: bytes):
+        self.secret_key = secret_key
+        self.bernoulli_map = BernoulliMap(secret_key)
+        
+    def oblivious_search(self, query: str) -> bytes:
+        """
+        Fully oblivious: 
+        - Input: plaintext query (on client)
+        - Processing: encoded query (on server) 
+        - Output: encoded result (from server)
+        - Decoding: back to plaintext (on client)
+        """
+        # Client side: encode query
+        encoded_query = self.encode_query(query)
+        
+        # Server side: process encoded, return encoded
+        encoded_result = self.server_process(encoded_query)
+        
+        # Client side: decode result
+        # (Would happen on trusted client machine)
+        return encoded_result  # Still encoded!
+    
+    def server_process(self, encoded_query: bytes) -> bytes:
+        """
+        Server NEVER sees plaintext
+        Input: encoded query
+        Output: encoded result
+        """
+        # Server just does lookup in Bernoulli map
+        # Doesn't know what query means or what result means
+        return self.bernoulli_map.lookup(encoded_query)
+    
+    def client_decode(self, encoded_result: bytes) -> bool:
+        """Decode on trusted client only"""
+        # Client knows expected values
+        expected = [True, False]  # For boolean results
+        
+        # Try each possibility
+        for value in expected:
+            test_encoding = self.encode_output(value)
+            if test_encoding == encoded_result:
+                return value
+        
+        raise ValueError("Unexpected encoded result")
+\end{lstlisting}
+
+\subsection{Bernoulli Tuples for Correlation Hiding}
+
+Beyond pairs, we can encode arbitrary tuples to hide complex correlations:
+
+\begin{lstlisting}[language=Python, caption={Generalized tuple encoding}]
+class BernoulliTupleEncoder:
+    """Hide correlations through tuple encoding"""
+    
+    def __init__(self, correlation_sets):
+        """
+        correlation_sets: List of commonly correlated term sets
+        Example: [
+            ("covid", "vaccine", "trial"),
+            ("password", "leak", "breach"),
+            ("financial", "fraud", "investigation")
+        ]
+        """
+        self.correlation_sets = correlation_sets
+        self.tuple_encodings = self._precompute_tuples()
+    
+    def encode_query(self, terms: List[str]) -> bytes:
+        """Encode query, using tuples when possible"""
+        # Sort for canonical ordering
+        terms_sorted = tuple(sorted(terms))
+        
+        # Check if this is a known correlation set
+        if terms_sorted in self.correlation_sets:
+            # Use single tuple encoding
+            return self._encode_tuple(terms_sorted)
+        
+        # Check for subsets that form tuples
+        for size in range(len(terms), 1, -1):
+            for subset in combinations(terms, size):
+                subset_sorted = tuple(sorted(subset))
+                if subset_sorted in self.correlation_sets:
+                    # Encode subset as tuple, rest individually
+                    tuple_enc = self._encode_tuple(subset_sorted)
+                    remaining = [t for t in terms if t not in subset]
+                    other_encs = [self._encode_single(t) for t in remaining]
+                    
+                    # Combine encodings
+                    return self._combine_encodings([tuple_enc] + other_encs)
+        
+        # No correlations found, encode individually
+        return self._combine_encodings([self._encode_single(t) for t in terms])
+    
+    def _encode_tuple(self, term_tuple: Tuple[str]) -> bytes:
+        """Create single encoding for entire tuple"""
+        # Single encoding hides correlation!
+        data = ":".join(term_tuple).encode()
+        return hashlib.sha256(data).digest()
+    
+    def _combine_encodings(self, encodings: List[bytes]) -> bytes:
+        """Combine multiple encodings obliviously"""
+        # XOR for simplicity (could use more sophisticated combination)
+        result = encodings[0]
+        for enc in encodings[1:]:
+            result = bytes(a ^ b for a, b in zip(result, enc))
+        return result
+\end{lstlisting}
+
+\subsection{Two-Level Hash Schemes}
+
+For more sophisticated constructions, we can use two-level perfect hashing with seed search:
+
+\begin{lstlisting}[language=Python, caption={Two-level perfect hashing for Bernoulli maps}]
+class TwoLevelBernoulliMap:
+    """
+    Two-level scheme:
+    - Level 1: Bins with minimal collisions
+    - Level 2: Per-bin seed search for perfect mapping
+    """
+    
+    def __init__(self, items: List[Tuple[str, Any]], max_attempts=1000):
+        self.level1_bins = defaultdict(list)
+        self.level2_seeds = {}
+        self.level2_maps = {}
+        
+        # Level 1: Distribute into bins
+        for key, value in items:
+            bin_id = self._hash_to_bin(key)
+            self.level1_bins[bin_id].append((key, value))
+        
+        # Level 2: Find perfect hash seed for each bin
+        for bin_id, bin_items in self.level1_bins.items():
+            seed = self._find_perfect_seed(bin_items, max_attempts)
+            if seed is None:
+                # Fall back to standard encoding
+                seed = 0
+            
+            self.level2_seeds[bin_id] = seed
+            self.level2_maps[bin_id] = self._build_perfect_map(bin_items, seed)
+    
+    def _find_perfect_seed(self, items: List[Tuple[str, Any]], 
+                          max_attempts: int) -> Optional[int]:
+        """
+        Search for seed that gives perfect (or near-perfect) mapping
+        Most input-output pairs should map correctly
+        """
+        n = len(items)
+        if n == 0:
+            return 0
+        
+        # Target: at least 90% correct mappings
+        target_correct = int(0.9 * n)
+        
+        for seed in range(max_attempts):
+            positions = {}
+            collisions = 0
+            
+            for key, value in items:
+                pos = self._hash_with_seed(key, seed) % (2 * n)
+                if pos in positions:
+                    collisions += 1
+                else:
+                    positions[pos] = (key, value)
+            
+            # Check if this seed is good enough
+            correct_mappings = n - collisions
+            if correct_mappings >= target_correct:
+                return seed
+        
+        return None  # No good seed found
+    
+    def _build_perfect_map(self, items: List[Tuple[str, Any]], 
+                          seed: int) -> Dict[int, bytes]:
+        """Build encoded map with the chosen seed"""
+        n = len(items)
+        encoded_map = {}
+        
+        for key, value in items:
+            pos = self._hash_with_seed(key, seed) % (2 * n)
+            # Encode the output value
+            encoded_value = self._encode_value(value)
+            encoded_map[pos] = encoded_value
+        
+        return encoded_map
+    
+    def lookup(self, key: str) -> bytes:
+        """Two-level lookup returning encoded result"""
+        # Level 1: Find bin
+        bin_id = self._hash_to_bin(key)
+        
+        # Level 2: Use bin's seed for lookup
+        seed = self.level2_seeds.get(bin_id, 0)
+        bin_map = self.level2_maps.get(bin_id, {})
+        
+        n = len(self.level1_bins[bin_id])
+        if n == 0:
+            return self._encode_value(None)
+        
+        pos = self._hash_with_seed(key, seed) % (2 * n)
+        
+        # Return encoded value (or encoded null)
+        return bin_map.get(pos, self._encode_value(None))
+\end{lstlisting}
+
+\subsection{Extending to Arbitrary Computations}
+
+The pattern generalizes to any computation:
+
+\begin{lstlisting}[language=Python, caption={Oblivious computation framework}]
+class ObliviousComputation:
+    """Framework for arbitrary oblivious computations"""
+    
+    def __init__(self, computation_type: str):
+        self.computation_type = computation_type
+        self.input_encoder = BernoulliEncoder()
+        self.output_encoder = BernoulliEncoder()
+        
+    def oblivious_compute(self, 
+                         encoded_inputs: List[bytes], 
+                         operation: str) -> bytes:
+        """
+        Perform computation on encoded inputs,
+        return encoded output
+        """
+        if self.computation_type == "boolean":
+            return self._boolean_op(encoded_inputs, operation)
+        elif self.computation_type == "arithmetic":
+            return self._arithmetic_op(encoded_inputs, operation)
+        elif self.computation_type == "comparison":
+            return self._comparison_op(encoded_inputs, operation)
+        else:
+            raise ValueError(f"Unknown computation: {self.computation_type}")
+    
+    def _boolean_op(self, inputs: List[bytes], op: str) -> bytes:
+        """Boolean operations on encoded values"""
+        # Server doesn't decode - works directly on encodings
+        if op == "AND":
+            # Intersection of Bernoulli sets
+            result = self._intersect_encodings(inputs)
+        elif op == "OR":
+            # Union of Bernoulli sets
+            result = self._union_encodings(inputs)
+        elif op == "NOT":
+            # Complement of Bernoulli set
+            result = self._complement_encoding(inputs[0])
+        
+        return result  # Still encoded!
+    
+    def _intersect_encodings(self, encodings: List[bytes]) -> bytes:
+        """Intersection without decoding"""
+        # Bit-wise AND for bloom-filter-like encodings
+        result = encodings[0]
+        for enc in encodings[1:]:
+            result = bytes(a & b for a, b in zip(result, enc))
+        return result
+    
+    def _union_encodings(self, encodings: List[bytes]) -> bytes:
+        """Union without decoding"""
+        # Bit-wise OR for bloom-filter-like encodings
+        result = encodings[0]
+        for enc in encodings[1:]:
+            result = bytes(a | b for a, b in zip(result, enc))
+        return result
+\end{lstlisting}
+
+\subsection{Key Insights}
+
+This enhanced approach provides:
+
+1. **End-to-end obliviousness**: Both inputs and outputs remain encoded
+2. **Correlation hiding**: Through generalized tuple encoding
+3. **Efficient constructions**: Two-level hashing with seed search
+4. **Computational completeness**: Extends to arbitrary operations
+5. **No observable patterns**: Server never sees plaintext values or results
+
+The server becomes a truly oblivious processor - it performs computations on encodings without ever learning what they represent.
